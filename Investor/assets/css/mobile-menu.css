@@ -1,0 +1,85 @@
+.menu-icon {
+  color: #182130;
+  cursor: pointer;
+  font-size:32px;
+  right: 2%;
+  position: absolute;
+  top: 33px;
+  z-index: 9999;
+}
+
+.left-menu {
+	position: fixed;
+	top: 0px;
+	left:-290px;
+	width: 290px;
+	height: 100%;
+	background:#27272c;
+	opacity: 1;
+	z-index:9999;
+	border-right: 1px solid #fff;
+	transition-duration: 0.3s;
+	transition-property: top, left, width;
+}
+.sidebar-open .left-menu {
+	left:0px;
+}
+.left-menu ul.left-menu-ul {
+	padding:50px 20px 0 22px;
+	list-style: none;
+	text-align: left;
+	background: none;
+	height: 100%;
+	overflow-y: scroll;
+	position: relative;
+}
+.left-menu ul li{
+	border-bottom: 1px solid #202020;
+	color: #ffffff;
+	font-size: 14px;
+	}
+.left-menu ul li a {
+	font-size: 14px;
+	line-height: 24px;
+	padding: 8px 0;
+	display:block;
+	color:#fff;
+}
+.left-menu ul li ul{
+	margin-left:20px;
+	}
+.no-border{
+	border-bottom:0px !important;
+	}
+.close-sidebar-menu {
+    font-size: 16px;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    background: rgba(0,0,0,0.25);
+    padding: 2px 15px;
+    margin: 0;
+    text-shadow: 0 0 1px rgba(0,0,0,0.1);
+    position: absolute;
+    top: 0;
+    font-size: 12px;
+    right: 17px;
+    width: 95%;
+    display: block;
+    line-height: 42px;
+    height: 44px;
+}
+.close-sidebar-menu span{
+	font-size: 17px;
+	font-weight: 600;
+	}
+.close-sidebar-menu i {
+    width: 44px;
+    height: 44px;
+    right: 17px;
+    float: right;
+    line-height: 40px;
+    text-align: center;
+    font-size: 16px;
+	position:absolute;
+	right:0;
+}
