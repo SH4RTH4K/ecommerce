@@ -150,7 +150,39 @@ The configured site name is also used in page titles, login and account screens,
 
 ## Administration
 
-The administration login is available at `/admin/login` (the legacy `/admin-login` URL redirects to the administrator login flow). An administrator record must exist in the legacy admin table before signing in. No default production credentials are documented or shipped in this README.
+The administration login is available at `/admin/login` (the legacy `/admin-login` URL redirects to the administrator login flow).
+
+### Create the first administrator
+
+Run all migrations first, then open Laravel Tinker from the project directory:
+
+```powershell
+.\.runtime\php74\php.exe artisan tinker
+```
+
+If the bundled runtime is not present, use your PHP 7.4 executable instead:
+
+```bash
+php artisan tinker
+```
+
+Paste the following into Tinker and press Enter after each statement:
+
+```php
+$roleId = DB::table('admin_roles')->where('name', 'Super Admin')->value('id');
+DB::table('tbl_admin')->updateOrInsert(['admin_name' => 'admin'], ['full_name' => 'Default Administrator', 'admin_email' => 'admin@example.com', 'role_id' => $roleId, 'is_active' => 1, 'admin_password' => Hash::make('Admin@12345'), 'created_at' => now(), 'updated_at' => now()]);
+exit
+```
+
+You can then sign in at `http://127.0.0.1:8000/admin/login` with:
+
+- Username: `admin`
+- Password: `Admin@12345`
+
+The command is safe to run again: it updates the `admin` account instead of creating a duplicate.
+
+> [!WARNING]
+> These credentials are intended only for initial local setup. Change the password immediately from **Administration > Admin Users** before exposing the application to a network or deploying it. Use a unique password of at least 12 characters.
 
 ## Testing
 
