@@ -11,11 +11,14 @@
         </li>
         <li><a href="#">Manage Manufacture</a></li>
     </ul>
+    @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
+    @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
+    @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
 
     <div class="row-fluid sortable">		
         <div class="box span12">
             <div class="box-header" data-original-title>
-                <h2><i class="halflings-icon user"></i><span class="break"></span>Manage Manufacture</h2>
+                <h2><i class="halflings-icon user"></i><span class="break"></span>Manage Manufacturers</h2>
                 <div class="box-icon">
                     <a href="#" class="btn-setting"><i class="halflings-icon wrench"></i></a>
                     <a href="#" class="btn-minimize"><i class="halflings-icon chevron-up"></i></a>
@@ -23,9 +26,12 @@
                 </div>
             </div>
             <div class="box-content">
+                <form id="bulk-manufacturer-form" method="post" action="{{ url('/manage-manufacturer/bulk-delete') }}">{{ csrf_field() }}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="bulk-manufacturer-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button><span id="bulk-manufacturer-count" class="muted">0 selected</span></div>
                 <table class="table table-striped table-bordered bootstrap-datatable datatable">
                     <thead>
                         <tr>
+                            <th style="width:32px"><input type="checkbox" id="select-all-manufacturers" aria-label="Select all manufacturers"></th>
                             <th>ID</th>
                             <th>Company Name</th>
                             <th>Status</th>
@@ -40,6 +46,7 @@
                         
                         ?>
                         <tr>
+                            <td><input type="checkbox" class="bulk-row-checkbox" name="manufacturer_ids[]" value="{{ $vmanufacturer->manufacturer_id }}" aria-label="Select {{ $vmanufacturer->manufacturer_name }}"></td>
                             <td>{{$vmanufacturer->manufacturer_id}}</td>
                             <td class="center">{{$vmanufacturer->manufacturer_name}}</td>
                             <td class="center">
@@ -87,9 +94,10 @@
                             }
                         ?>
                     </tbody>
-                </table>            
+                </table></form>
             </div>
         </div><!--/span-->
     </div><!--/row-->
 </div><!--/.fluid-container-->
+@include('admin.components.bulk-delete-script',['formId'=>'bulk-manufacturer-form','selectAllId'=>'select-all-manufacturers','buttonId'=>'bulk-manufacturer-button','counterId'=>'bulk-manufacturer-count','itemLabel'=>'manufacturers'])
 @endsection

@@ -22,7 +22,7 @@ class CreateProductTable extends Migration
             $table->string('product_model');
             $table->string('product_name');
             $table->text('Product_description');
-            $table->integer('product_price');
+            $table->decimal('offer_price', 12, 2)->nullable();
             $table->string('product_condition');
             $table->string('product_image');
             $table->tinyInteger('publication_status');

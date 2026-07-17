@@ -5,16 +5,16 @@
                         <div class="col-sm-8">
                             <div class="contactinfo">
                                 <ul class="nav nav-pills">
-                                    <li><a href="#"><i class="fa fa-phone"></i> +88 01627-361218 / 01774-014546</a></li>
-                                    <li><a href="#"><i class="fa fa-envelope"></i> info@experttechbd.com</a></li>
-                                    <li><a href="#"><i class="fa fa-envelope"></i> reyadcse@gmail.com</a></li>
+                                    <li><a href="#"><i class="fa fa-phone"></i> +88 01612-717349 / 01914-717349</a></li>
+                                    <li><a href="#"><i class="fa fa-envelope"></i> support@example.com</a></li>
+                                    <li><a href="#"><i class="fa fa-envelope"></i> support@example.com</a></li>
                                 </ul>
                             </div>
                         </div>
                         <div class="col-sm-4">
                             <div class="social-icons pull-right">
                                 <ul class="nav navbar-nav">
-                                    <li><a href="#"><i class="fa fa-facebook"></i></a></li>
+                                    <li><a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a></li>
                                     <li><a href="#"><i class="fa fa-twitter"></i></a></li>
                                     <li><a href="#"><i class="fa fa-linkedin"></i></a></li>
                                     <li><a href="#"><i class="fa fa-dribbble"></i></a></li>
@@ -31,7 +31,7 @@
                     <div class="row">
                         <div class="col-sm-3">
                             <div class="logo pull-left">
-                                <a href="{{URL::to('/')}}"><img src="{{asset('asset/front-end/img/final-logo.png')}}" alt="" /></a>
+                                <a href="{{URL::to('/')}}"><img src="{{asset('asset/front-end/img/ecommerce-logo.png')}}" alt="Ecommerce" width="200" height="50"/></a>
                             </div>
 <!--                            <div class="btn-group pull-right">
                                 <div class="btn-group">
@@ -57,7 +57,7 @@
                                 </div>
                             </div>-->
                         </div>
-                        <div class="col-sm-7">
+                        <div class="col-sm-6 col-xs-12">
                             <div class="shop-menu pull-right">
                                 <ul class="nav navbar-nav collapse navbar-collapse">
                                     <li><a href="{{URL::to('/')}}" class="active">Home</a></li>
@@ -75,10 +75,15 @@
                             </div>
                             
                         </div>
-                        <div class="col-sm-2">
-                            <div class="search_box pull-right">
-                                <input type="text" placeholder="Search"/>
+                        <div class="col-sm-3 col-xs-12" style="margin-top: 5px">
+                            <div>
+                                {!! Form::open(['url' => '/search-product', 'method' => 'post']) !!}
+                                    <input type="text" name="search_text" placeholder="Search"/>
+                                    <input type="submit" name="btn" value="Search"/>
+                                {!! Form::close() !!}
+                                
                             </div>
+                            
                         </div>
                     </div>
                 </div>

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7748878140287110"
+     crossorigin="anonymous"></script>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="description" content="">
         <meta name="author" content="">
-        <title>@yield("title", "Home | EXPERTtechbd | Sell | Buy | Exchange All type of computer's | Router | Printer | Monitor")</title>
+        <title>@yield("title", "Home | ".$brandName)</title>
         <link href="{{asset('asset/front-end/css/bootstrap.min.css')}}" rel="stylesheet">
         <link href="{{asset('asset/front-end/css/font-awesome.min.css')}}" rel="stylesheet">
         <link href="{{asset('asset/front-end/css/prettyPhoto.css')}}" rel="stylesheet">
@@ -14,6 +16,7 @@
         <link href="{{asset('asset/front-end/css/main.css')}}" rel="stylesheet">
         <link href="{{asset('asset/front-end/css/responsive.css')}}" rel="stylesheet">
         <link href="{{asset('asset/front-end/css/custom.css')}}" rel="stylesheet">
+        <link href="{{asset('css/ecommerce-home.css')}}" rel="stylesheet">
         <!--[if lt IE 9]>
         <script src="js/html5shiv.js"></script>
         <script src="js/respond.min.js"></script>

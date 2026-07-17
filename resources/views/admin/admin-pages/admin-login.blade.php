@@ -4,9 +4,9 @@
 
         <!-- start: Meta -->
         <meta charset="utf-8">
-        <title>@yield("title", 'EXPERTtechbd Login')</title>
+        <title>@yield("title", $brandName.' Login')</title>
         <meta name="description" content="Bootstrap Metro Dashboard">
-        <meta name="author" content="Dennis Ji">
+        <meta name="author" content="{{ $brandName }}">
         <meta name="keyword" content="Metro, Metro UI, Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
         <!-- end: Meta -->
 
@@ -41,19 +41,23 @@
                             <a href="index.html"><i class="halflings-icon home"></i></a>
                             <a href="#"><i class="halflings-icon cog"></i></a>
                         </div>
-                        <h2>Login to your account</h2>
-                        {!! Form::open(['url' => '/admin-login', 'method' => 'post']) !!}
+                        <h2>Administrator sign in</h2>
+                        <p>Use your administrator username and password. No email address is required.</p>
+                        @if(session('message'))<div class="alert alert-success" role="status">{{ session('message') }}</div>@endif
+                        @if(session('exception'))<div class="alert alert-error" role="alert">{{ session('exception') }}</div>@endif
+                        @if($errors->any())<div class="alert alert-error" role="alert">{{ $errors->first() }}</div>@endif
+                        {!! Form::open(['route' => 'admin.login.submit', 'method' => 'post']) !!}
                             <fieldset>
 
                                 <div class="input-prepend" title="Username">
                                     <span class="add-on"><i class="halflings-icon user"></i></span>
-                                    <input class="input-large span10" name="username" id="username" type="text" placeholder="type username"/>
+                                    <input class="input-large span10" name="username" id="username" type="text" value="{{ old('username') }}" autocomplete="username" placeholder="Username" required autofocus/>
                                 </div>
                                 <div class="clearfix"></div>
 
                                 <div class="input-prepend" title="Password">
                                     <span class="add-on"><i class="halflings-icon lock"></i></span>
-                                    <input class="input-large span10" name="password" id="password" type="password" placeholder="type password"/>
+                                    <input class="input-large span10" name="password" id="password" type="password" autocomplete="current-password" placeholder="Password" required/>
                                 </div>
                                 <div class="clearfix"></div>
 
@@ -65,19 +69,7 @@
                                 <div class="clearfix"></div>
                         {!! Form::close() !!}
                         <hr>
-                        <p style="text-align: center; color: red;">
-                            <?php
-                            $exception=Session::get('exception');
-                            if(isset($exception)){
-                                echo $exception;
-                                Session::put('exception','');
-                            }
-                            ?>
-                        </p>
-                        <h3>Forgot Password?</h3>
-                        <p>
-                            No problem, <a href="#">click here</a> to get a new password.
-                        </p>	
+                        <p><a href="{{ url('/login') }}">Customer account sign in</a></p>
                     </div><!--/span-->
                 </div><!--/row-->
 

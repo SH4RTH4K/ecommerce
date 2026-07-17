@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Support\Facades\Schema;use Illuminate\Database\Schema\Blueprint;use Illuminate\Database\Migrations\Migration;
+class CreateSystemBackupsTable extends Migration {public function up(){Schema::create('system_backups',function(Blueprint $t){$t->increments('id');$t->string('filename');$t->string('disk')->default('local');$t->unsignedBigInteger('size_bytes')->default(0);$t->string('status',20)->default('creating');$t->string('created_by')->nullable();$t->text('error')->nullable();$t->timestamps();$t->index(['status','created_at']);});}public function down(){Schema::dropIfExists('system_backups');}}

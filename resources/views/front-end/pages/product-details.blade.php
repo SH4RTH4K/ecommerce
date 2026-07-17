@@ -1,139 +1,45 @@
-@include("front-end.components.head")
-@include("front-end.components.header")
-<div class="col-sm-offset-1 col-sm-10">
-    <div class="product-details"><!--product-details-->
-        <div class="col-sm-5">
-            <div class="view-product">
-                <img src="{{asset($product_details->product_image)}}" alt="product_image">
-                <!--                <h3>ZOOM</h3>-->
-            </div>
-
+@extends('front-end.master')
+@section('title', ($product_details->seo_title ?: $product_details->product_name).' | '.$brandName)
+@section('meta_description', $product_details->seo_description ?: ($product_details->short_description ?: 'Buy '.$product_details->product_name.' from '.$brandName.'. View price, specifications, warranty and availability.'))
+@section('canonical', url('/product-details/'.$product_details->id))
+@section('og_type', 'product')
+@section('og_image', $product_details->image_url)
+@push('structured_data')
+<script type="application/ld+json">{!! json_encode(array_filter(['@context'=>'https://schema.org','@type'=>'Product','name'=>$product_details->product_name,'image'=>$product_details->all_images->values()->all(),'description'=>$product_details->seo_description ?: $product_details->short_description,'sku'=>$product_details->sku ?: 'PRD'.$product_details->id,'brand'=>['@type'=>'Brand','name'=>optional($product_details->manufacturer)->manufacturer_name ?: $brandName],'offers'=>['@type'=>'Offer','url'=>url('/product-details/'.$product_details->id),'priceCurrency'=>'BDT','price'=>(string)$product_details->selling_price,'availability'=>$product_details->product_condition==='In Stock'?'https://schema.org/InStock':'https://schema.org/OutOfStock','itemCondition'=>'https://schema.org/NewCondition'],'aggregateRating'=>$averageRating ? ['@type'=>'AggregateRating','ratingValue'=>(string)$averageRating,'reviewCount'=>(string)$reviews->count()] : null]), JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) !!}</script>
+@endpush
+@section('main_content')
+<section class="lt-detail-section">
+    @include('partials.flash')
+    <nav class="lt-breadcrumb" aria-label="Breadcrumb"><a href="{{ url('/') }}">Home</a><i class="fa fa-angle-right"></i>@if($product_details->category)<a href="{{ url('/product-by-category/'.$product_details->category_id) }}">{{ $product_details->category->category_name }}</a><i class="fa fa-angle-right"></i>@endif<span>{{ $product_details->product_name }}</span></nav>
+    <div class="lt-detail-grid">
+        <div class="lt-product-gallery">
+            <div class="lt-detail-image"><img id="main-product-image" src="{{ $product_details->image_url }}" alt="{{ $product_details->product_name }}"></div>
+            @if($product_details->all_images->count() > 1)<div class="lt-thumbnails">@foreach($product_details->all_images as $index=>$image)<button type="button" aria-label="View {{ $product_details->product_name }} image {{ $index+1 }}" onclick="document.getElementById('main-product-image').src=this.dataset.image" data-image="{{ filter_var($image, FILTER_VALIDATE_URL) ? $image : asset($image) }}"><img src="{{ filter_var($image, FILTER_VALIDATE_URL) ? $image : asset($image) }}" alt="{{ $product_details->product_name }} thumbnail {{ $index+1 }}" loading="lazy"></button>@endforeach</div>@endif
         </div>
-        <form name="manufacturer">
-            <div class="col-sm-7">
-                <div class="product-information"><!--/product-information-->
-                    <img src="images/product-details/new.jpg" class="newarrival" alt="">
-                    <h2 style="text-transform: uppercase">{{$product_details->product_name}}</h2>
-                    <p>Product ID: {{$product_details->product_id}}</p>
-                    <!--<img src="images/product-details/rating.png" alt="">-->
-                    <span>
-                        <span>BDT {{$product_details->product_price}}</span>
-                        <!--                    <label>Quantity:</label>
-                                            <input type="text" value="3">
-                                            <button type="button" class="btn btn-fefault cart">
-                                                <i class="fa fa-shopping-cart"></i>
-                                                Add to cart
-                                            </button>-->
-                    </span>
-    <!--                <p><b>Availability:</b> In Stock</p>-->
-                    <?PHP 
-                    $temp=$product_details->product_condition;
-                     if($temp=="new"){
-                         ?>
-                    <p><b>Condition: </b><span style="color: green"> {{$product_details->product_condition}}</span></p>
-                         <?PHP
-                     }else
-                     {
-                         ?>
-                    <p><b>Condition: </b><span style="color: red">{{$product_details->product_condition}}</span></p>
-                    
-                     <?PHP
-                     }
-                    ?>
-                   
-                    <div style="overflow-x:auto;">
-                        <table>
-                            <tr name="manufacturer_id">
-                                <td>Brand</td>
-                                <td  style="text-transform: uppercase">{{$product_details->manufacturer_name}}</td>
-
-                            </tr>
-                            <tr>
-                                <td>Model</td>
-                                <td>{{$product_details->product_model}}</td>
-                            </tr>
-                            <tr>
-                                <td>Product Description</td>
-                                <td>{!!$product_details->product_description!!}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <h2 style="color: red; padding-top: 20px;">For Order : +88 01774-014546</h2>
-
-
-                    <!--<a href=""><img src="{{asset('asset/front-end/img/product-details/share.png')}}" class="share img-responsive" alt=""></a>-->
-                </div><!--/product-information-->
-            </div>
-        </form>
-    </div><!--/product-details-->
-
-
-
-
-    <div class="recommended_items"><!--recommended_items-->
-        <h2 class="title text-center">Experttechbd Warranty, Guaranty বিক্রয়োত্তর সেবা </h2>
-
-        <div id="recommended-item-carousel" class="carousel slide" data-ride="carousel">
-            <!--<p>* 1 Year Guaranty (Parts & Panel)</p>-->
-            <p><span><strong>Warranty Guarantee Is Not Applicable Following Reason:</strong></span></p>
-            <ol>
-                <li>
-                    If PC Open By Locally Or By Any Person.
-                </li>
-                <li>
-                    Any Accidents, Lighting, Fire, Public Disturbance, Voltage Fluctuating.
-                </li>
-                <li>
-                    If Panel Is Broken.
-                </li>
-                <li>
-                    Defects Caused By Improper Use or Improper Installation.
-                </li>
-                <li>
-                    Any Short Circuit Damage.
-                </li>
-            </ol>
-            <p>
-                <span>
-                    <strong>For Guarantee & Warranty Service:</strong>
-                </span>
-            </p>
-            <ol>
-                <li>
-                    Send Your PC to Our Shop Address (By Any Person)
-                </li>
-                <li>
-                    Send Your PC by Any courier Service to Our Shop Address.
-                </li>
-                <li>
-                    After Servicing (Guarantee & Warranty) We Will Send You.(Customer Will Bear All Up Down Cost Of The Product).
-                </li>
-                <li>
-                    Mobile No: 01774-014546
-                </li>
-            </ol>
-            <p>
-                <span><strong>বিক্রয়োত্তর সেবা প্রদানের জন্য (Guaranty & Warranty):</strong></span>
-            </p>
-            <ol>
-                <li>
-                    আপনার কোন সার্ভিস প্রয়োজন হলে দয়া করে PC আমাদের দোকানের ঠিকানায় পাঠিয়ে দিবেন।
-                </li>
-                <li>
-                    আপনি নিজে প্রোডাক্টটি নিয়ে আসতে পারেন আথবা, কোন কুরিয়ার সার্ভিসের মাধ্যমে আমাদের দোকানের ঠিকানায় প্রেরণ করুন।
-                </li>
-                <li>
-                    আপনার সার্ভিসিং (Guarantee & Warranty) হয়ে গেলে আমরা আপনার নিকটস্থ কোন কুরিয়ার সার্ভিস সেন্টারে পাঠিয়ে দিবো। (পরিবহন সংক্রান্ত যাবতীয় খরচাদি ক্রেতাকে বহন করতে হবে) 
-                </li>
-            </ol>
-            Please Check PC Then Receive Your Product. You Should/Will Receive Your Product At Your Own Risk.
-            After Receiving The PC, Our Company Will Not Take Any Other Responsibility About Configuration Except The Service Issue.
-            <br>
-            দয়া করে প্রথমে যাচাই করুন অতঃপর আপনি আপনার নিজ দায়িত্বে আপনার পণ্যটি বুঝে নিন।
-            <br>
-            আপনার পণ্যটি বুঝে নেওয়ার পর থেকে কনফিগারেশন সম্পর্কিত কোন দায় দায়িত্ব আমাদের কোম্পানি গ্রহন করবে না। কিন্তু সার্ভিস সংক্রান্ত যে কোন সেবা আমাদের নির্দিষ্ট মেয়াদ পর্যন্ত প্রদান করা হবে।   
+        <div class="lt-detail-info">
+            <span class="lt-detail-code">Product Code: {{ $product_details->sku ?: 'LT'.str_pad($product_details->id, 5, '0', STR_PAD_LEFT) }}</span>
+            <h1>{{ $product_details->product_name }}</h1>
+            <p class="lt-detail-model">Model: {{ $product_details->product_model ?: 'Not specified' }}</p>
+            <div class="lt-detail-price">৳{{ number_format($product_details->selling_price) }} @if($product_details->has_offer)<del>৳{{ number_format($product_details->regular_price) }}</del>@endif</div>
+            <p class="lt-stock {{ $product_details->product_condition === 'In Stock' ? 'is-in' : 'is-out' }}"><i class="fa fa-circle"></i> {{ $product_details->product_condition }}</p>
+            @if($product_details->short_description)<p class="lt-product-summary">{{ $product_details->short_description }}</p>@endif
+            @if(!empty($product_details->key_features))<div class="lt-key-features"><h2>Key Features</h2><ul>@foreach($product_details->key_features as $feature)<li>{{ $feature }}</li>@endforeach</ul></div>@endif
+            <dl class="lt-detail-meta"><div><dt>Brand</dt><dd>{{ optional($product_details->manufacturer)->manufacturer_name ?: $brandName }}</dd></div><div><dt>Warranty</dt><dd>{{ $product_details->warranty ?: 'Contact us' }}</dd></div><div><dt>Delivery</dt><dd>1–3 working days nationwide</dd></div></dl>
+<div class="lt-buy-actions"><form action="{{ route('cart.add', $product_details->id) }}" method="post">{{ csrf_field() }}<input type="number" min="1" max="99" name="quantity" value="1"><button class="lt-primary-button"><i class="fa fa-shopping-cart"></i> Add to cart</button></form><form action="{{ route('compare.add', $product_details->id) }}" method="post">{{ csrf_field() }}<button class="lt-secondary-button"><i class="fa fa-exchange"></i> Compare</button></form><form action="{{ route('wishlist.add', $product_details->id) }}" method="post">{{ csrf_field() }}<button class="lt-secondary-button"><i class="fa fa-heart-o"></i> Wishlist</button></form></div>
+            @if($product_details->product_condition !== 'In Stock')<form class="lt-feedback-form" method="post" action="{{ route('stock-alerts.subscribe',$product_details->id) }}" style="margin-top:18px">{{ csrf_field() }}<h3><i class="fa fa-bell-o"></i> Notify me when available</h3><div style="display:flex;gap:10px"><input type="email" name="email" value="{{ old('email',optional(auth()->user())->email) }}" placeholder="Your email address" required style="flex:1"><button class="lt-primary-button">Create alert</button></div></form>@endif
         </div>
-    </div><!--/recommended_items-->
-    <br>
-</div>
-@include("front-end.components.script")
+    </div>
+    @if(!empty($product_details->specifications))<div class="lt-description"><h2>Specifications</h2><table class="lt-spec-table">@foreach($product_details->specifications as $label=>$value)@if(is_array($value))<tr class="lt-spec-group"><th colspan="2">{{ $label }}</th></tr>@foreach($value as $itemLabel=>$itemValue)<tr><th>{{ $itemLabel }}</th><td>{{ $itemValue }}</td></tr>@endforeach @else<tr><th>{{ $label }}</th><td>{{ $value }}</td></tr>@endif @endforeach</table></div>@endif
+    @if($product_details->attributeValues->isNotEmpty())<div class="lt-description"><h2>Product Attributes</h2><table class="lt-spec-table">@foreach($product_details->attributeValues as $attributeValue)@if($attributeValue->attribute)<tr><th>{{ $attributeValue->attribute->name }}</th><td>{{ $attributeValue->display_value }}</td></tr>@endif @endforeach</table></div>@endif
+    <div class="lt-description"><h2>Product Description</h2><div>{!! $product_details->product_description ?: 'Contact us for full product information.' !!}</div></div>
+    <div class="lt-warranty"><h2>Warranty &amp; After-sales Service</h2><p>{{ $product_details->warranty ?: 'Warranty terms vary by product and manufacturer.' }} Accidental damage, unauthorized repair, improper installation, and misuse are not covered unless the manufacturer states otherwise.</p></div>
+    <div class="lt-feedback-grid">
+        <section class="lt-feedback-panel"><div class="lt-feedback-heading"><div><span>Customer feedback</span><h2>Reviews</h2></div>@if($averageRating)<strong>{{ $averageRating }} <i class="fa fa-star"></i><small>{{ $reviews->count() }} reviews</small></strong>@endif</div>
+        <div class="lt-feedback-list">@forelse($reviews as $review)<article><div><strong>{{ $review->customer_name }}</strong><span>@for($star=1;$star<=5;$star++)<i class="fa {{ $star <= $review->rating ? 'fa-star' : 'fa-star-o' }}"></i>@endfor</span></div><p>{{ $review->review }}</p><small>{{ date('M j, Y', strtotime($review->created_at)) }}</small></article>@empty<p>No published reviews yet. Be the first to share your experience.</p>@endforelse</div>
+        <form class="lt-feedback-form" method="post" action="{{ route('reviews.store',$product_details->id) }}">{{ csrf_field() }}<h3>Write a review</h3><div class="lt-inline-fields"><label>Name<input name="customer_name" value="{{ old('customer_name', optional(auth()->user())->name) }}" required></label><label>Email<input type="email" name="email" value="{{ old('email', optional(auth()->user())->email) }}"></label></div><label>Rating<select name="rating" required><option value="5">5 – Excellent</option><option value="4">4 – Very good</option><option value="3">3 – Good</option><option value="2">2 – Fair</option><option value="1">1 – Poor</option></select></label><label>Review<textarea name="review" minlength="10" required>{{ old('review') }}</textarea></label><button class="lt-primary-button">Submit for review</button></form></section>
+        <section class="lt-feedback-panel"><div class="lt-feedback-heading"><div><span>Need product advice?</span><h2>Questions &amp; Answers</h2></div></div><div class="lt-feedback-list">@forelse($questions as $question)<article><strong>Q: {{ $question->question }}</strong><p><b>A:</b> {{ $question->answer }}</p><small>Asked by {{ $question->customer_name }}</small></article>@empty<p>No answered questions yet.</p>@endforelse</div>
+        <form class="lt-feedback-form" method="post" action="{{ route('questions.store',$product_details->id) }}">{{ csrf_field() }}<h3>Ask a question</h3><div class="lt-inline-fields"><label>Name<input name="customer_name" value="{{ old('customer_name', optional(auth()->user())->name) }}" required></label><label>Email<input type="email" name="email" value="{{ old('email', optional(auth()->user())->email) }}"></label></div><label>Your question<textarea name="question" minlength="5" required>{{ old('question') }}</textarea></label><button class="lt-primary-button">Submit question</button></form></section>
+    </div>
+    @if($similarProducts->isNotEmpty())<div class="lt-section-heading"><div><span>You may also like</span><h2>Similar Products</h2></div></div><div class="lt-product-grid">@foreach($similarProducts as $product)@include('partials.product-card', ['product'=>$product])@endforeach</div>@endif
+</section>
+@endsection

@@ -11,6 +11,9 @@
         </li>
         <li><a href="#">Manage Category</a></li>
     </ul>
+    @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
+    @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
+    @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
 
     <div class="row-fluid sortable">		
         <div class="box span12">
@@ -23,9 +26,12 @@
                 </div>
             </div>
             <div class="box-content">
+                <form id="bulk-category-form" method="post" action="{{ url('/manage-category/bulk-delete') }}">{{ csrf_field() }}
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="bulk-category-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button><span id="bulk-category-count" class="muted">0 selected</span></div>
                 <table class="table table-striped table-bordered bootstrap-datatable datatable">
                     <thead>
                         <tr>
+                            <th style="width:32px"><input type="checkbox" id="select-all-categories" aria-label="Select all categories"></th>
                             <th>Category ID</th>
                             <th>Category Name</th>
                             <th>Status</th>
@@ -38,6 +44,7 @@
                             {
                         ?>
                         <tr>
+                            <td><input type="checkbox" class="bulk-row-checkbox" name="category_ids[]" value="{{ $vcategory->category_id }}" aria-label="Select {{ $vcategory->category_name }}"></td>
                             <td>{{$vcategory->category_id}}</td>
                             <td class="center">{{$vcategory->category_name}}</td>
                             <td class="center">
@@ -86,9 +93,10 @@
                             }
                         ?>
                     </tbody>
-                </table>            
+                </table></form>
             </div>
         </div><!--/span-->
     </div><!--/row-->
 </div><!--/.fluid-container-->
+@include('admin.components.bulk-delete-script',['formId'=>'bulk-category-form','selectAllId'=>'select-all-categories','buttonId'=>'bulk-category-button','counterId'=>'bulk-category-count','itemLabel'=>'categories'])
 @endsection

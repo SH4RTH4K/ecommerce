@@ -1,0 +1,173 @@
+/* Stable admin shell: the legacy theme used percentage spans that hid labels at browser zoom breakpoints. */
+@media (min-width: 768px) {
+    .container-fluid-full {
+        position: relative !important;
+        height: auto !important;
+        min-height: calc(100vh - 40px);
+        overflow: visible !important;
+    }
+
+    #sidebar-left.span2 {
+        position: fixed !important;
+        z-index: 30;
+        top: 40px;
+        bottom: 0;
+        left: 0;
+        width: 240px !important;
+        height: auto !important;
+        margin: 0 !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: #30343a;
+        scrollbar-width: thin;
+    }
+
+    #sidebar-left .sidebar-nav,
+    #sidebar-left .nav-collapse {
+        display: block !important;
+        width: 100%;
+    }
+
+    #sidebar-left .hidden-tablet {
+        display: inline !important;
+    }
+
+    #sidebar-left .nav-tabs.nav-stacked > li > a {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 42px;
+        margin: 0;
+        padding: 10px 14px;
+        text-align: left;
+        white-space: normal;
+    }
+
+    #sidebar-left .nav-tabs.nav-stacked > li > a i {
+        flex: 0 0 17px;
+        margin: 0;
+        text-align: center;
+    }
+
+    #content.span10 {
+        box-sizing: border-box;
+        float: none;
+        width: calc(100% - 240px) !important;
+        min-height: calc(100vh - 40px);
+        margin: 0 0 0 240px !important;
+    }
+}
+
+@media (max-width: 767px) {
+    #sidebar-left {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    #sidebar-left .sidebar-nav > ul {
+        max-height: 65vh;
+        overflow-y: auto;
+    }
+
+    #content.span10 {
+        box-sizing: border-box;
+        width: 100% !important;
+    }
+}
+
+/* Modern grouped administration menu */
+#sidebar-left {
+    color: #dce6ef;
+    background: linear-gradient(180deg, #132a3a 0%, #0d202d 100%) !important;
+    border-right: 1px solid rgba(255,255,255,.07);
+    box-shadow: 8px 0 28px rgba(4,20,31,.12);
+}
+
+.admin-menu-intro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 20px 16px 17px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.admin-menu-mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 10px;
+    color: #fff;
+    background: linear-gradient(135deg, #f5821f, #ff9f4d);
+    box-shadow: 0 8px 18px rgba(245,130,31,.25);
+}
+
+.admin-menu-intro strong,
+.admin-menu-intro small { display: block; }
+.admin-menu-intro strong { color: #fff; font-size: 14px; }
+.admin-menu-intro small { margin-top: 2px; color: #8fa6b6; font-size: 11px; }
+
+.admin-menu { padding: 8px 10px 24px; }
+.admin-menu-group { margin: 12px 0 4px; }
+.admin-menu-group h2 {
+    margin: 0;
+    padding: 8px 10px 6px;
+    color: #6f899a;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.admin-menu-link {
+    position: relative;
+    display: grid;
+    grid-template-columns: 24px minmax(0,1fr) auto;
+    align-items: center;
+    gap: 9px;
+    min-height: 40px;
+    margin: 3px 0;
+    padding: 8px 10px;
+    color: #bfd0dc;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-decoration: none;
+    transition: background .16s, color .16s, transform .16s;
+}
+
+.admin-menu-link > i { color: #7894a6; text-align: center; font-size: 14px; }
+.admin-menu-link > b {
+    min-width: 21px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    color: #fff;
+    background: #e65f45;
+    font-size: 10px;
+    text-align: center;
+}
+.admin-menu-link:hover,
+.admin-menu-link:focus {
+    color: #fff;
+    background: rgba(255,255,255,.08);
+    transform: translateX(2px);
+    text-decoration: none;
+}
+.admin-menu-link:hover > i,
+.admin-menu-link:focus > i { color: #f8a55e; }
+.admin-menu-link.is-active {
+    color: #fff;
+    background: linear-gradient(90deg, rgba(245,130,31,.28), rgba(245,130,31,.1));
+    box-shadow: inset 3px 0 #f5821f;
+}
+.admin-menu-link.is-active > i { color: #ff9c47; }
+.admin-menu-link.admin-menu-sub { min-height: 34px; margin-left: 33px; grid-template-columns: 17px 1fr; font-size: 11px; }
+
+@media (min-width: 768px) {
+    #sidebar-left.span2 { width: 252px !important; }
+    #content.span10 { width: calc(100% - 252px) !important; margin-left: 252px !important; }
+}

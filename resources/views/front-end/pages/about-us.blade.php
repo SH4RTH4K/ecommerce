@@ -1,34 +1,11 @@
-@include("front-end.components.head")
-    <body>
-        <!--header-->
-        @include("front-end.components.header")
-        <!--/header-->
-        <section>
-            <div class="container">
-                <div class="row">
-                    <div class="col-sm-2"></div>
-                    <div class="col-sm-8">
-                        <p><h2 style="text-align: center;">About Us</h2></p>
-                    <p style="text-justify: inter-word; text-align: justify">
-What is Lorem Ipsum?
-
-Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
-Why do we use it?
-
-It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).
-</p>
-                    </div>
-                    <div class="col-sm-2"></div>
-                </div>
-            </div>
-        </section>
-        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-        <!--Footer-->
-        @include("front-end.components.footer")
-        <!--/Footer-->
-        @include("front-end.components.script")
-
-
-        
-    </body>
-</html>
+@extends('front-end.master')
+@section('title', 'About Us | '.$brandName)
+@section('main_content')
+<section class="lt-info-page">
+    <div class="lt-info-hero"><div><span>About our store</span><h1>A flexible ecommerce experience built around customers.</h1><p>{{ $brandName }} presents products clearly, accepts orders securely, and provides dependable customer service.</p></div><div class="lt-info-mark"><i class="fa fa-shopping-bag"></i></div></div>
+    <div class="lt-story-grid"><div><span class="lt-info-kicker">Our approach</span><h2>Clear information and practical service</h2><p>This storefront can be customized for different industries, product catalogs, delivery areas, and business models.</p><p>Store owners can configure branding, contact details, policies, products, inventory, payments, and customer support from the administration dashboard.</p></div><aside><strong>Flexible</strong><span>Configurable catalog and branding</span><strong>Responsive</strong><span>Shopping across devices</span><strong>Customer first</strong><span>Support before and after purchase</span></aside></div>
+    <div class="lt-values-grid"><article><i class="fa fa-bullseye"></i><h3>Our Mission</h3><p>Make dependable technology accessible through honest advice, suitable products, and responsive service.</p></article><article><i class="fa fa-eye"></i><h3>Our Vision</h3><p>Become a trusted technology partner for households, professionals, and growing organizations.</p></article><article><i class="fa fa-handshake-o"></i><h3>Our Promise</h3><p>Put customer needs first and recommend products with value, quality, and long-term usability in mind.</p></article></div>
+    <div class="lt-capabilities"><div><span class="lt-info-kicker">What we provide</span><h2>Products and expertise for every setup</h2><p>Our catalog covers desktops, laptops, monitors, networking products, printers, office equipment, cameras, security systems, accessories, and PC components from established brands.</p><a href="{{ url('/#categories') }}">Explore categories <i class="fa fa-arrow-right"></i></a></div><ul><li><i class="fa fa-check"></i> Personal and custom PC solutions</li><li><i class="fa fa-check"></i> Networking and office hardware</li><li><i class="fa fa-check"></i> Corporate procurement support</li><li><i class="fa fa-check"></i> Nationwide product delivery</li></ul></div>
+    <div class="lt-info-cta"><div><h2>Need help choosing the right product?</h2><p>Tell our team what you need and we will help you compare suitable options.</p></div><a href="{{ url('/contact-us') }}">Talk to our team</a></div>
+</section>
+@endsection

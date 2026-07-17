@@ -2,9 +2,10 @@
 
         <!-- start: Meta -->
         <meta charset="utf-8">
-        <title>@yield("title", 'EXPERTtechbd Dashboard')</title>
+        <title>@yield("title", $brandName.' Dashboard')</title>
         <meta name="description" content="Bootstrap Metro Dashboard">
-        <meta name="author" content="Dennis Ji">
+        <meta name="author" content="{{ $brandName }}">
+        <link rel="icon" href="{{ asset($brandFavicon) }}">
         <meta name="keyword" content="Metro, Metro UI, Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
         <!-- end: Meta -->
 
@@ -13,10 +14,12 @@
         <!-- end: Mobile Specific -->
 
         <!-- start: CSS -->
-        <link id="bootstrap-style" href="{{asset('asset/expert-admin/css/bootstrap.min.css')}}" rel="stylesheet">
+    <link id="bootstrap-style" href="{{asset('asset/expert-admin/css/bootstrap.min.css')}}" rel="stylesheet">
+    <link href="{{asset('asset/front-end/css/font-awesome.min.css')}}" rel="stylesheet">
         <link href="{{asset('asset/expert-admin/css/bootstrap-responsive.min.css')}}" rel="stylesheet">
         <link id="base-style" href="{{asset('asset/expert-admin/css/style.css')}}" rel="stylesheet">
         <link id="base-style-responsive" href="{{asset('asset/expert-admin/css/style-responsive.css')}}" rel="stylesheet">
+        <link href="{{ asset('asset/expert-admin/css/ecommerce-admin-responsive.css') }}?v={{ filemtime(public_path('asset/expert-admin/css/ecommerce-admin-responsive.css')) }}" rel="stylesheet">
         <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&subset=latin,cyrillic-ext,latin-ext' rel='stylesheet' type='text/css'>
         <!-- end: CSS -->
 
@@ -32,7 +35,7 @@
         <![endif]-->
 
         <!-- start: Favicon -->
-        <link rel="shortcut icon" href="{{asset('asset/expert-admin/img/favicon.ico')}}">
+        <link rel="shortcut icon" href="{{ asset(isset($siteSettings['favicon']) && $siteSettings['favicon'] ? $siteSettings['favicon'] : 'asset/expert-admin/img/favicon.ico') }}">
         <!-- end: Favicon -->
 
 

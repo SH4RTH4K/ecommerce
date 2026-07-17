@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="description" content="">
         <meta name="author" content="">
-        <title>Home | EXPERTtechbd</title>
+        <title>Home | {{ $brandName }}</title>
         <link href="{{asset('public/asset/css/bootstrap.min.css')}}" rel="stylesheet">
         <link href="{{asset('public/asset/css/font-awesome.min.css')}}" rel="stylesheet">
         <link href="{{asset('public/asset/css/prettyPhoto.css')}}" rel="stylesheet">
@@ -32,9 +32,9 @@
                         <div class="col-sm-6">
                             <div class="contactinfo">
                                 <ul class="nav nav-pills">
-                                    <li><a href="#"><i class="fa fa-phone"></i> +88 01627-361218 / 01774-014546</a></li>
+                                    <li><a href="#"><i class="fa fa-phone"></i> +88 01612-717349 / 01516154037</a></li>
                                     <li><a href="#"><i class="fa fa-envelope"></i> info@experttechbd.com</a></li>
-                                    <li><a href="#"><i class="fa fa-envelope"></i> reyadcse@gmail.com</a></li>
+                                    <li><a href="#"><i class="fa fa-envelope"></i> support@example.com</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -226,26 +226,26 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">
-                                        <h4 class="panel-title">
-                                            <a data-toggle="collapse" data-parent="#accordian" href="#mens">
-                                                <span class="badge pull-right"><i class="fa fa-plus"></i></span>
-                                                Used Product
-                                            </a>
-                                        </h4>
-                                    </div>
-                                    <div id="mens" class="panel-collapse collapse">
-                                        <div class="panel-body">
-                                            <ul>
-                                                <li><a href="#">Computer</a></li>
-                                                <li><a href="#">Laptop</a></li>
-                                                <li><a href="#">Monitor</a></li>
-                                                <li><a href="#">Router</a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!--<div class="panel panel-default">-->
+                                <!--    <div class="panel-heading">-->
+                                <!--        <h4 class="panel-title">-->
+                                <!--            <a data-toggle="collapse" data-parent="#accordian" href="#mens">-->
+                                <!--                <span class="badge pull-right"><i class="fa fa-plus"></i></span>-->
+                                <!--                Used Product-->
+                                <!--            </a>-->
+                                <!--        </h4>-->
+                                <!--    </div>-->
+                                <!--    <div id="mens" class="panel-collapse collapse">-->
+                                <!--        <div class="panel-body">-->
+                                <!--            <ul>-->
+                                <!--                <li><a href="#">Computer</a></li>-->
+                                <!--                <li><a href="#">Laptop</a></li>-->
+                                <!--                <li><a href="#">Monitor</a></li>-->
+                                <!--                <li><a href="#">Router</a></li>-->
+                                <!--            </ul>-->
+                                <!--        </div>-->
+                                <!--    </div>-->
+                                <!--</div>-->
 
 <!--                                <div class="panel panel-default">
                                     <div class="panel-heading">

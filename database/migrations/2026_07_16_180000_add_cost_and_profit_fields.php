@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Support\Facades\Schema;use Illuminate\Database\Schema\Blueprint;use Illuminate\Database\Migrations\Migration;
+class AddCostAndProfitFields extends Migration {public function up(){Schema::table('product',function(Blueprint $t){$t->decimal('purchase_price',12,2)->default(0)->after('offer_price');});Schema::table('order_items',function(Blueprint $t){$t->decimal('unit_purchase_price',12,2)->default(0)->after('offer_price');$t->decimal('profit',12,2)->default(0)->after('subtotal');});}public function down(){Schema::table('order_items',function(Blueprint $t){$t->dropColumn(['unit_purchase_price','profit']);});Schema::table('product',function(Blueprint $t){$t->dropColumn('purchase_price');});}}

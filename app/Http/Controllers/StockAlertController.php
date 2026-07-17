@@ -1,0 +1,4 @@
+<?php
+namespace App\Http\Controllers;
+use App\Product;use Illuminate\Http\Request;use Illuminate\Support\Facades\DB;
+class StockAlertController extends Controller {public function subscribe(Request $request,$id){$this->validate($request,['email'=>'required|email|max:150']);$product=Product::where('publication_status',1)->findOrFail($id);if($product->product_condition==='In Stock')return redirect()->back()->with('success','This product is already in stock.');DB::table('stock_alerts')->updateOrInsert(['product_id'=>$product->id,'email'=>strtolower(trim($request->email))],['user_id'=>auth()->id(),'status'=>'waiting','notified_at'=>null,'email_status'=>'pending','email_error'=>null,'updated_at'=>now(),'created_at'=>now()]);return redirect()->back()->with('success','We will notify you when this product is back in stock.');}}

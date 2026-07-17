@@ -48,6 +48,13 @@
                                 <textarea name="category_description" class="cleditor" rows="3"></textarea>
                             </div>
                         </div>
+                        @php $categoryIcons = ['fa-folder-open'=>'Folder','fa-desktop'=>'Desktop','fa-laptop'=>'Laptop','fa-keyboard-o'=>'Keyboard','fa-mouse-pointer'=>'Mouse','fa-print'=>'Printer','fa-hdd-o'=>'Storage / HDD','fa-picture-o'=>'Graphics','fa-refresh'=>'Cooling','fa-archive'=>'Casing / Box','fa-link'=>'Cable / Connector','fa-signal'=>'Network / Wireless','fa-video-camera'=>'Camera','fa-camera'=>'Webcam / Camera','fa-headphones'=>'Headphones','fa-music'=>'Audio','fa-volume-up'=>'Speaker','fa-gamepad'=>'Gaming','fa-dot-circle-o'=>'Optical Disc','fa-bolt'=>'Power / UPS','fa-clock-o'=>'Watch','fa-mobile'=>'Mobile','fa-cogs'=>'Components','fa-shield'=>'Security','fa-globe'=>'Internet','fa-sitemap'=>'Network Structure','fa-shopping-cart'=>'Shopping']; @endphp
+                        <div class="control-group">
+                            <label class="control-label" for="icon_class">Category Icon</label>
+                            <div class="controls"><select name="icon_class" id="icon_class" class="span6">@foreach($categoryIcons as $class => $label)<option value="{{$class}}">{{$label}} ({{$class}})</option>@endforeach</select> <span id="category-icon-preview" style="font-size:24px;margin-left:12px"><i class="fa fa-folder-open"></i></span></div>
+                        </div>
+                        <div class="control-group"><label class="control-label" for="display_order">Homepage Order</label><div class="controls"><input type="number" min="0" name="display_order" id="display_order" value="0" class="span2"><span class="help-inline">Lower numbers appear first.</span></div></div>
+                        <div class="control-group"><label class="control-label">Featured Categories</label><div class="controls"><label class="checkbox"><input type="checkbox" name="is_featured" value="1" checked> Show on homepage</label></div></div>
                         <div class="control-group">
                             <label class="control-label" for="selectError3">Publication Status</label>
                             <div class="controls">
@@ -63,6 +70,7 @@
                         </div>
                     </fieldset>
                 {!! Form::close() !!}   
+                <script>document.getElementById('icon_class').addEventListener('change',function(){document.getElementById('category-icon-preview').innerHTML='<i class="fa '+this.value+'"></i>';});</script>
 
             </div>
         </div><!--/span-->

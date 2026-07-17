@@ -1,0 +1,6 @@
+<?php
+namespace App\Http\Controllers;
+use App\Category; use App\Product; use Illuminate\Support\Facades\Cache;
+class SeoController extends Controller {
+ public function sitemap(){ $xml=Cache::remember('xml-sitemap',now()->addHours(6),function(){ $urls=collect([['loc'=>url('/'),'priority'=>'1.0'],['loc'=>url('/about-us'),'priority'=>'0.6'],['loc'=>url('/contact-us'),'priority'=>'0.6']]); Category::where('publication_status',1)->get()->each(function($category)use($urls){$urls->push(['loc'=>url('/product-by-category/'.$category->category_id),'lastmod'=>$category->updated_at,'priority'=>'0.8']);}); Product::where('publication_status',1)->select('id','updated_at')->get()->each(function($product)use($urls){$urls->push(['loc'=>url('/product-details/'.$product->id),'lastmod'=>$product->updated_at,'priority'=>'0.9']);}); $xml='<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'; foreach($urls as $item){$xml.='<url><loc>'.htmlspecialchars($item['loc'],ENT_XML1,'UTF-8').'</loc>';if(!empty($item['lastmod']))$xml.='<lastmod>'.date('c',strtotime($item['lastmod'])).'</lastmod>';$xml.='<changefreq>weekly</changefreq><priority>'.$item['priority'].'</priority></url>';}$xml.='</urlset>';return $xml; }); return response($xml,200)->header('Content-Type','application/xml; charset=UTF-8'); }
+}

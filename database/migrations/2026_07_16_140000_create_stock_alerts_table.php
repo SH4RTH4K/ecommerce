@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Support\Facades\Schema;use Illuminate\Database\Schema\Blueprint;use Illuminate\Database\Migrations\Migration;
+class CreateStockAlertsTable extends Migration {public function up(){Schema::create('stock_alerts',function(Blueprint $t){$t->increments('id');$t->unsignedInteger('product_id');$t->unsignedInteger('user_id')->nullable();$t->string('email');$t->string('status',20)->default('waiting');$t->timestamp('notified_at')->nullable();$t->string('email_status',20)->default('pending');$t->text('email_error')->nullable();$t->timestamps();$t->unique(['product_id','email']);$t->index(['status','created_at']);});}public function down(){Schema::dropIfExists('stock_alerts');}}

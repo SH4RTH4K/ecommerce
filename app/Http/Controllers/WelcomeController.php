@@ -6,154 +6,173 @@ use Illuminate\Http\Request;
 use DB;
 use Session;
 use Illuminate\Support\Facades\Redirect;
+use App\Http\Controllers\Controller;
+use App\Category;
+use App\Manufacturer;
+use App\Product;
+use App\Banner;
+use Illuminate\Support\Facades\Cache;
 
 class WelcomeController extends Controller
 {
     public function index()
     {
-        $all_published_product=DB::table('product')
+        $categoryTree = Cache::remember('mega-menu-tree', now()->addHours(6), function () {
+            return Category::with('subCategories')
+                ->withCount(['products as published_products_count' => function ($query) {
+                    $query->where('publication_status', 1);
+                }])
+                ->where('publication_status', 1)
+                ->orderBy('category_name')
+                ->get();
+        });
+
+        // top_product is the legacy schema's featured flag.
+        $featuredProducts = Product::where('publication_status', 1)
+            ->where('top_product', 1)
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $newArrivals = Product::where('publication_status', 1)
+            ->where('is_new_arrival', 1)
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $latestProducts = Product::where('publication_status', 1)
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $brands = Manufacturer::where('publication_status', 1)
+            ->orderBy('manufacturer_name')
+            ->limit(12)
+            ->get();
+
+        $featuredCategories = $categoryTree->where('is_featured', 1)
+            ->sortBy(function ($category) {
+                return sprintf('%05d-%s', $category->display_order, $category->category_name);
+            })->take(10);
+
+        $banners = Cache::remember('homepage-banners', now()->addHours(6), function () {
+            return Banner::where('is_active', 1)->orderBy('display_order')->orderByDesc('id')->get();
+        });
+
+        return view('home', compact(
+            'categoryTree',
+            'featuredCategories',
+            'featuredProducts',
+            'newArrivals',
+            'latestProducts',
+            'brands',
+            'banners'
+        ));
+    }
+    
+    public function productByCategory(Request $request, $category_id)
+    {
+        $category = Category::where('publication_status', 1)->findOrFail($category_id);
+        $query = Product::where('category_id', $category_id)->where('publication_status', 1);
+
+        if ($request->filled('manufacturer')) $query->where('manufacturer_id', $request->manufacturer);
+        if ($request->filled('min_price')) $query->whereRaw(Product::sellingPriceSql().' >= ?', [max(0, (float) $request->min_price)]);
+        if ($request->filled('max_price')) $query->whereRaw(Product::sellingPriceSql().' <= ?', [max(0, (float) $request->max_price)]);
+        if ($request->availability === 'in-stock') $query->where('product_condition', 'In Stock');
+        if ($request->filled('q')) {
+            $term = $request->q;
+            $query->where(function ($q) use ($term) {
+                $q->where('product_name', 'like', '%'.$term.'%')->orWhere('product_model', 'like', '%'.$term.'%');
+            });
+        }
+        foreach((array)$request->input('attributes',[]) as $attributeId=>$value) {
+            if($value==='') continue;
+            $query->whereHas('attributeValues',function($attributeQuery) use($attributeId,$value){$attributeQuery->where('attribute_id',(int)$attributeId)->where(function($valueQuery)use($value){$valueQuery->where('value',$value)->orWhere('value','like','%"'.$value.'"%');});});
+        }
+
+        switch ($request->input('sort')) {
+            case 'price-asc': $query->orderByRaw(Product::sellingPriceSql().' ASC'); break;
+            case 'price-desc': $query->orderByRaw(Product::sellingPriceSql().' DESC'); break;
+            case 'name': $query->orderBy('product_name'); break;
+            default: $query->latest();
+        }
+
+        $manufacturerIds = Product::where('category_id', $category_id)->where('publication_status', 1)
+            ->whereNotNull('manufacturer_id')->distinct()->pluck('manufacturer_id');
+        $manufacturers = Manufacturer::whereIn('manufacturer_id', $manufacturerIds)->orderBy('manufacturer_name')->get();
+        $perPage = in_array((int) $request->per_page, [12, 24, 48]) ? (int) $request->per_page : 12;
+        $products = $query->paginate($perPage)->appends($request->query());
+        $attributeFilters = DB::table('catalog_attributes')->where('category_id',$category_id)->where('is_filterable',1)->orderBy('display_order')->get()->map(function($attribute) use($category_id){
+            $storedValues=DB::table('product_attribute_values')->join('product','product_attribute_values.product_id','=','product.id')->where('product_attribute_values.attribute_id',$attribute->id)->where('product.category_id',$category_id)->where('product.publication_status',1)->pluck('product_attribute_values.value');
+            if($attribute->input_type==='multiselect'){$attribute->values=$storedValues->flatMap(function($value){$decoded=json_decode($value,true);return is_array($decoded)?$decoded:[$value];})->filter()->unique()->sort()->values();}
+            else $attribute->values=$storedValues->unique()->sort()->values();
+            return $attribute;
+        })->filter(function($attribute){return $attribute->values->isNotEmpty();});
+
+        return view('front-end.pages.product-by-category', compact('category', 'products', 'manufacturers', 'attributeFilters'));
+    }
+    
+    public function productBySubCategory($sub_category)
+    {
+        $search_by_sub_category_name = DB::table('sub_category')
+            ->where('sub_category_id',$sub_category)
+            ->where('publication_status',1)
+            ->first();
+        abort_unless($search_by_sub_category_name,404);
+        $all_sub_product_by_category=DB::table('product')
+                ->where('sub_category',$sub_category)
                 ->where('publication_status',1)
                 ->latest()
                 ->get();
-        $home= view('front-end.components.features-item')
-                ->with('all_published_product', $all_published_product);
-        return view('front-end.master')
-                    ->with('main_content', $home);
-    }
-
-    public function computers()
-    {
-        $computers= view('front-end.pages.full-pc');
-        return view('front-end.master')
-                    ->with('main_content', $computers);
+        return view('front-end.pages.product-by-sub-category',compact('all_sub_product_by_category','search_by_sub_category_name'));
     }
     
-    public function monitor()
+    public function allManufacturerById($manufacturer_id)
     {
-        $monitor= view('front-end.pages.monitor');
+//        $search_by_sub_category_name = DB::table('product')
+//            ->join('sub_category', 'product.sub_category', '=', 'sub_category.sub_category_id')
+//            ->select('product.*', 'sub_category.sub_category_name')
+//            ->where('product.sub_category',$sub_category)
+//            ->first();
+        $all_manufacturer_by_id=DB::table('product')
+                ->where('manufacturer_id',$manufacturer_id)
+                ->where('publication_status',1)
+                ->latest()
+                ->get();
+        $manufacturer_home= view('front-end.pages.manufacturer-by-id')
+                ->with('all_manufacturer_by_id', $all_manufacturer_by_id);
+//                ->with('search_by_sub_category_name',$search_by_sub_category_name);
         return view('front-end.master')
-                    ->with('main_content', $monitor);
+                    ->with('main_content', $manufacturer_home);
     }
     
-    public function motherboard()
+    public function searchProduct(Request $request)
     {
-        $motherboard= view('front-end.pages.motherboard');
+        $search=$request->search_text;
+        $search_product=DB::table('product')
+                ->where('publication_status',1)
+                ->where(function ($query) use ($search) {
+                    $query->where('product_name','like','%'.$search.'%')
+                        ->orWhere('product_model','like','%'.$search.'%')
+                        ->orWhere('sku','like','%'.$search.'%')
+                        ->orWhereExists(function($attributeQuery) use($search){$attributeQuery->select(DB::raw(1))->from('product_attribute_values')->whereRaw('product_attribute_values.product_id = product.id')->where('value','like','%'.$search.'%');});
+                })->get();
+        $search_home= view('front-end.pages.search-product')
+                ->with('search_product', $search_product);
         return view('front-end.master')
-                    ->with('main_content', $motherboard);
+                    ->with('main_content', $search_home);
     }
     
-    public function processor()
-    {
-        $processor= view('front-end.pages.processor');
-        return view('front-end.master')
-                    ->with('main_content', $processor);
-    }
-    
-    public function hard_disk()
-    {
-        $hard_disk= view('front-end.pages.hard-disk');
-        return view('front-end.master')
-                    ->with('main_content', $hard_disk);
-    }
-    
-    public function dvd_writer()
-    {
-        $dvd_writer= view('front-end.pages.dvd-writer');
-        return view('front-end.master')
-                    ->with('main_content', $dvd_writer);
-    }
-    
-    public function power_supply()
-    {
-        $power_supply= view('front-end.pages.power-supply');
-        return view('front-end.master')
-                    ->with('main_content', $power_supply);
-    }
-    
-    public function casing()
-    {
-        $casing= view('front-end.pages.casing');
-        return view('front-end.master')
-                    ->with('main_content', $casing);
-    }
-    
-    public function use_pc()
-    {
-        $use_pc= view('front-end.pages.use-pc');
-        return view('front-end.master')
-                    ->with('main_content', $use_pc);
-    }
-    
-    public function use_laptop()
-    {
-        $use_laptop= view('front-end.pages.use-laptop');
-        return view('front-end.master')
-                    ->with('main_content', $use_laptop);
-    }
-    
-    public function laptop()
-    {
-        $laptop= view('front-end.pages.laptop');
-        return view('front-end.master')
-                    ->with('main_content', $laptop);
-    }
-    
-    public function use_monitor()
-    {
-        $use_monitor= view('front-end.pages.use-monitor');
-        return view('front-end.master')
-                    ->with('main_content', $use_monitor);
-    }
-    
-    public function use_router()
-    {
-        $use_router= view('front-end.pages.use-router');
-        return view('front-end.master')
-                    ->with('main_content', $use_router);
-    }
-    
-    public function router()
-    {
-        $router= view('front-end.pages.router');
-        return view('front-end.master')
-                    ->with('main_content', $router);
-    }
-    
-    public function use_printer()
-    {
-        $use_printer= view('front-end.pages.use-printer');
-        return view('front-end.master')
-                    ->with('main_content', $use_printer);
-    }
-    
-    public function printer()
-    {
-        $printer= view('front-end.pages.printer');
-        return view('front-end.master')
-                    ->with('main_content', $printer);
-    }
-    
-    
-    public function pendrive()
-    {
-        $pendrive= view('front-end.pages.pendrive');
-        return view('front-end.master')
-                    ->with('main_content', $pendrive);
-    }
     
     
     public function gift_item()
     {
-        $gift_item= view('front-end.pages.gift-item');
-        return view('front-end.master')
-                    ->with('main_content', $gift_item);
+        return view('front-end.pages.gift-item');
     }
-    
+
     public function physiotherapy()
     {
-        $physiotherapy= view('front-end.pages.physiotherapy');
-        return view('front-end.master')
-                    ->with('main_content', $physiotherapy);
+        return view('front-end.pages.physiotherapy');
     }
     
     
@@ -176,16 +195,15 @@ class WelcomeController extends Controller
     
     public function product_details($id)
     {
-        $product_details = DB::table('product')
-           // ->join('product', 'product.manufacturer_id', '=', 'product.manufacturer_id')
-            ->join('manufacturer', 'product.manufacturer_id', '=', 'manufacturer.manufacturer_id')
-            ->select('product.*', 'manufacturer.manufacturer_name')
-            ->where('product.id',$id)
-            ->first();
-//        $product_details= view('front-end.pages.product-details');
-        return view('front-end.pages.product-details')
-                    ->with('product_details',$product_details);
-//                    ->with('main_content', $product_details);
+        $product_details = Product::with(['manufacturer', 'category', 'attributeValues'])
+            ->where('publication_status', 1)->findOrFail($id);
+        $similarProducts = Product::where('publication_status', 1)
+            ->where('category_id', $product_details->category_id)
+            ->where('id', '<>', $product_details->id)->latest()->limit(5)->get();
+        $reviews = DB::table('product_reviews')->where('product_id',$id)->where('is_approved',1)->latest()->get();
+        $questions = DB::table('product_questions')->where('product_id',$id)->where('is_approved',1)->whereNotNull('answer')->latest()->get();
+        $averageRating = $reviews->count() ? round($reviews->avg('rating'), 1) : null;
+        return view('front-end.pages.product-details', compact('product_details', 'similarProducts', 'reviews', 'questions', 'averageRating'));
     }
     
     
