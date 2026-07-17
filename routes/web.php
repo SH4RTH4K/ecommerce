@@ -88,6 +88,9 @@ Route::get('/xyz', function(){ return redirect()->route('admin.login'); });
 Route::middleware('admin.auth')->group(function () {
 Route::get('/dashboard', "SuperAdminController@index")->name('admin.dashboard');
 Route::post('/admin/logout', 'AdminController@logout')->name('admin.logout');
+Route::get('/admin-data/{resource}/template', 'AdminDataTransferController@template')->name('admin-data.template');
+Route::get('/admin-data/{resource}/export', 'AdminDataTransferController@export')->name('admin-data.export');
+Route::post('/admin-data/{resource}/import', 'AdminDataTransferController@import')->name('admin-data.import');
 
 Route::get('/add-category', "SuperAdminController@addCategory");
 Route::get('/manage-category', "SuperAdminController@manageCategory");

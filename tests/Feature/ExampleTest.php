@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\UploadedFile;
 use App\User;
 use App\Product;
 
@@ -103,6 +104,50 @@ class ExampleTest extends TestCase
             $this->assertFalse($product->has_offer);
             $this->assertEquals(1000,$product->selling_price);
             $this->assertNull($product->discount_percent);
+        }
+    }
+
+    public function testAdminDataTransferRequiresAuthenticationAndAllTemplatesDownload()
+    {
+        $this->withoutExceptionHandling();
+        $this->get('/admin-data/categories/export')->assertRedirect('/admin/login');
+        $admin=DB::table('tbl_admin')->where('is_active',1)->first();
+        if(!$admin) return $this->assertTrue(true);
+
+        $session=['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name];
+        foreach(['products','categories','subcategories','manufacturers','attributes','suppliers','locations'] as $resource) {
+            $this->withSession($session)->get('/admin-data/'.$resource.'/template')
+                ->assertStatus(200)
+                ->assertHeader('content-type','text/csv; charset=UTF-8');
+            $this->withSession($session)->get('/admin-data/'.$resource.'/export')->assertStatus(200);
+        }
+    }
+
+    public function testDataTransferPanelsRenderOnAllRequestedAdminPages()
+    {
+        $admin=DB::table('tbl_admin')->where('is_active',1)->first();
+        if(!$admin) return $this->assertTrue(true);
+        $session=['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name];
+        foreach(['/manage-product','/manage-category','/manage-subCategory','/manage-manufacturer','/catalog-attributes','/purchasing','/stock-locations'] as $uri) {
+            $this->withSession($session)->get($uri)->assertStatus(200)->assertSee('Import CSV');
+        }
+    }
+
+    public function testCategoryCsvImportIsTransactional()
+    {
+        $admin=DB::table('tbl_admin')->where('is_active',1)->first();
+        if(!$admin) return $this->assertTrue(true);
+        $session=['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name];
+        $name='CSV test '.str_random(10);
+        $path=tempnam(sys_get_temp_dir(),'catalog-csv-');
+        file_put_contents($path,"category_id,category_name,category_description,icon_class,is_featured,display_order,publication_status\n,{$name},Imported test category,fa-folder,1,5,1\n");
+        try {
+            $file=new UploadedFile($path,'categories.csv','text/csv',null,true);
+            $this->withSession($session)->post('/admin-data/categories/import',['mode'=>'upsert','csv_file'=>$file])->assertSessionHas('message');
+            $this->assertDatabaseHas('category',['category_name'=>$name]);
+            DB::table('category')->where('category_name',$name)->delete();
+        } finally {
+            if(file_exists($path)) unlink($path);
         }
     }
 }

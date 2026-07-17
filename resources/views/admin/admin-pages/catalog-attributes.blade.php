@@ -6,6 +6,7 @@
 <div id="content" class="span10 ca">
 <ul class="breadcrumb"><li><i class="icon-home"></i> Admin <i class="icon-angle-right"></i></li><li>Product Attributes</li></ul>
 @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
+@include('admin.components.data-transfer',['resource'=>'attributes'])
 <div class="ca-hero"><div><h1>Product Attribute Manager</h1><p>Manage category filters and comparison data from one place.</p></div><div class="ca-hero-actions"><button class="btn btn-inverse" id="expand-all"><i class="icon-resize-full icon-white"></i> Expand all</button><button class="btn btn-primary" data-open="create-modal"><i class="icon-plus icon-white"></i> New attribute</button></div></div>
 <section class="ca-panel">
 <form class="ca-toolbar" method="get"><select name="category_id"><option value="">All configured categories</option>@foreach($categories as $category)@if(isset($categoryStats[$category->category_id]))<option value="{{ $category->category_id }}" {{ request('category_id')==$category->category_id?'selected':'' }}>{{ $category->category_name }} — {{ $categoryStats[$category->category_id]->attribute_count }}</option>@endif @endforeach</select><input name="search" value="{{ request('search') }}" placeholder="Search attributes by name or slug"><button class="btn btn-primary"><i class="icon-search icon-white"></i> Search</button></form>

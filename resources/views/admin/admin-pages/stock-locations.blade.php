@@ -6,6 +6,7 @@
     @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
     @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
     @if($errors->any())<div class="alert alert-error"><strong>Please correct the location details:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    @include('admin.components.data-transfer',['resource'=>'locations'])
 
     <div class="row-fluid">
         <div class="box span5">
