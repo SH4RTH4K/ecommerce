@@ -77,10 +77,11 @@
                         </div>
                         <div class="col-sm-3 col-xs-12" style="margin-top: 5px">
                             <div>
-                                {!! Form::open(['url' => '/search-product', 'method' => 'post']) !!}
+                                <form action="{{ url('/search-product') }}" method="POST">
+                                    @csrf
                                     <input type="text" name="search_text" placeholder="Search"/>
                                     <input type="submit" name="btn" value="Search"/>
-                                {!! Form::close() !!}
+                                </form>
                                 
                             </div>
                             

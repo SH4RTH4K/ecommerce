@@ -34,7 +34,8 @@
                     }
                     ?>
                 </h3>
-                {!! Form::open(['url' => '/save-manufacturer', 'method' => 'post']) !!}
+                <form action="{{ url('/save-manufacturer') }}" method="POST">
+                    @csrf
                 <fieldset class="form-horizontal">
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Company Name </label>
@@ -57,7 +58,7 @@
                     </div>
                     
                 </fieldset>
-                {!! Form::close() !!}   
+                </form>
 
             </div>
         </div><!--/span-->

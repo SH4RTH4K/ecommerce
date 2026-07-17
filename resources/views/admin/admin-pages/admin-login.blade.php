@@ -46,7 +46,8 @@
                         @if(session('message'))<div class="alert alert-success" role="status">{{ session('message') }}</div>@endif
                         @if(session('exception'))<div class="alert alert-error" role="alert">{{ session('exception') }}</div>@endif
                         @if($errors->any())<div class="alert alert-error" role="alert">{{ $errors->first() }}</div>@endif
-                        {!! Form::open(['route' => 'admin.login.submit', 'method' => 'post']) !!}
+                        <form action="{{ route('admin.login.submit') }}" method="POST">
+                            @csrf
                             <fieldset>
 
                                 <div class="input-prepend" title="Username">
@@ -67,7 +68,7 @@
                                     <button type="submit" class="btn btn-primary">Login</button>
                                 </div>
                                 <div class="clearfix"></div>
-                        {!! Form::close() !!}
+                        </form>
                         <hr>
                         <p><a href="{{ url('/login') }}">Customer account sign in</a></p>
                     </div><!--/span-->

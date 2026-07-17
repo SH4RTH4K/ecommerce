@@ -34,7 +34,8 @@
                     }
                     ?>
                 </h3>
-                {!! Form::open(['url' => '/save-subCategory', 'method' => 'post']) !!}
+                <form action="{{ url('/save-subCategory') }}" method="POST">
+                    @csrf
                 <fieldset class="form-horizontal">
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Sub Category Name </label>
@@ -67,7 +68,7 @@
                     </div>
                     
                 </fieldset>
-                {!! Form::close() !!}   
+                </form>
 
             </div>
         </div><!--/span-->

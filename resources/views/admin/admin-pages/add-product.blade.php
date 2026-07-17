@@ -35,7 +35,8 @@
                     ?>
                 </h3>
                 @if($errors->any())<div class="alert alert-error"><strong>Please correct the product form:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-                {!! Form::open(['url' => '/save-product', 'method' => 'post', 'enctype' => 'multipart/form-data']) !!}
+                <form action="{{ url('/save-product') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
                 <fieldset class="form-horizontal">
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Product ID </label>
@@ -190,7 +191,7 @@
                         <button type="reset" class="btn">Cancel</button>
                     </div>
                 </fieldset>
-                {!! Form::close() !!}   
+                </form>
 
             </div>
         </div><!--/span-->

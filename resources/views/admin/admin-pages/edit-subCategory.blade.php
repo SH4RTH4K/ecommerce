@@ -34,7 +34,8 @@
                     }
                     ?>
                 </h3>
-                {!! Form::open(['url' => '/update-subCategory', 'method' => 'post', 'name' => 'edit_subCategory']) !!}
+                <form action="{{ url('/update-subCategory') }}" method="POST" name="edit_subCategory">
+                    @csrf
                 <fieldset class="form-horizontal">
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Sub Category Name </label>
@@ -59,7 +60,7 @@
                     </div>
                     
                 </fieldset>
-                {!! Form::close() !!}   
+                </form>
 
             </div>
         </div><!--/span-->

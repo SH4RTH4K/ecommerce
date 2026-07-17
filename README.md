@@ -122,6 +122,30 @@ npm run dev
 
 For an optimized build, use `npm run production`.
 
+## Running the application locally
+
+### Windows with the bundled PHP runtime
+
+From PowerShell in the project directory, run:
+
+```powershell
+.\.runtime\php74\php.exe artisan config:clear
+.\.runtime\php74\php.exe artisan migrate
+.\.runtime\php74\php.exe artisan serve --host=127.0.0.1 --port=8000
+```
+
+Keep that terminal open and visit `http://127.0.0.1:8000`. Stop the server with `Ctrl+C`.
+
+### macOS, Linux, or Windows with PHP 7.4 installed
+
+```bash
+php artisan config:clear
+php artisan migrate
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+`artisan serve` is for local development only. Do not use it as the public production web server.
+
 ## Configuration
 
 The main environment settings are stored in `.env`:
@@ -210,14 +234,91 @@ routes/web.php           Storefront, account, checkout, and admin routes
 tests/                   PHPUnit unit and feature tests
 ```
 
-## Deployment notes
+## Deploying to cPanel
 
-- Point the web server document root to the `public` directory.
-- Set `APP_ENV=production` and `APP_DEBUG=false`.
-- Configure a production database, mail transport, and HTTPS URL.
-- Ensure `storage` and `bootstrap/cache` are writable by the web server.
-- Run `composer install --no-dev --optimize-autoloader` and `php artisan config:cache` during deployment.
-- Back up the database and uploaded product assets before running migrations on an existing installation.
+1. In **MultiPHP Manager**, select PHP 7.4 for the domain. Enable the PHP extensions required by Laravel and MySQL, including `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `ctype`, `json`, and `fileinfo`.
+2. Create a MySQL database and database user in cPanel, assign the user **All Privileges**, and note the cPanel-prefixed database name and username.
+3. Upload or clone the project into a directory outside `public_html`, for example `/home/CPANEL_USER/ecommerce`.
+4. Set the domain's document root to `/home/CPANEL_USER/ecommerce/public`. This is the recommended and secure layout because `.env`, application code, and `vendor` remain outside the public web directory.
+5. Copy `.env.example` to `.env`, then configure at least:
+
+   ```dotenv
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://example.com
+
+   DB_CONNECTION=mysql
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_DATABASE=cpaneluser_ecommerce
+   DB_USERNAME=cpaneluser_dbuser
+   DB_PASSWORD=use-a-strong-database-password
+   ```
+
+6. In **cPanel Terminal**, run these commands from the project directory. The exact PHP path can differ by host; use `php -v` first and ensure it reports PHP 7.4.
+
+   ```bash
+   cd /home/CPANEL_USER/ecommerce
+   composer install --no-dev --optimize-autoloader
+   php artisan key:generate
+   php artisan migrate --force
+   php artisan config:cache
+   php artisan view:cache
+   ```
+
+   Run `key:generate` only for a new installation whose `.env` has no `APP_KEY`. Never replace an existing production key because encrypted data and sessions may become unreadable.
+
+   On many cPanel servers, PHP 7.4 can be invoked explicitly with `/opt/cpanel/ea-php74/root/usr/bin/php artisan ...` if the default `php` command uses another version.
+
+7. Make Laravel's writable directories available to the web-server user:
+
+   ```bash
+   chmod -R 775 storage bootstrap/cache
+   ```
+
+8. Enable SSL in cPanel, open the site over HTTPS, and create the first administrator using the instructions in the **Administration** section.
+
+If cPanel does not allow changing the document root, keep the Laravel application outside `public_html`, copy only the contents of its `public` directory into `public_html`, and update the two paths in `public_html/index.php` to point to the real `vendor/autoload.php` and `bootstrap/app.php`. Never place `.env` or the complete Laravel project inside a publicly accessible directory.
+
+### cPanel without Terminal or Composer
+
+Run `composer install --no-dev --optimize-autoloader` locally with PHP 7.4, then upload the project including `vendor`. Export the prepared local database and import it with phpMyAdmin, or ask the hosting provider to run the migrations. Generate `APP_KEY` locally with `php artisan key:generate --show` and place the resulting value in the server `.env`.
+
+## Deploying to a VPS or other server
+
+Use PHP 7.4 FPM with Apache or Nginx, MySQL/MariaDB, and Composer. Upload or clone the project, configure `.env`, and run:
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan key:generate
+php artisan migrate --force
+php artisan config:cache
+php artisan view:cache
+```
+
+Run `key:generate` only once for a new installation. Keep the existing `APP_KEY` during later deployments.
+
+Configure the virtual host's document root as `/path/to/ecommerce/public`. For Nginx, the application location must fall back to Laravel's front controller:
+
+```nginx
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+```
+
+For Apache, enable `mod_rewrite` and allow `.htaccess` overrides for the `public` directory. The repository already includes the Laravel rewrite file.
+
+The web-server user must be able to write to `storage`, `bootstrap/cache`, and the product/branding upload directories below `public/asset/front-end/img`. Configure HTTPS and set `APP_URL` to the final HTTPS domain.
+
+## Production checklist
+
+- Keep `.env`, database exports, backups, and application source outside the public document root.
+- Set `APP_ENV=production`, `APP_DEBUG=false`, and a correct HTTPS `APP_URL`.
+- Use a unique `APP_KEY`, strong database credentials, and a new administrator password.
+- Configure SMTP, scheduled jobs, queues, and backups if those features are used.
+- Back up the database and `public/asset/front-end/img` uploads before migrations or updates.
+- After changing `.env`, clear and rebuild configuration with `php artisan config:clear` followed by `php artisan config:cache`.
+- Do not run `php artisan serve` as the production server.
 
 ## License
 

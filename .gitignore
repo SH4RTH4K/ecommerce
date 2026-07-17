@@ -14,6 +14,7 @@ npm-debug.log
 yarn-error.log
 .env
 .phpunit.result.cache
+.phpunit.cache/
 
 # Local backups and unrelated legacy copies
 /LBD/
