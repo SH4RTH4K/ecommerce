@@ -116,7 +116,7 @@ class ExampleTest extends TestCase
         if(!$admin) return $this->assertTrue(true);
 
         $session=['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name];
-        foreach(['products','categories','subcategories','manufacturers','attributes','suppliers','locations'] as $resource) {
+        foreach(['products','categories','subcategories','manufacturers','companies','series','attributes','suppliers','locations'] as $resource) {
             $this->withSession($session)->get('/admin-data/'.$resource.'/template')
                 ->assertStatus(200)
                 ->assertHeader('content-type','text/csv; charset=UTF-8');

@@ -366,14 +366,14 @@ class SuperAdminController extends Controller {
                 ->get();
         $sub_category = DB::table('sub_category')
                 ->get();
-        $manufacturer = DB::table('manufacturer')
-                ->orderBy("manufacturer_name","asc")
-                ->get();
+        $manufacturer = DB::table('manufacturer as m')->leftJoin('companies as c','c.id','=','m.company_id')->select('m.*','c.name as company_name')->orderBy('c.name')->orderBy('m.manufacturer_name')->get();
+        $productSeries = DB::table('product_series')->where('is_active',1)->orderBy('name')->get();
         $catalogAttributes = DB::table('catalog_attributes')->orderBy('category_id')->orderBy('display_order')->get()->groupBy('category_id');
         $specificationTemplates = config('catalog_specification_templates', []);
         $home = view('admin.admin-pages.add-product')
                 ->with('category', $category)
                 ->with('manufacturer', $manufacturer)
+                ->with('productSeries', $productSeries)
                 ->with('sub_category', $sub_category)
                 ->with('catalogAttributes', $catalogAttributes)
                 ->with('specificationTemplates', $specificationTemplates);
@@ -392,6 +392,8 @@ class SuperAdminController extends Controller {
             'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'gallery_images' => 'nullable|array|max:10',
             'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'manufacturer_id' => 'required|integer|exists:manufacturer,manufacturer_id',
+            'product_series_id' => ['nullable','integer',Rule::exists('product_series','id')->where(function($query)use($request){$query->where('manufacturer_id',$request->manufacturer_id);})],
         ]);
         $data = array();
         $data['product_id'] = $request->product_id;
@@ -400,6 +402,7 @@ class SuperAdminController extends Controller {
         $data['category_id'] = $request->category_id;
         $data['sub_category'] = $request->sub_category_id;
         $data['manufacturer_id'] = $request->manufacturer_id;
+        $data['product_series_id'] = $request->product_series_id ?: null;
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
         $data['product_description'] = $request->product_description;
@@ -438,9 +441,8 @@ class SuperAdminController extends Controller {
                 ->get();
         $sub_category = DB::table('sub_category')
                 ->get();
-        $manufacturer = DB::table('manufacturer')
-                ->orderBy("manufacturer_name","asc")
-                ->get();
+        $manufacturer = DB::table('manufacturer as m')->leftJoin('companies as c','c.id','=','m.company_id')->select('m.*','c.name as company_name')->orderBy('c.name')->orderBy('m.manufacturer_name')->get();
+        $productSeries = DB::table('product_series')->orderBy('name')->get();
         $catalogAttributes = DB::table('catalog_attributes')->orderBy('category_id')->orderBy('display_order')->get()->groupBy('category_id');
         $specificationTemplates = config('catalog_specification_templates', []);
         $productAttributeValues = DB::table('product_attribute_values')->where('product_id',$id)->pluck('value','attribute_id');
@@ -448,6 +450,7 @@ class SuperAdminController extends Controller {
                 ->with('product_info', $product_info)
                 ->with('category', $category)
                 ->with('manufacturer', $manufacturer)
+                ->with('productSeries', $productSeries)
                 ->with('sub_category', $sub_category)
                 ->with('catalogAttributes', $catalogAttributes)
                 ->with('specificationTemplates', $specificationTemplates)
@@ -471,6 +474,8 @@ class SuperAdminController extends Controller {
             'gallery_images' => 'nullable|array|max:10',
             'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'remove_gallery_images' => 'nullable|array',
+            'manufacturer_id' => 'required|integer|exists:manufacturer,manufacturer_id',
+            'product_series_id' => ['nullable','integer',Rule::exists('product_series','id')->where(function($query)use($request){$query->where('manufacturer_id',$request->manufacturer_id);})],
         ]);
         $beforeProduct=DB::table('product')->where('id',$id)->first();
         $data['product_id'] = $request->product_id;
@@ -479,6 +484,7 @@ class SuperAdminController extends Controller {
         $data['category_id'] = $request->category_id;
         $data['sub_category'] = $request->sub_category_id;
         $data['manufacturer_id'] = $request->manufacturer_id;
+        $data['product_series_id'] = $request->product_series_id ?: null;
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
         $data['product_description'] = $request->product_description;

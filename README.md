@@ -40,7 +40,7 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 | Storefront | Responsive homepage, catalog browsing, search, specifications, comparison, wishlist, reviews, questions, stock alerts, and PC builder |
 | Sales | Cart, coupons, delivery zones, checkout, order tracking, invoices, Bangladesh payment methods, manual-payment review, and EMI plans |
 | Customer care | Customer accounts, returns, refunds, credit notes, warranty/service claims, support requests, and notifications |
-| Catalog | Categories, subcategories, manufacturers, products, attributes, pricing, imports, exports, and media |
+| Catalog | Categories, subcategories, Company → Brand → Product Series hierarchy, products, attributes, pricing, imports, exports, and media |
 | Operations | Multi-location inventory, suppliers, purchasing, stock receipts, transfers, and low-stock workflows |
 | Growth | Banners, announcements, customer segments, campaigns, abandoned carts, analytics, SEO, and configurable branding |
 | Administration | Role-based permissions, activity history, sales reports, system monitoring, backups, API clients, and signed webhooks |
@@ -171,6 +171,10 @@ Announcements and top-bar contact actions are managed separately at `/top-bar-ma
 ### Payment methods
 
 The payment workspace at `/payment-methods` supports Bangladesh-focused methods, including manual mobile financial services, cash on delivery, bank transfer, cards, gateways, QR payments, and EMI rules. Credentials remain protected and are not displayed in ordinary administration views.
+
+### Companies, brands, and product series
+
+Open `/catalog-hierarchy` to organize catalog identity as **Company → Brand → Product Series → Product**. The workspace supports individual editing and CSV transfer for every level. Existing legacy manufacturer records remain compatible and operate as brands.
 
 ## Security baseline
 

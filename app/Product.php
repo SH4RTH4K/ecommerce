@@ -81,6 +81,11 @@ class Product extends Model
         return $this->belongsTo(Manufacturer::class, 'manufacturer_id', 'manufacturer_id');
     }
 
+    public function series()
+    {
+        return $this->belongsTo(ProductSeries::class, 'product_series_id');
+    }
+
     public function attributeValues()
     {
         return $this->hasMany(ProductAttributeValue::class, 'product_id')->with('attribute');

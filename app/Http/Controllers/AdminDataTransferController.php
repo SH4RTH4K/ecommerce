@@ -13,8 +13,8 @@ class AdminDataTransferController extends Controller
     private $resources = [
         'products' => [
             'label' => 'Products', 'table' => 'product',
-            'headers' => ['product_id','sku','barcode','product_name','product_model','category_id','sub_category','manufacturer_id','regular_price','offer_price','purchase_price','product_condition','stock_quantity','stock_tracking','warranty','publication_status','top_product','is_new_arrival','short_description'],
-            'sample' => ['PRD-1001','SKU-1001','','Example Router','XR1000','1','1','1','2500','2250','1800','In Stock','10','1','1 year','1','0','1','Example catalog product'],
+            'headers' => ['product_id','sku','barcode','product_name','product_model','category_id','sub_category','manufacturer_id','product_series_id','regular_price','offer_price','purchase_price','product_condition','stock_quantity','stock_tracking','warranty','publication_status','top_product','is_new_arrival','short_description'],
+            'sample' => ['PRD-1001','SKU-1001','','Example Router','XR1000','1','1','1','','2500','2250','1800','In Stock','10','1','1 year','1','0','1','Example catalog product'],
         ],
         'categories' => [
             'label' => 'Categories', 'table' => 'category',
@@ -27,9 +27,19 @@ class AdminDataTransferController extends Controller
             'sample' => ['','1','Wireless Router','1'],
         ],
         'manufacturers' => [
-            'label' => 'Manufacturers', 'table' => 'manufacturer',
-            'headers' => ['manufacturer_id','manufacturer_name','publication_status'],
-            'sample' => ['','Example Brand','1'],
+            'label' => 'Brands', 'table' => 'manufacturer',
+            'headers' => ['manufacturer_id','company_id','manufacturer_name','publication_status'],
+            'sample' => ['','1','Example Brand','1'],
+        ],
+        'companies' => [
+            'label' => 'Companies', 'table' => 'companies',
+            'headers' => ['id','name','is_active'],
+            'sample' => ['','Example Technologies Ltd','1'],
+        ],
+        'series' => [
+            'label' => 'Product Series', 'table' => 'product_series',
+            'headers' => ['id','manufacturer_id','name','is_active'],
+            'sample' => ['','1','Example Series','1'],
         ],
         'attributes' => [
             'label' => 'Catalog Attributes', 'table' => 'catalog_attributes',
@@ -101,6 +111,8 @@ class AdminDataTransferController extends Controller
             case 'categories': return $this->upsertCategory($row,$mode);
             case 'subcategories': return $this->upsertSubcategory($row,$mode);
             case 'manufacturers': return $this->upsertManufacturer($row,$mode);
+            case 'companies': return $this->upsertCompany($row,$mode);
+            case 'series': return $this->upsertSeries($row,$mode);
             case 'products': return $this->upsertProduct($row,$mode);
             case 'attributes': return $this->upsertAttribute($row,$mode);
             case 'suppliers': return $this->upsertSupplier($row,$mode);
@@ -126,17 +138,32 @@ class AdminDataTransferController extends Controller
 
     private function upsertManufacturer($r,$mode)
     {
-        $this->check($r,['manufacturer_name'=>'required|max:255','publication_status'=>'required|boolean']);
+        $this->check($r,['company_id'=>'required|integer|exists:companies,id','manufacturer_name'=>'required|max:255','publication_status'=>'required|boolean']);
         $existing=$r['manufacturer_id']!==''?DB::table('manufacturer')->where('manufacturer_id',(int)$r['manufacturer_id'])->first():DB::table('manufacturer')->where('manufacturer_name',$r['manufacturer_name'])->first();
-        return $this->save('manufacturer','manufacturer_id',$existing,['manufacturer_name'=>$r['manufacturer_name'],'publication_status'=>(int)$r['publication_status'],'updated_at'=>now()],$mode);
+        return $this->save('manufacturer','manufacturer_id',$existing,['company_id'=>(int)$r['company_id'],'manufacturer_name'=>$r['manufacturer_name'],'publication_status'=>(int)$r['publication_status'],'updated_at'=>now()],$mode);
+    }
+
+    private function upsertCompany($r,$mode)
+    {
+        $this->check($r,['name'=>'required|max:160','is_active'=>'required|boolean']);
+        $existing=$r['id']!==''?DB::table('companies')->where('id',(int)$r['id'])->first():DB::table('companies')->where('name',$r['name'])->first();
+        return $this->save('companies','id',$existing,['name'=>$r['name'],'is_active'=>(int)$r['is_active'],'updated_at'=>now()],$mode);
+    }
+
+    private function upsertSeries($r,$mode)
+    {
+        $this->check($r,['manufacturer_id'=>'required|integer|exists:manufacturer,manufacturer_id','name'=>'required|max:160','is_active'=>'required|boolean']);
+        $existing=$r['id']!==''?DB::table('product_series')->where('id',(int)$r['id'])->first():DB::table('product_series')->where('manufacturer_id',(int)$r['manufacturer_id'])->where('name',$r['name'])->first();
+        return $this->save('product_series','id',$existing,['manufacturer_id'=>(int)$r['manufacturer_id'],'name'=>$r['name'],'is_active'=>(int)$r['is_active'],'updated_at'=>now()],$mode);
     }
 
     private function upsertProduct($r,$mode)
     {
-        $this->check($r,['product_id'=>'required|max:255','sku'=>'nullable|max:255','barcode'=>'nullable|max:64','product_name'=>'required|max:255','product_model'=>'required|max:255','category_id'=>'required|integer|exists:category,category_id','sub_category'=>'required|integer|exists:sub_category,sub_category_id','manufacturer_id'=>'required|integer|exists:manufacturer,manufacturer_id','regular_price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','purchase_price'=>'required|numeric|min:0','product_condition'=>'required|in:In Stock,Out Of Stock','stock_quantity'=>'required|integer|min:0','stock_tracking'=>'required|boolean','publication_status'=>'required|boolean','top_product'=>'required|boolean','is_new_arrival'=>'required|boolean']);
+        $this->check($r,['product_id'=>'required|max:255','sku'=>'nullable|max:255','barcode'=>'nullable|max:64','product_name'=>'required|max:255','product_model'=>'required|max:255','category_id'=>'required|integer|exists:category,category_id','sub_category'=>'required|integer|exists:sub_category,sub_category_id','manufacturer_id'=>'required|integer|exists:manufacturer,manufacturer_id','product_series_id'=>'nullable|integer|exists:product_series,id','regular_price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','purchase_price'=>'required|numeric|min:0','product_condition'=>'required|in:In Stock,Out Of Stock','stock_quantity'=>'required|integer|min:0','stock_tracking'=>'required|boolean','publication_status'=>'required|boolean','top_product'=>'required|boolean','is_new_arrival'=>'required|boolean']);
+        if($r['product_series_id']!==''&&!DB::table('product_series')->where('id',(int)$r['product_series_id'])->where('manufacturer_id',(int)$r['manufacturer_id'])->exists())throw new \InvalidArgumentException('The selected product series does not belong to the selected brand.');
         $existing=$r['sku']!==''?DB::table('product')->where('sku',$r['sku'])->first():DB::table('product')->where('product_id',$r['product_id'])->first();
         $regular=(float)$r['regular_price'];$offer=$r['offer_price']!==''?(float)$r['offer_price']:null;if($offer!==null&&$offer>=$regular)$offer=null;
-        $data=['product_id'=>$r['product_id'],'sku'=>$r['sku']?:null,'barcode'=>$r['barcode']?:null,'product_name'=>$r['product_name'],'product_model'=>$r['product_model'],'category_id'=>(int)$r['category_id'],'sub_category'=>(int)$r['sub_category'],'manufacturer_id'=>(int)$r['manufacturer_id'],'regular_price'=>$regular,'offer_price'=>$offer,'purchase_price'=>(float)$r['purchase_price'],'product_condition'=>$r['product_condition'],'stock_quantity'=>(int)$r['stock_quantity'],'stock_tracking'=>(int)$r['stock_tracking'],'warranty'=>$r['warranty']?:null,'publication_status'=>(int)$r['publication_status'],'top_product'=>(int)$r['top_product'],'is_new_arrival'=>(int)$r['is_new_arrival'],'short_description'=>$r['short_description']?:null,'updated_at'=>now()];
+        $data=['product_id'=>$r['product_id'],'sku'=>$r['sku']?:null,'barcode'=>$r['barcode']?:null,'product_name'=>$r['product_name'],'product_model'=>$r['product_model'],'category_id'=>(int)$r['category_id'],'sub_category'=>(int)$r['sub_category'],'manufacturer_id'=>(int)$r['manufacturer_id'],'product_series_id'=>$r['product_series_id']!==''?(int)$r['product_series_id']:null,'regular_price'=>$regular,'offer_price'=>$offer,'purchase_price'=>(float)$r['purchase_price'],'product_condition'=>$r['product_condition'],'stock_quantity'=>(int)$r['stock_quantity'],'stock_tracking'=>(int)$r['stock_tracking'],'warranty'=>$r['warranty']?:null,'publication_status'=>(int)$r['publication_status'],'top_product'=>(int)$r['top_product'],'is_new_arrival'=>(int)$r['is_new_arrival'],'short_description'=>$r['short_description']?:null,'updated_at'=>now()];
         if(!$existing){$data+=['Product_description'=>'','product_image'=>'asset/front-end/img/home/pic 1.jpg','key_features'=>'[]','specifications'=>'{}','gallery_images'=>'[]'];}
         return $this->save('product','id',$existing,$data,$mode);
     }

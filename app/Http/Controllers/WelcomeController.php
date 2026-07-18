@@ -197,7 +197,7 @@ class WelcomeController extends Controller
     
     public function product_details($id)
     {
-        $product_details = Product::with(['manufacturer', 'category', 'attributeValues'])
+        $product_details = Product::with(['manufacturer.company', 'series', 'category', 'attributeValues'])
             ->where('publication_status', 1)->findOrFail($id);
         $similarProducts = Product::where('publication_status', 1)
             ->where('category_id', $product_details->category_id)

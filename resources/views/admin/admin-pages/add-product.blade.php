@@ -77,15 +77,20 @@
                     <!--    </div>-->
                     <!--</div>-->
                     <div class="control-group">
-                        <label class="control-label" for="selectError3">Manufacturer Name </label>
+                        <label class="control-label" for="brand_id">Brand</label>
                         <div class="controls">
-                            <select id="selectError3" name="manufacturer_id">
+                            <select id="brand_id" name="manufacturer_id" required>
+                                <option value="">Choose brand</option>
                                 @foreach($manufacturer as $vmanufacturer)
-                                <option value="{{$vmanufacturer->manufacturer_id}}">{{$vmanufacturer->manufacturer_name}}
+                                <option value="{{$vmanufacturer->manufacturer_id}}">{{ $vmanufacturer->company_name ? $vmanufacturer->company_name.' → ' : '' }}{{$vmanufacturer->manufacturer_name}}
                                 </option>
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="product_series_id">Product Series</label>
+                        <div class="controls"><select id="product_series_id" name="product_series_id"><option value="">No series / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}">{{ $series->name }}</option>@endforeach</select><p class="help-block">Series options update after choosing a brand.</p></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Product Model </label>
@@ -198,7 +203,7 @@
 
     </div><!--/row-->
 </div><!--/.fluid-container-->
-<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}category.addEventListener('change',showAttributes);showAttributes();var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
+<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),templates=@json($specificationTemplates),field=document.getElementById('specifications'),button=document.getElementById('load-spec-template'),status=document.getElementById('spec-template-status');function refreshTemplate(){var template=templates[category.value];button.disabled=!template;status.textContent=template?template.name+' available':'No template configured';}category.addEventListener('change',refreshTemplate);button.addEventListener('click',function(){var template=templates[category.value];if(!template)return;if(field.value.trim()&&!confirm('Replace the current specifications with the category template?'))return;field.value=template.content;});refreshTemplate();});</script>
 <!-- end: Content -->
 @endsection
