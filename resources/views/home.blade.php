@@ -15,6 +15,7 @@
     <link rel="icon" href="{{ asset(isset($siteSettings['favicon']) && $siteSettings['favicon'] ? $siteSettings['favicon'] : 'favicon.ico') }}">
     <link rel="stylesheet" href="{{ asset('asset/front-end/css/font-awesome.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
     @include('partials.google-analytics')
 </head>
 <body>
@@ -23,27 +24,41 @@
     @include('partials.header')
 
     <main id="main-content">
+        @if($banners->isNotEmpty())
         <section class="lt-hero lt-container" aria-label="Featured promotions">
             <div class="lt-carousel" data-carousel tabindex="0">
-                @php $slides = $banners->isNotEmpty() ? $banners : collect(['pic 1.jpg', 'pic 2.jpg', 'pic 3.jpg']); @endphp
+                @php $slides = $banners; $hasMultipleSlides = $slides->count() > 1; @endphp
                 @foreach($slides as $index => $slide)
-                    <div class="lt-slide {{ $index === 0 ? 'is-active' : '' }}" data-slide aria-hidden="{{ $index === 0 ? 'false' : 'true' }}">
-                        @php $isCustom = is_object($slide); $image = $isCustom ? $slide->image_path : 'asset/front-end/img/home/'.$slide; @endphp
-                        @if($isCustom && $slide->link_url)<a href="{{ url($slide->link_url) }}">@endif
-                        <img src="{{ asset($image) }}" alt="{{ $isCustom && $slide->title ? $slide->title : $brandName.' promotion '.($index + 1) }}" {{ $index === 0 ? 'fetchpriority=high' : 'loading=lazy' }}>
-                        @if($isCustom && ($slide->title || $slide->subtitle))<span class="lt-banner-copy"><strong>{{ $slide->title }}</strong><small>{{ $slide->subtitle }}</small></span>@endif
-                        @if($isCustom && $slide->link_url)</a>@endif
+                    @php
+                        $isCustom = is_object($slide);
+                        $desktopImage = $isCustom ? $slide->resolved_desktop_image : 'asset/front-end/img/home/'.$slide;
+                        $mobileImage = $isCustom ? $slide->resolved_mobile_image : null;
+                        $destination = $isCustom ? $slide->resolved_link : null;
+                        $position = $isCustom && $slide->image_position ? $slide->image_position : 'center';
+                    @endphp
+                    <div class="lt-slide {{ $index === 0 ? 'is-active' : '' }} {{ $isCustom && $slide->show_overlay ? 'has-overlay' : '' }}" data-slide aria-hidden="{{ $index === 0 ? 'false' : 'true' }}">
+                        @if($destination)<a href="{{ $destination }}" @if($slide->open_in_new_tab) target="_blank" rel="noopener noreferrer" @endif>@endif
+                        <picture>
+                            @if($mobileImage && $mobileImage !== $desktopImage)<source media="(max-width: 767px)" srcset="{{ asset($mobileImage) }}">@endif
+                            <img src="{{ asset($desktopImage) }}" alt="{{ $isCustom ? $slide->resolved_alt : $brandName.' promotion '.($index + 1) }}" style="object-position:{{ $position }}" width="1200" height="500" {{ $index === 0 ? 'fetchpriority=high' : 'loading=lazy' }}>
+                        </picture>
+                        @if($isCustom && $slide->show_overlay && ($slide->title || $slide->subtitle || $slide->button_text))<span class="lt-banner-copy">@if($slide->title)<strong>{{ $slide->title }}</strong>@endif @if($slide->subtitle)<small>{{ $slide->subtitle }}</small>@endif @if($slide->button_text)<b>{{ $slide->button_text }} <i class="fa fa-arrow-right"></i></b>@endif</span>@endif
+                        @if($destination)</a>@endif
                     </div>
                 @endforeach
-                <button class="lt-carousel-control lt-prev" type="button" data-prev aria-label="Previous slide"><i class="fa fa-angle-left"></i></button>
-                <button class="lt-carousel-control lt-next" type="button" data-next aria-label="Next slide"><i class="fa fa-angle-right"></i></button>
-                <button class="lt-carousel-pause" type="button" data-pause aria-label="Pause carousel"><i class="fa fa-pause"></i></button>
+                @if($hasMultipleSlides)
+                    <button class="lt-carousel-control lt-prev" type="button" data-prev aria-label="Previous slide"><i class="fa fa-angle-left"></i></button>
+                    <button class="lt-carousel-control lt-next" type="button" data-next aria-label="Next slide"><i class="fa fa-angle-right"></i></button>
+                    <div class="lt-carousel-dots" role="tablist" aria-label="Choose promotion">@foreach($slides as $index => $slide)<button type="button" data-carousel-dot="{{ $index }}" class="{{ $index === 0 ? 'is-active' : '' }}" aria-label="Show promotion {{ $index + 1 }}" aria-selected="{{ $index === 0 ? 'true' : 'false' }}"></button>@endforeach</div>
+                    <button class="lt-carousel-pause" type="button" data-pause aria-label="Pause carousel"><i class="fa fa-pause"></i></button>
+                @endif
             </div>
             <aside class="lt-hero-side">
                 <div><span>{{ isset($siteSettings['hero_side_title']) && $siteSettings['hero_side_title'] ? $siteSettings['hero_side_title'] : 'Build your dream PC' }}</span><h2>{{ isset($siteSettings['hero_side_text']) && $siteSettings['hero_side_text'] ? $siteSettings['hero_side_text'] : 'Expert guidance. Genuine parts.' }}</h2><a href="{{ url('/contact-us') }}">Get a quotation</a></div>
                 <div><span>Fast nationwide delivery</span><h2>Technology at your doorstep.</h2><a href="#products">Shop products</a></div>
             </aside>
         </section>
+        @endif
 
         <section id="categories" class="lt-section lt-container">
             <div class="lt-section-heading"><div><span>Browse quickly</span><h2>Featured Categories</h2></div></div>

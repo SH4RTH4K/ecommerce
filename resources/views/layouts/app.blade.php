@@ -9,6 +9,7 @@
     <link rel="icon" href="{{ asset(isset($siteSettings['favicon']) && $siteSettings['favicon'] ? $siteSettings['favicon'] : 'favicon.ico') }}">
     <link rel="stylesheet" href="{{ asset('asset/front-end/css/font-awesome.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
     @include('partials.google-analytics')
 </head>
 <body>

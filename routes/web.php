@@ -14,12 +14,12 @@
 
 Route::get('/', "WelcomeController@index");
 Route::get('/sitemap.xml', 'SeoController@sitemap')->name('sitemap');
-Route::get('/product-by-category/{id}', "WelcomeController@productByCategory");
+Route::get('/product-by-category/{id}', "WelcomeController@productByCategory")->name('store.category.show');
 Route::get('/product-by-sub-category/{id}', "WelcomeController@productBySubCategory");
 Route::post('/search-product', "WelcomeController@searchProduct");
 Route::get('/all-manufacturer-by-id/{id}', "WelcomeController@allManufacturerById");
 
-Route::get('/product-details/{id}', "WelcomeController@product_details");
+Route::get('/product-details/{id}', "WelcomeController@product_details")->name('store.product.show');
 
 Route::get('/cart', 'ShopController@cart')->name('cart.index');
 Route::post('/cart/add/{id}', 'ShopController@addToCart')->name('cart.add');
@@ -132,11 +132,24 @@ Route::get('/published-product/{id}', "SuperAdminController@publishedProduct");
 Route::get('/delete-product/{id}', "SuperAdminController@deleteProduct");
 Route::get('/edit-product/{id}', "SuperAdminController@editProduct");
 Route::post('/update-product/', "SuperAdminController@updateProduct");
-Route::get('/site-customization', 'SuperAdminController@siteCustomization');
-Route::post('/site-settings', 'SuperAdminController@updateSiteSettings');
-Route::post('/save-banner', 'SuperAdminController@saveBanner');
-Route::get('/toggle-banner/{id}', 'SuperAdminController@toggleBanner');
-Route::get('/delete-banner/{id}', 'SuperAdminController@deleteBanner');
+ Route::get('/site-customization', 'SuperAdminController@siteCustomization');
+ Route::get('/banner-management', 'SuperAdminController@bannerManagement')->name('banner.index');
+ Route::post('/site-settings', 'SuperAdminController@updateSiteSettings');
+ Route::get('/top-bar-management', 'TopBarAdminController@index')->name('admin.top-bar.index');
+ Route::post('/top-bar/settings', 'TopBarAdminController@updateSettings')->name('admin.top-bar.settings.update');
+Route::post('/top-bar/announcements', 'TopBarAdminController@storeAnnouncement')->name('admin.announcements.store');
+Route::patch('/top-bar/announcements/{id}', 'TopBarAdminController@updateAnnouncement')->name('admin.announcements.update');
+Route::post('/top-bar/announcements/{id}/toggle', 'TopBarAdminController@toggleAnnouncement')->name('admin.announcements.toggle');
+Route::delete('/top-bar/announcements/{id}', 'TopBarAdminController@deleteAnnouncement')->name('admin.announcements.destroy');
+Route::post('/top-bar/contacts', 'TopBarAdminController@storeContact')->name('admin.contact-items.store');
+Route::patch('/top-bar/contacts/{id}', 'TopBarAdminController@updateContact')->name('admin.contact-items.update');
+Route::post('/top-bar/contacts/{id}/toggle', 'TopBarAdminController@toggleContact')->name('admin.contact-items.toggle');
+Route::delete('/top-bar/contacts/{id}', 'TopBarAdminController@deleteContact')->name('admin.contact-items.destroy');
+Route::post('/save-banner', 'SuperAdminController@saveBanner')->name('banner.store');
+Route::post('/update-banner/{id}', 'SuperAdminController@updateBanner')->name('banner.update');
+Route::get('/banner-product-preview/{id}', 'SuperAdminController@bannerProductPreview')->name('banner.product-preview');
+Route::post('/toggle-banner/{id}', 'SuperAdminController@toggleBanner')->name('banner.toggle');
+Route::post('/delete-banner/{id}', 'SuperAdminController@deleteBanner')->name('banner.destroy');
 Route::get('/customer-inbox', 'SuperAdminController@customerInbox');
 Route::post('/review/{id}/moderate', 'SuperAdminController@moderateReview');
 Route::post('/question/{id}/answer', 'SuperAdminController@answerQuestion');
@@ -191,8 +204,10 @@ Route::post('/marketing-campaigns/{id}/send', 'SuperAdminController@sendMarketin
 Route::post('/marketing-campaigns/{id}/delete', 'SuperAdminController@deleteMarketingCampaign');
 Route::get('/admin-users', 'SuperAdminController@adminUsers');
 Route::post('/admin-roles', 'SuperAdminController@saveAdminRole');
+Route::post('/admin-roles/{id}/update', 'SuperAdminController@updateAdminRole');
 Route::post('/admin-roles/{id}/delete', 'SuperAdminController@deleteAdminRole');
 Route::post('/admin-users', 'SuperAdminController@saveAdminUser');
+Route::post('/admin-users/{id}/update', 'SuperAdminController@updateAdminUser');
 Route::post('/admin-users/{id}/toggle', 'SuperAdminController@toggleAdminUser');
 Route::post('/admin-users/{id}/password', 'SuperAdminController@resetAdminPassword');
 Route::get('/admin-activity', 'SuperAdminController@adminActivity');

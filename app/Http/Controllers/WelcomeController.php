@@ -55,9 +55,11 @@ class WelcomeController extends Controller
                 return sprintf('%05d-%s', $category->display_order, $category->category_name);
             })->take(10);
 
-        $banners = Cache::remember('homepage-banners', now()->addHours(6), function () {
-            return Banner::where('is_active', 1)->orderBy('display_order')->orderByDesc('id')->get();
-        });
+        $banners = Banner::with(['product', 'category'])
+            ->visible()
+            ->orderBy('display_order')
+            ->orderByDesc('id')
+            ->get();
 
         return view('home', compact(
             'categoryTree',

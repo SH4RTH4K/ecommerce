@@ -37,6 +37,10 @@ require __DIR__.'/vendor/autoload.php';
 
 $app = require_once __DIR__.'/bootstrap/app.php';
 
+// This front controller supports deployments where the project root itself
+// is the web document root (for example, cPanel public_html).
+$app->usePublicPath(__DIR__);
+
 /*
 |--------------------------------------------------------------------------
 | Run The Application

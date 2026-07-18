@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
 use Session;
 use DB;
+use App\Banner;
+use App\Category;
+use App\Product;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class SuperAdminController extends Controller {
 
@@ -224,8 +229,8 @@ class SuperAdminController extends Controller {
         ]);
 
         $ids = array_values(array_unique(array_map('intval', $request->sub_category_ids)));
-        $usedIds = DB::table('product')->whereIn('sub_category_id', $ids)
-            ->pluck('sub_category_id')->map(function ($id) { return (int) $id; })->unique()->all();
+        $usedIds = DB::table('product')->whereIn('sub_category', $ids)
+            ->pluck('sub_category')->map(function ($id) { return (int) $id; })->unique()->all();
         $deletableIds = array_values(array_diff($ids, $usedIds));
         $deleted = 0;
 
@@ -393,7 +398,7 @@ class SuperAdminController extends Controller {
         $data['sku'] = $request->sku ?: null;
         $data['barcode'] = $request->barcode;
         $data['category_id'] = $request->category_id;
-        $data['sub_category_id'] = $request->sub_category_id;
+        $data['sub_category'] = $request->sub_category_id;
         $data['manufacturer_id'] = $request->manufacturer_id;
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
@@ -472,7 +477,7 @@ class SuperAdminController extends Controller {
         $data['sku'] = $request->sku ?: null;
         $data['barcode'] = $request->barcode;
         $data['category_id'] = $request->category_id;
-        $data['sub_category_id'] = $request->sub_category_id;
+        $data['sub_category'] = $request->sub_category_id;
         $data['manufacturer_id'] = $request->manufacturer_id;
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
@@ -569,16 +574,33 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         $settings = DB::table('site_settings')->pluck('setting_value', 'setting_key');
-        $banners = DB::table('banners')->orderBy('display_order')->orderByDesc('id')->get();
-        return view('admin.admin-pages.site-customization', compact('settings', 'banners'));
+        $topAnnouncements = \Schema::hasTable('top_announcements') ? \App\TopAnnouncement::orderByDesc('priority')->orderBy('display_order')->get() : collect();
+        $siteContactItems = \Schema::hasTable('site_contact_items') ? \App\SiteContactItem::orderByDesc('is_primary')->orderBy('display_order')->get() : collect();
+        return view('admin.admin-pages.site-customization', compact('settings','topAnnouncements','siteContactItems'));
+    }
+
+    public function bannerManagement()
+    {
+        $this->authCheck();
+        $banners = Banner::with(['product', 'category'])->orderBy('display_order')->orderByDesc('id')->get();
+        $bannerProducts = Product::where('publication_status', 1)->orderBy('product_name')->get(['id','product_id','sku','product_name','product_image','regular_price','offer_price','publication_status']);
+        $bannerCategories = Category::where('publication_status', 1)->orderBy('category_name')->get(['category_id','category_name']);
+        return view('admin.admin-pages.banner-management', compact('banners', 'bannerProducts', 'bannerCategories'));
     }
 
     public function updateSiteSettings(Request $request)
     {
         $this->authCheck();
         $this->validate($request, [
-            'site_name' => 'nullable|string|max:120',
+            'site_name' => 'required|string|max:120',
+            'site_tagline' => 'nullable|string|max:180',
+            'notice_text' => 'nullable|string|max:300',
+            'phone' => ['nullable','string','max:40','regex:/^[0-9+()\-\s.]+$/'],
+            'support_phone' => ['nullable','string','max:40','regex:/^[0-9+()\-\s.]+$/'],
+            'whatsapp_number' => ['nullable','string','max:40','regex:/^[0-9+()\-\s.]+$/'],
             'support_email' => 'nullable|email|max:150',
+            'shop_address' => 'nullable|string|max:500',
+            'business_hours' => 'nullable|string|max:180',
             'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
             'favicon' => 'nullable|mimes:ico,png|max:512',
             'facebook_url' => 'nullable|url|max:255',
@@ -591,19 +613,43 @@ class SuperAdminController extends Controller {
             'default_meta_title' => 'nullable|string|max:70',
             'default_meta_description' => 'nullable|string|max:320',
             'meta_keywords' => 'nullable|string|max:500',
-            'robots_directive' => 'nullable|in:index,follow,index,nofollow,noindex,follow,noindex,nofollow',
+            'robots_directive' => ['nullable', \Illuminate\Validation\Rule::in(['index,follow','index,nofollow','noindex,follow','noindex,nofollow'])],
             'seo_image' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
+            'footer_description' => 'nullable|string|max:500',
+            'copyright_text' => 'nullable|string|max:255',
+            'hero_side_title' => 'nullable|string|max:120',
+            'hero_side_text' => 'nullable|string|max:240',
+            'development_mode_enabled' => 'required|boolean',
+            'development_mode_message_type' => ['required', \Illuminate\Validation\Rule::in(['development','maintenance','coming_soon','system_upgrade','emergency','custom'])],
+            'development_mode_title' => 'required|string|max:150',
+            'development_mode_message' => 'required|string|max:2000',
+            'development_mode_additional_message' => 'nullable|string|max:2000',
+            'development_mode_availability_text' => 'nullable|string|max:255',
+            'development_mode_show_admin_login' => 'required|boolean',
+            'development_mode_login_button_text' => 'nullable|string|max:100',
         ]);
+        $previousDevelopmentMode = DB::table('site_settings')
+            ->where('setting_key', 'development_mode_enabled')->value('setting_value');
         $allowed = [
             'site_name','site_tagline','notice_text','phone','support_phone','whatsapp_number',
             'support_email','shop_address','business_hours','facebook_url','instagram_url',
             'youtube_url','linkedin_url','twitter_url','default_meta_description',
             'default_meta_title','meta_keywords','robots_directive','google_analytics_id',
-            'google_site_verification','footer_description','copyright_text','hero_side_title','hero_side_text'
+            'google_site_verification','footer_description','copyright_text','hero_side_title','hero_side_text',
+            'development_mode_enabled','development_mode_message_type','development_mode_title',
+            'development_mode_message','development_mode_additional_message',
+            'development_mode_availability_text','development_mode_show_admin_login',
+            'development_mode_login_button_text'
         ];
         foreach ($allowed as $key) {
+            $value = null;
+            if ($request->filled($key)) {
+                $value = (string)$request->input($key);
+                $value = preg_replace('/<(script|iframe|object|embed|style)\b[^>]*>.*?<\/\1>/is', '', $value);
+                $value = trim(strip_tags($value));
+            }
             DB::table('site_settings')->updateOrInsert(['setting_key' => $key], [
-                'setting_value' => $request->filled($key) ? trim($request->input($key)) : null,
+                'setting_value' => $value,
                 'updated_at' => now(), 'created_at' => now()
             ]);
         }
@@ -621,43 +667,197 @@ class SuperAdminController extends Controller {
             if ($oldPath && strpos($oldPath, $path) === 0 && is_file(public_path($oldPath))) unlink(public_path($oldPath));
         }
         Cache::forget('site-settings');
-        return Redirect::to('/site-customization')->with('message', 'Site settings updated.');
+        $newDevelopmentMode = (string)$request->input('development_mode_enabled') === '1';
+        $previouslyEnabled = in_array($previousDevelopmentMode, [true, 1, '1', 'true', 'on'], true);
+        if ($newDevelopmentMode !== $previouslyEnabled && \Schema::hasTable('admin_activity_logs')) {
+            DB::table('admin_activity_logs')->insert([
+                'admin_id' => session('admin_id'),
+                'admin_name' => session('admin_name'),
+                'action' => 'Development Mode Updated',
+                'method' => 'POST',
+                'path' => '/site-settings',
+                'ip_hash' => hash_hmac('sha256', (string)$request->ip(), config('app.key')),
+                'details' => json_encode(['previous_status' => $previouslyEnabled, 'new_status' => $newDevelopmentMode, 'message_type' => $request->development_mode_message_type]),
+                'created_at' => now(),
+            ]);
+        }
+        if ($newDevelopmentMode && !$previouslyEnabled) {
+            $message = 'Development Mode has been enabled. Public visitors will now see the configured Development Mode message.';
+        } elseif (!$newDevelopmentMode && $previouslyEnabled) {
+            $message = 'Development Mode has been disabled. The public website is now available.';
+        } else {
+            $message = 'Site settings updated.';
+        }
+        $destination = $newDevelopmentMode !== $previouslyEnabled
+            ? '/site-customization#development-mode'
+            : '/site-customization';
+        return Redirect::to($destination)->with('message', $message);
     }
 
     public function saveBanner(Request $request)
     {
         $this->authCheck();
-        $this->validate($request, ['image' => 'required|image|max:4096', 'title' => 'nullable|max:255', 'link_url' => 'nullable|max:255']);
-        $image = $request->file('image');
-        $name = str_random(20).'.'.strtolower($image->getClientOriginalExtension());
-        $path = 'asset/front-end/img/banners/';
-        if (!is_dir(public_path($path))) mkdir(public_path($path), 0755, true);
-        $image->move(public_path($path), $name);
-        DB::table('banners')->insert(['title'=>$request->title,'subtitle'=>$request->subtitle,'image_path'=>$path.$name,'link_url'=>$request->link_url,'display_order'=>max(0,(int)$request->display_order),'is_active'=>$request->has('is_active')?1:0,'created_at'=>now(),'updated_at'=>now()]);
-        Cache::forget('homepage-banners');
-        return Redirect::to('/site-customization')->with('message', 'Banner added.');
+        $data = $this->validatedBannerData($request);
+        $desktopImage = $request->hasFile('desktop_image') ? $this->storeBannerImage($request->file('desktop_image'), 'desktop') : null;
+        $mobileImage = $request->hasFile('mobile_image') ? $this->storeBannerImage($request->file('mobile_image'), 'mobile') : null;
+        $data['image_path'] = $desktopImage;
+        $data['mobile_image'] = $mobileImage;
+        try { Banner::create($data); }
+        catch (\Throwable $exception) { $this->removeBannerFile($desktopImage); $this->removeBannerFile($mobileImage); throw $exception; }
+        return Redirect::to('/banner-management')->with('message', 'Banner added.');
+    }
+
+    public function updateBanner(Request $request, $id)
+    {
+        $this->authCheck();
+        $banner = Banner::findOrFail($id);
+        $data = $this->validatedBannerData($request, $banner);
+        $oldDesktop = $banner->image_path;
+        $oldMobile = $banner->mobile_image;
+        $newDesktop = $request->hasFile('desktop_image') ? $this->storeBannerImage($request->file('desktop_image'), 'desktop') : null;
+        $newMobile = $request->hasFile('mobile_image') ? $this->storeBannerImage($request->file('mobile_image'), 'mobile') : null;
+        if ($newDesktop) $data['image_path'] = $newDesktop;
+        if ($newMobile) $data['mobile_image'] = $newMobile;
+        if ($request->has('remove_mobile_image')) $data['mobile_image'] = null;
+        try { $banner->update($data); }
+        catch (\Throwable $exception) { $this->removeBannerFile($newDesktop); $this->removeBannerFile($newMobile); throw $exception; }
+        if ($newDesktop) $this->removeBannerFileIfUnused($oldDesktop, $banner->id);
+        if ($newMobile || $request->has('remove_mobile_image')) $this->removeBannerFileIfUnused($oldMobile, $banner->id);
+        return Redirect::to('/banner-management')->with('message', 'Banner updated.');
+    }
+
+    public function bannerProductPreview($id)
+    {
+        $this->authCheck();
+        $product = Product::where('publication_status', 1)->findOrFail($id);
+        return response()->json($this->productBannerData($product));
     }
 
     public function toggleBanner($id)
     {
         $this->authCheck();
-        $banner = DB::table('banners')->where('id', $id)->first();
-        if ($banner) DB::table('banners')->where('id', $id)->update(['is_active' => $banner->is_active ? 0 : 1, 'updated_at'=>now()]);
-        Cache::forget('homepage-banners');
-        return Redirect::to('/site-customization');
+        $banner = Banner::findOrFail($id);
+        $banner->update(['is_active' => !$banner->is_active]);
+        return Redirect::to('/banner-management')->with('message', $banner->is_active ? 'Banner is now visible.' : 'Banner is now hidden.');
     }
 
     public function deleteBanner($id)
     {
         $this->authCheck();
-        $banner = DB::table('banners')->where('id', $id)->first();
-        if ($banner) {
-            $fullPath = public_path($banner->image_path);
-            if (is_file($fullPath)) unlink($fullPath);
-            DB::table('banners')->where('id', $id)->delete();
-        }
-        Cache::forget('homepage-banners');
-        return Redirect::to('/site-customization');
+        $banner = Banner::findOrFail($id);
+        $desktop = $banner->image_path;
+        $mobile = $banner->mobile_image;
+        $banner->delete();
+        $this->removeBannerFileIfUnused($desktop, $id);
+        $this->removeBannerFileIfUnused($mobile, $id);
+        return Redirect::to('/banner-management')->with('message', 'Banner deleted.');
+    }
+
+    private function validatedBannerData(Request $request, Banner $existing = null)
+    {
+        $types = ['custom','product','category','campaign','information'];
+        $positions = ['center','top','bottom','left','right'];
+        $validator = Validator::make($request->all(), [
+            'banner_type' => ['required', Rule::in($types)],
+            'product_id' => ['nullable','integer',Rule::exists('product','id')->where(function ($query) { $query->where('publication_status', 1); })],
+            'category_id' => ['nullable','integer',Rule::exists('category','category_id')->where(function ($query) { $query->where('publication_status', 1); })],
+            'link_url' => ['nullable','string','max:255'],
+            'title' => ['nullable','string','max:255'],
+            'subtitle' => ['nullable','string','max:255'],
+            'button_text' => ['nullable','string','max:100'],
+            'desktop_image' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:5120'],
+            'mobile_image' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:5120'],
+            'image_position' => ['required', Rule::in($positions)],
+            'display_order' => ['required','integer','min:0'],
+            'starts_at' => ['nullable','date'],
+            'expires_at' => ['nullable','date','after_or_equal:starts_at'],
+        ]);
+        $validator->after(function ($validator) use ($request, $existing) {
+            $type = $request->input('banner_type');
+            if ($type === 'product' && !$request->filled('product_id')) $validator->errors()->add('product_id', 'Choose a published product.');
+            if ($type === 'category' && !$request->filled('category_id')) $validator->errors()->add('category_id', 'Choose a published category.');
+            if ($type === 'custom' && !$request->filled('link_url')) $validator->errors()->add('link_url', 'Enter an internal path or HTTPS destination.');
+            if (in_array($type, ['custom','campaign'], true) && $request->filled('link_url') && !$this->isSafeBannerUrl($request->input('link_url'))) $validator->errors()->add('link_url', 'Use an internal path beginning with / or a valid HTTPS URL.');
+            $useProduct = $request->boolean('use_product_image');
+            if ($useProduct && !$request->filled('product_id')) $validator->errors()->add('use_product_image', 'Choose a product before using its image.');
+            $hasDesktop = $request->hasFile('desktop_image') || ($existing && $existing->image_path);
+            if (!$hasDesktop) $validator->errors()->add('desktop_image', 'Upload a dedicated desktop banner image. It remains the safe fallback in product-image mode.');
+            if ($useProduct && $request->filled('product_id')) {
+                $product = Product::where('publication_status', 1)->find($request->product_id);
+                if ((!$product || !$product->product_image) && !$hasDesktop) $validator->errors()->add('desktop_image', 'This product has no image. Upload a desktop banner fallback.');
+            }
+        });
+        $validator->validate();
+
+        $type = $request->banner_type;
+        $product = $type === 'product' || $request->boolean('use_product_image') ? Product::where('publication_status', 1)->find($request->product_id) : null;
+        $title = $request->filled('title') ? trim($request->title) : ($product ? $product->product_name : null);
+        $subtitle = $request->filled('subtitle') ? trim($request->subtitle) : ($product ? $this->productBannerData($product)['subtitle'] : null);
+        return [
+            'banner_type' => $type,
+            'product_id' => $product ? $product->id : null,
+            'category_id' => $type === 'category' ? (int)$request->category_id : null,
+            'title' => $title,
+            'subtitle' => $subtitle,
+            'button_text' => $request->filled('button_text') ? trim($request->button_text) : ($type === 'product' ? 'Shop Now' : null),
+            'link_url' => in_array($type, ['custom','campaign'], true) && $request->filled('link_url') ? trim($request->link_url) : null,
+            'use_product_image' => $request->boolean('use_product_image'),
+            'image_position' => $request->image_position,
+            'show_overlay' => $request->boolean('show_overlay'),
+            'display_order' => (int)$request->display_order,
+            'starts_at' => $request->filled('starts_at') ? $request->starts_at : null,
+            'expires_at' => $request->filled('expires_at') ? $request->expires_at : null,
+            'open_in_new_tab' => $request->boolean('open_in_new_tab'),
+            'is_active' => $request->boolean('is_active'),
+        ];
+    }
+
+    private function productBannerData(Product $product)
+    {
+        $discount = $product->discount_percent;
+        $price = number_format($product->selling_price, 0);
+        return [
+            'id' => $product->id,
+            'name' => $product->product_name,
+            'sku' => $product->sku ?: $product->product_id,
+            'regular_price' => (float)$product->regular_price,
+            'selling_price' => (float)$product->selling_price,
+            'discount_percent' => $discount,
+            'subtitle' => $discount ? 'Save '.$discount.'% — Now ৳'.$price : 'Now ৳'.$price,
+            'button_text' => 'Shop Now',
+            'image' => $product->image_url,
+            'url' => route('store.product.show', $product->id),
+            'status' => $product->publication_status ? 'Published' : 'Hidden',
+        ];
+    }
+
+    private function storeBannerImage($file, $prefix)
+    {
+        $path = 'asset/front-end/img/banners/';
+        if (!is_dir(public_path($path))) mkdir(public_path($path), 0755, true);
+        $name = $prefix.'-'.str_random(24).'.'.strtolower($file->getClientOriginalExtension());
+        $file->move(public_path($path), $name);
+        return $path.$name;
+    }
+
+    private function isSafeBannerUrl($url)
+    {
+        if (strpos($url, '/') === 0 && strpos($url, '//') !== 0) return true;
+        return filter_var($url, FILTER_VALIDATE_URL) && strtolower((string)parse_url($url, PHP_URL_SCHEME)) === 'https';
+    }
+
+    private function removeBannerFileIfUnused($path, $excludingId)
+    {
+        if (!$path || strpos($path, 'asset/front-end/img/banners/') !== 0) return;
+        $used = Banner::where('id', '<>', $excludingId)->where(function ($query) use ($path) { $query->where('image_path', $path)->orWhere('mobile_image', $path); })->exists();
+        if (!$used) $this->removeBannerFile($path);
+    }
+
+    private function removeBannerFile($path)
+    {
+        if (!$path || strpos($path, 'asset/front-end/img/banners/') !== 0) return;
+        $fullPath = public_path($path);
+        if (is_file($fullPath)) unlink($fullPath);
     }
 
     public function customerInbox()
@@ -1021,10 +1221,34 @@ class SuperAdminController extends Controller {
 
     public function adminUsers(){ $roles=DB::table('admin_roles')->orderBy('name')->get();$admins=DB::table('tbl_admin as a')->leftJoin('admin_roles as r','r.id','=','a.role_id')->select('a.*','r.name as role_name')->orderBy('a.admin_name')->get();return view('admin.admin-pages.admin-users',compact('roles','admins'));}
     public function saveAdminRole(Request $request){$permissions=['dashboard','catalog','inventory','orders','customers','marketing','reports','settings','staff'];$this->validate($request,['name'=>'required|max:100']);$selected=array_values(array_intersect($permissions,(array)$request->permissions));if(!in_array('dashboard',$selected,true))$selected[]='dashboard';if(DB::table('admin_roles')->where('name',$request->name)->exists())return Redirect::back()->with('exception','A role with that name already exists.');DB::table('admin_roles')->insert(['name'=>$request->name,'permissions'=>json_encode($selected),'is_system'=>0,'created_at'=>now(),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator role created.');}
+    public function updateAdminRole(Request $request,$id){
+        $allowed=['dashboard','catalog','inventory','orders','customers','marketing','reports','settings','staff'];
+        $this->validate($request,['name'=>'required|max:100']);
+        $role=DB::table('admin_roles')->where('id',$id)->first();
+        abort_unless($role,404);
+        if(DB::table('admin_roles')->where('name',$request->name)->where('id','<>',$id)->exists())return Redirect::back()->with('exception','A role with that name already exists.');
+        $selected=array_values(array_intersect($allowed,(array)$request->permissions));
+        if(!in_array('dashboard',$selected,true))$selected[]='dashboard';
+        if($role->name==='Super Admin')$selected=$allowed;
+        DB::table('admin_roles')->where('id',$id)->update(['name'=>$request->name,'permissions'=>json_encode($selected),'updated_at'=>now()]);
+        return Redirect::back()->with('message','Administrator role updated.');
+    }
     public function deleteAdminRole($id){$role=DB::table('admin_roles')->where('id',$id)->first();if(!$role)return Redirect::back();if($role->is_system||DB::table('tbl_admin')->where('role_id',$id)->exists())return Redirect::back()->with('exception','System roles and roles assigned to staff cannot be deleted.');DB::table('admin_roles')->where('id',$id)->delete();return Redirect::back()->with('message','Role deleted.');}
     public function saveAdminUser(Request $request){$this->validate($request,['admin_name'=>'required|max:30','full_name'=>'nullable|max:120','admin_email'=>'nullable|email|max:150','role_id'=>'required|integer|exists:admin_roles,id','password'=>'required|min:8|max:255']);if(DB::table('tbl_admin')->where('admin_name',$request->admin_name)->exists())return Redirect::back()->withInput()->with('exception','That administrator username already exists.');DB::table('tbl_admin')->insert(['admin_name'=>$request->admin_name,'full_name'=>$request->full_name,'admin_email'=>$request->admin_email,'role_id'=>$request->role_id,'is_active'=>1,'admin_password'=>\Hash::make($request->password),'created_at'=>now(),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator account created.');}
+    public function updateAdminUser(Request $request,$id){
+        $this->validate($request,['admin_name'=>'required|max:30','full_name'=>'nullable|max:120','admin_email'=>'nullable|email|max:150','role_id'=>'required|integer|exists:admin_roles,id']);
+        $admin=DB::table('tbl_admin')->where('admin_id',$id)->first();
+        abort_unless($admin,404);
+        if(DB::table('tbl_admin')->where('admin_name',$request->admin_name)->where('admin_id','<>',$id)->exists())return Redirect::back()->with('exception','That administrator username already exists.');
+        if($request->admin_email&&DB::table('tbl_admin')->where('admin_email',$request->admin_email)->where('admin_id','<>',$id)->exists())return Redirect::back()->with('exception','That administrator email is already in use.');
+        $roleId=(int)$request->role_id;
+        if((int)$id===(int)session('admin_id'))$roleId=(int)$admin->role_id;
+        DB::table('tbl_admin')->where('admin_id',$id)->update(['admin_name'=>$request->admin_name,'full_name'=>$request->full_name?:null,'admin_email'=>$request->admin_email?:null,'role_id'=>$roleId,'updated_at'=>now()]);
+        if((int)$id===(int)session('admin_id'))$request->session()->put(['admin_name'=>$request->admin_name,'admin_display_name'=>$request->full_name ?: $request->admin_name]);
+        return Redirect::back()->with('message','Administrator account updated.');
+    }
     public function toggleAdminUser($id){if((int)$id===(int)session('admin_id'))return Redirect::back()->with('exception','You cannot disable your own account.');$admin=DB::table('tbl_admin')->where('admin_id',$id)->first();if($admin)DB::table('tbl_admin')->where('admin_id',$id)->update(['is_active'=>$admin->is_active?0:1,'updated_at'=>now()]);return Redirect::back()->with('message','Administrator status updated.');}
-    public function resetAdminPassword(Request $request,$id){$this->validate($request,['password'=>'required|min:8|max:255']);abort_unless(DB::table('tbl_admin')->where('admin_id',$id)->exists(),404);DB::table('tbl_admin')->where('admin_id',$id)->update(['admin_password'=>\Hash::make($request->password),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator password updated.');}
+    public function resetAdminPassword(Request $request,$id){$this->validate($request,['password'=>'required|min:8|max:255|confirmed']);abort_unless(DB::table('tbl_admin')->where('admin_id',$id)->exists(),404);DB::table('tbl_admin')->where('admin_id',$id)->update(['admin_password'=>\Hash::make($request->password),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator password updated.');}
     public function adminActivity(Request $request){$query=DB::table('admin_activity_logs')->latest('created_at');if($request->filled('admin_id'))$query->where('admin_id',$request->admin_id);if($request->filled('search'))$query->where(function($q)use($request){$q->where('action','like','%'.$request->search.'%')->orWhere('path','like','%'.$request->search.'%');});$logs=$query->paginate(50)->appends($request->query());$admins=DB::table('tbl_admin')->select('admin_id','admin_name')->orderBy('admin_name')->get();return view('admin.admin-pages.admin-activity',compact('logs','admins'));}
 
     public function systemHealth(){try{DB::select('SELECT 1');$database=['ok'=>true,'message'=>'Connected'];}catch(\Throwable $e){$database=['ok'=>false,'message'=>$e->getMessage()];}$storageWritable=is_writable(storage_path('app'))&&is_writable(storage_path('framework'))&&is_writable(storage_path('logs'));$free=@disk_free_space(base_path());$total=@disk_total_space(base_path());$health=['database'=>$database,'storage'=>['ok'=>$storageWritable,'message'=>$storageWritable?'Writable':'One or more storage directories are not writable'],'php'=>['ok'=>version_compare(PHP_VERSION,'7.2.5','>='),'message'=>PHP_VERSION],'laravel'=>['ok'=>true,'message'=>app()->version()],'disk'=>['ok'=>$free!==false&&$free>536870912,'message'=>$free===false?'Unknown':$this->formatBytes($free).' free of '.$this->formatBytes($total)],'environment'=>['ok'=>config('app.env')==='production'&&!config('app.debug'),'message'=>config('app.env').' · debug '.(config('app.debug')?'ON':'off')]];$backups=DB::table('system_backups')->latest()->limit(30)->get();$lastBackup=$backups->first();return view('admin.admin-pages.system-health',compact('health','backups','lastBackup'));}

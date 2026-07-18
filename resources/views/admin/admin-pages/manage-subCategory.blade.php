@@ -36,7 +36,7 @@
                 <table class="table table-striped table-bordered bootstrap-datatable datatable">
                     <thead>
                         <tr>
-                            <th style="width:32px"><input type="checkbox" id="select-all-subcategories" aria-label="Select all subcategories"></th>
+                            <th style="width:32px"><input type="checkbox" id="select-all-subcategories" data-no-uniform="true" aria-label="Select all subcategories"></th>
                             <th>ID</th>
                             <th>Category Name</th>
                             <th>Sub Category Name</th>
@@ -52,7 +52,7 @@
                         
                         ?>
                         <tr>
-                            <td><input type="checkbox" class="subcategory-checkbox" name="sub_category_ids[]" value="{{ $vsubcategory->sub_category_id }}" aria-label="Select {{ $vsubcategory->sub_category_name }}"></td>
+                            <td><input type="checkbox" class="subcategory-checkbox" name="sub_category_ids[]" value="{{ $vsubcategory->sub_category_id }}" data-no-uniform="true" aria-label="Select {{ $vsubcategory->sub_category_name }}"></td>
                             <td>{{$vsubcategory->sub_category_id}}</td>
                             <td>{{$vsubcategory->category_name}}</td>
                             <td class="center">{{$vsubcategory->sub_category_name}}</td>

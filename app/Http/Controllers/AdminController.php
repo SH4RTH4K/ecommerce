@@ -22,14 +22,14 @@ class AdminController extends Controller
         if(!$valid) {$this->securityEvent($request,'warning','Failed administrator login',$request->username);return redirect('/login?account=admin')->withInput($request->only('username'))->with('exception','Username or password is invalid.');}
         if($legacy) DB::table('tbl_admin')->where('admin_id',$admin->admin_id)->update(['admin_password'=>Hash::make($request->password)]);
         $request->session()->regenerate(true);
-        $request->session()->put(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name]);
+        $request->session()->put(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name,'admin_display_name'=>$admin->full_name ?: $admin->admin_name]);
         $this->securityEvent($request,'info','Successful administrator login',$admin->admin_name);
         return redirect()->intended(route('admin.dashboard'));
     }
 
     public function logout(Request $request)
     {
-        $request->session()->forget(['admin_id','admin_name']);
+        $request->session()->forget(['admin_id','admin_name','admin_display_name']);
         $request->session()->regenerate();
         return redirect()->route('admin.login')->with('message','You have signed out.');
     }

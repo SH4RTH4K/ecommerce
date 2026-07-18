@@ -35,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
         View::share('brandName', $brandName);
         View::share('brandLogo', $siteSettings->get('site_logo') ?: 'asset/front-end/img/ecommerce-logo.png');
         View::share('brandFavicon', $siteSettings->get('favicon') ?: 'favicon.ico');
+        View::composer('partials.topbar', function ($view) {
+            $view->with('topBar', app(\App\Services\TopBarService::class)->data());
+        });
         View::composer('partials.mega-menu', function ($view) {
             $categoryTree = Cache::remember('mega-menu-tree', now()->addHours(6), function () {
                 return Category::with('subCategories')
@@ -50,6 +53,9 @@ class AppServiceProvider extends ServiceProvider
         });
         View::composer(['admin.components.admin-header','admin.components.main-menu'], function ($view) {
             $counts = ['inventory'=>0,'orders'=>0,'messages'=>0,'notifications'=>0];
+            $currentSettings = Cache::remember('site-settings', now()->addHours(6), function () {
+                return DB::table('site_settings')->pluck('setting_value', 'setting_key');
+            });
             if (Schema::hasTable('product') && Schema::hasColumn('product','stock_tracking')) $counts['inventory'] = DB::table('product')->where('stock_tracking',1)->where('stock_quantity','<=',5)->count();
             if (Schema::hasTable('orders')) $counts['orders'] = DB::table('orders')->whereIn('status',['pending','confirmed','processing'])->count();
             if (Schema::hasTable('support_requests')) {
@@ -59,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
             }
             if (Schema::hasTable('store_notifications')) $counts['notifications']=DB::table('store_notifications')->where('recipient_type','admin')->whereNull('read_at')->count();
             $view->with('adminHeaderCounts',$counts);
+            $view->with('developmentModeActive', (string)$currentSettings->get('development_mode_enabled', '0') === '1');
         });
     }
 

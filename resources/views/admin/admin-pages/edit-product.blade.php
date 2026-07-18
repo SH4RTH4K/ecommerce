@@ -200,7 +200,7 @@
 </div><!--/.fluid-container-->
 <script type="text/javascript">
     document.forms['update_data'].elements['category_id'].value='<?php echo $product_info->category_id?>';
-    document.forms['update_data'].elements['sub_category_id'].value='<?php echo isset($product_info->sub_category_id) ? $product_info->sub_category_id : ''?>';
+    document.forms['update_data'].elements['sub_category_id'].value='<?php echo isset($product_info->sub_category) ? $product_info->sub_category : ''?>';
     document.forms['update_data'].elements['manufacturer_id'].value='<?php echo $product_info->manufacturer_id?>';
 </script>
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}category.addEventListener('change',showAttributes);showAttributes();});</script>
