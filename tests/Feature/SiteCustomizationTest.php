@@ -22,7 +22,8 @@ class SiteCustomizationTest extends TestCase
             ->get('/site-customization')->assertStatus(200)
             ->assertSee('Store setup')->assertSee('Business identity')
             ->assertSee('Contact &amp; location',false)->assertSee('Search &amp; sharing',false)
-            ->assertSee('Changes become public immediately');
+            ->assertSee('Changes become public immediately')
+            ->assertSee('brand-logo-upload',false)->assertSee('brand-favicon-upload',false);
     }
 
     public function testSettingsBusinessRulesRejectMissingIdentityAndInvalidPhone()
@@ -55,6 +56,9 @@ class SiteCustomizationTest extends TestCase
                     'development_mode_show_admin_login'=>'1','development_mode_login_button_text'=>'Admin Login',
                 ])->assertRedirect('/site-customization')->assertSessionHas('message');
             $this->assertDatabaseHas('site_settings',['setting_key'=>'site_name','setting_value'=>$name]);
+            $this->get('/')->assertOk()->assertSee('lt-brand-tagline',false)->assertSee('Trusted technology store');
+            $this->app['session']->flush();
+            $this->get('/admin/login')->assertOk()->assertSee('admin-login-tagline',false)->assertSee('Trusted technology store');
         } finally { DB::rollBack(); Cache::forget('site-settings'); }
     }
 }

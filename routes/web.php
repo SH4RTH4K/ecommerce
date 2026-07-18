@@ -79,6 +79,9 @@ Route::get('/terms&conditions', "WelcomeController@termsandconditions");
 
 //For Admin
 Route::get('/admin/login', 'AdminController@index')->name('admin.login');
+Route::get('/admin/index.html', function () {
+    return session()->has('admin_id') ? redirect()->route('admin.dashboard') : redirect()->route('admin.login');
+})->name('admin.legacy-index');
 Route::post('/admin/login', 'AdminController@login')->middleware('throttle:10,1')->name('admin.login.submit');
 Route::get('/admin-login', function () { return redirect('/login?account=admin'); });
 Route::get('/xyz', function(){ return redirect()->route('admin.login'); });

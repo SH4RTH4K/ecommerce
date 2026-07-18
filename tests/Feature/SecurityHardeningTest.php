@@ -90,4 +90,15 @@ class SecurityHardeningTest extends TestCase
         $this->assertStringContainsString('nl2br(e($product_details->product_description', $view);
         $this->assertStringNotContainsString('{!! $product_details->product_description', $view);
     }
+
+    public function testLegacyAdminIndexRedirectsAndLoginHasNoDeadThemeActions(): void
+    {
+        $this->get('/admin/index.html')->assertRedirect(route('admin.login'));
+        $this->get('/admin/login')->assertOk()
+            ->assertSee('Back to storefront')
+            ->assertSee('admin-login-brand', false)
+            ->assertSee('Logo not uploaded')
+            ->assertDontSee('href="index.html"', false)
+            ->assertDontSee('halflings-icon cog', false);
+    }
 }

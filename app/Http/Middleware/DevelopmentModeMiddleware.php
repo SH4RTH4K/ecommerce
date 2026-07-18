@@ -25,7 +25,7 @@ class DevelopmentModeMiddleware
                 return $next($request);
             }
 
-            if ($this->isRequiredAsset($request) || $request->routeIs('admin.login', 'admin.login.submit')) {
+            if ($this->isRequiredAsset($request) || $request->routeIs('admin.login', 'admin.login.submit', 'admin.legacy-index')) {
                 return $next($request);
             }
 

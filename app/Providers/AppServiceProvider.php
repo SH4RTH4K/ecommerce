@@ -35,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
         View::share('brandName', $brandName);
         View::share('brandLogo', $siteSettings->get('site_logo') ?: 'asset/front-end/img/ecommerce-logo.png');
         View::share('brandFavicon', $siteSettings->get('favicon') ?: 'favicon.ico');
+        View::share('hasCustomBrandLogo', (bool)$siteSettings->get('site_logo'));
+        View::share('hasCustomBrandFavicon', (bool)$siteSettings->get('favicon'));
         View::composer('partials.topbar', function ($view) {
             $view->with('topBar', app(\App\Services\TopBarService::class)->data());
         });

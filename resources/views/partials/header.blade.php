@@ -9,9 +9,7 @@
 @endphp
 <header class="lt-header">
     <div class="lt-container lt-header-main">
-        <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">
-            <img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async">
-        </a>
+        <div class="lt-brand-lockup"><a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home"><img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async"></a>@if($siteSettings->get('site_tagline'))<span class="lt-brand-tagline">{{ $siteSettings->get('site_tagline') }}</span>@endif</div>
         <form class="lt-search" action="{{ url('/search-product') }}" method="post" role="search">
             {{ csrf_field() }}
             <label class="sr-only" for="site-search">Search products</label>

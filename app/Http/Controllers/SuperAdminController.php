@@ -704,6 +704,15 @@ class SuperAdminController extends Controller {
             if ($oldPath && strpos($oldPath, $path) === 0 && is_file(public_path($oldPath))) unlink(public_path($oldPath));
         }
         Cache::forget('site-settings');
+        $freshSettings=DB::table('site_settings')->pluck('setting_value','setting_key');
+        $freshBrandName=$freshSettings->get('site_name') ?: config('app.name','Ecommerce');
+        \View::share('siteSettings',$freshSettings);
+        \View::share('brandName',$freshBrandName);
+        \View::share('brandLogo',$freshSettings->get('site_logo') ?: 'asset/front-end/img/ecommerce-logo.png');
+        \View::share('brandFavicon',$freshSettings->get('favicon') ?: 'favicon.ico');
+        \View::share('hasCustomBrandLogo',(bool)$freshSettings->get('site_logo'));
+        \View::share('hasCustomBrandFavicon',(bool)$freshSettings->get('favicon'));
+        config(['app.name'=>$freshBrandName]);
         $newDevelopmentMode = (string)$request->input('development_mode_enabled') === '1';
         $previouslyEnabled = in_array($previousDevelopmentMode, [true, 1, '1', 'true', 'on'], true);
         if ($newDevelopmentMode !== $previouslyEnabled && \Schema::hasTable('admin_activity_logs')) {
