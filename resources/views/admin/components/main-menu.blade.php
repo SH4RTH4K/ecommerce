@@ -25,8 +25,11 @@
                     <a class="admin-menu-link {{ $active(['add-product','manage-product','edit-product/*']) }}" href="{{ url('/manage-product') }}"><i class="icon-shopping-cart"></i><span>Products</span></a>
                     <a class="admin-menu-link admin-menu-sub {{ $active('add-product') }}" href="{{ url('/add-product') }}"><i class="icon-plus"></i><span>Add Product</span></a>
                     <a class="admin-menu-link {{ $active(['manage-category','add-category','edit-category/*']) }}" href="{{ url('/manage-category') }}"><i class="icon-folder-open"></i><span>Categories</span></a>
+                    <a class="admin-menu-link admin-menu-sub {{ $active('add-category') }}" href="{{ url('/add-category') }}"><i class="icon-plus"></i><span>Add Category</span></a>
                     <a class="admin-menu-link {{ $active(['manage-subCategory','add-subCategory','edit-subCategory/*']) }}" href="{{ url('/manage-subCategory') }}"><i class="icon-sitemap"></i><span>Subcategories</span></a>
+                    <a class="admin-menu-link admin-menu-sub {{ $active('add-subCategory') }}" href="{{ url('/add-subCategory') }}"><i class="icon-plus"></i><span>Add Subcategory</span></a>
                     <a class="admin-menu-link {{ $active(['manage-manufacturer','add-manufacturer','edit-manufacturer/*']) }}" href="{{ url('/manage-manufacturer') }}"><i class="icon-certificate"></i><span>Brands &amp; Manufacturers</span></a>
+                    <a class="admin-menu-link admin-menu-sub {{ $active('add-manufacturer') }}" href="{{ url('/add-manufacturer') }}"><i class="icon-plus"></i><span>Add Manufacturer</span></a>
                     <a class="admin-menu-link {{ $active('catalog-attributes*') }}" href="{{ url('/catalog-attributes') }}"><i class="icon-list-alt"></i><span>Product Attributes</span></a>
                 </div>
             </section>

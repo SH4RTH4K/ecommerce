@@ -14,6 +14,7 @@
     @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
     @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
     @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
+    <div style="margin-bottom:16px"><a class="btn btn-primary" href="{{ url('/add-product') }}"><i class="halflings-icon white plus"></i> Add Product</a></div>
     @include('admin.components.data-transfer',['resource'=>'products'])
 
     <div class="row-fluid sortable">		
