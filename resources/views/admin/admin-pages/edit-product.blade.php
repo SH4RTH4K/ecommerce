@@ -80,7 +80,7 @@
                     <div class="control-group">
                         <label class="control-label" for="brand_id">Brand</label>
                         <div class="controls">
-                            <select id="brand_id" name="manufacturer_id" required>
+                            <select id="brand_id" name="manufacturer_id"><option value="">No brand / not applicable</option>
                                 @foreach($manufacturer as $vmanufacturer)
                                 <option value="{{$vmanufacturer->manufacturer_id}}">{{ $vmanufacturer->company_name ? $vmanufacturer->company_name.' → ' : '' }}{{$vmanufacturer->manufacturer_name}}</option>
                                 @endforeach
@@ -88,8 +88,8 @@
                         </div>
                     </div>
                     <div class="control-group">
-                        <label class="control-label" for="product_series_id">Product Series</label>
-                        <div class="controls"><select id="product_series_id" name="product_series_id"><option value="">No series / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}" {{ $product_info->product_series_id==$series->id?'selected':'' }}>{{ $series->name }}</option>@endforeach</select><p class="help-block">Series options update after choosing a brand.</p></div>
+                        <label class="control-label" for="product_series_id">Collection / Product Line</label>
+                        <div class="controls"><select id="product_series_id" name="product_series_id"><option value="">None / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}" {{ $product_info->product_series_id==$series->id?'selected':'' }}>{{ $series->name }}</option>@endforeach</select><p class="help-block">Optional. Examples: ThinkPad, Summer Collection, or Premium Range.</p></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Product Model </label>
@@ -158,6 +158,7 @@
                         <label class="control-label" for="stock_quantity">Stock Quantity</label>
                         <div class="controls"><input type="number" min="0" name="stock_quantity" id="stock_quantity" value="{{ $product_info->stock_quantity }}" class="span6"></div>
                     </div>
+                    @include('admin.components.multi-industry-product-fields')
                     <div class="control-group">
                         <label class="control-label" for="warranty">Warranty</label>
                         <div class="controls"><input type="text" name="warranty" id="warranty" value="{{ $product_info->warranty }}" class="span6"></div>

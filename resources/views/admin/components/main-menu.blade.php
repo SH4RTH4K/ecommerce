@@ -26,7 +26,7 @@
                     <a class="admin-menu-link admin-menu-sub {{ $active('add-category') }}" href="{{ url('/add-category') }}"><i class="icon-plus"></i><span>Add Category</span></a>
                     <a class="admin-menu-link {{ $active(['manage-subCategory','add-subCategory','edit-subCategory/*']) }}" href="{{ url('/manage-subCategory') }}"><i class="icon-sitemap"></i><span>Step 2 · Subcategories</span></a>
                     <a class="admin-menu-link admin-menu-sub {{ $active('add-subCategory') }}" href="{{ url('/add-subCategory') }}"><i class="icon-plus"></i><span>Add Subcategory</span></a>
-                    <a class="admin-menu-link {{ $active(['catalog-hierarchy*','manage-manufacturer','add-manufacturer','edit-manufacturer/*']) }}" href="{{ url('/catalog-hierarchy') }}"><i class="icon-certificate"></i><span>Step 3 · Companies, Brands &amp; Series</span></a>
+                    <a class="admin-menu-link {{ $active(['catalog-hierarchy*','manage-manufacturer','add-manufacturer','edit-manufacturer/*']) }}" href="{{ url('/catalog-hierarchy') }}"><i class="icon-certificate"></i><span>Step 3 · Companies, Brands &amp; Product Lines (optional)</span></a>
                     <a class="admin-menu-link {{ $active('catalog-attributes*') }}" href="{{ url('/catalog-attributes') }}"><i class="icon-list-alt"></i><span>Step 4 · Product Attributes</span></a>
                     <a class="admin-menu-link {{ $active(['add-product','manage-product','edit-product/*']) }}" href="{{ url('/manage-product') }}"><i class="icon-shopping-cart"></i><span>Step 5 · Products</span></a>
                     <a class="admin-menu-link admin-menu-sub {{ $active('add-product') }}" href="{{ url('/add-product') }}"><i class="icon-plus"></i><span>Add Product</span></a>

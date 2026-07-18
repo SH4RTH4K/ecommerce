@@ -19,6 +19,7 @@ class Product extends Model
         'specifications' => 'array',
         'gallery_images' => 'array',
         'stock_tracking' => 'boolean',
+        'prescription_required' => 'boolean',
     ];
 
     protected static function boot()
@@ -89,5 +90,15 @@ class Product extends Model
     public function attributeValues()
     {
         return $this->hasMany(ProductAttributeValue::class, 'product_id')->with('attribute');
+    }
+
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class, 'product_id');
+    }
+
+    public function lots()
+    {
+        return $this->hasMany(ProductLot::class, 'product_id');
     }
 }

@@ -40,7 +40,7 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 | Storefront | Responsive homepage, catalog browsing, search, specifications, comparison, wishlist, reviews, questions, stock alerts, and PC builder |
 | Sales | Cart, coupons, delivery zones, checkout, order tracking, invoices, Bangladesh payment methods, manual-payment review, and EMI plans |
 | Customer care | Customer accounts, returns, refunds, credit notes, warranty/service claims, support requests, and notifications |
-| Catalog | Categories, subcategories, Company → Brand → Product Series hierarchy, products, attributes, pricing, imports, exports, and media |
+| Catalog | Categories, optional Company → Brand → Collection/Product Line hierarchy, multi-industry products, variants, lot/expiry traceability, attributes, pricing, imports, exports, and media |
 | Operations | Multi-location inventory, suppliers, purchasing, stock receipts, transfers, and low-stock workflows |
 | Growth | Banners, announcements, customer segments, campaigns, abandoned carts, analytics, SEO, and configurable branding |
 | Administration | Role-based permissions, activity history, sales reports, system monitoring, backups, API clients, and signed webhooks |
@@ -172,9 +172,11 @@ Announcements and top-bar contact actions are managed separately at `/top-bar-ma
 
 The payment workspace at `/payment-methods` supports Bangladesh-focused methods, including manual mobile financial services, cash on delivery, bank transfer, cards, gateways, QR payments, and EMI rules. Credentials remain protected and are not displayed in ordinary administration views.
 
-### Companies, brands, and product series
+### Multi-industry catalog
 
-Open `/catalog-hierarchy` to organize catalog identity as **Company → Brand → Product Series → Product**. The workspace supports individual editing and CSV transfer for every level. Existing legacy manufacturer records remain compatible and operate as brands.
+Products can be classified as general merchandise, technology, clothing, food, or medicine. **Company → Brand → Collection/Product Line** is optional, so unbranded goods are supported. Category attributes provide flexible filters, variants hold sellable choices such as size/color/pack size with separate SKU and stock, and food/medicine products can record batch, manufacture, and expiry details. Medicine fields provide operational traceability only; deployment still requires applicable legal and pharmacy review.
+
+Open `/catalog-hierarchy` to manage optional branded-product identity. The workspace supports individual editing and CSV transfer for every level. Existing legacy manufacturer records remain compatible and operate as brands.
 
 ## Security baseline
 

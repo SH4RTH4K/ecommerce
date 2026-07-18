@@ -197,7 +197,7 @@ class WelcomeController extends Controller
     
     public function product_details($id)
     {
-        $product_details = Product::with(['manufacturer.company', 'series', 'category', 'attributeValues'])
+        $product_details = Product::with(['manufacturer.company', 'series', 'category', 'attributeValues', 'variants' => function($query){$query->where('is_active',1)->orderBy('id');}, 'lots' => function($query){$query->where(function($date){$date->whereNull('expires_at')->orWhere('expires_at','>=',now()->toDateString());})->orderBy('expires_at');}])
             ->where('publication_status', 1)->findOrFail($id);
         $similarProducts = Product::where('publication_status', 1)
             ->where('category_id', $product_details->category_id)

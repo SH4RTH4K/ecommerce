@@ -386,23 +386,36 @@ class SuperAdminController extends Controller {
         $request->merge(['barcode' => $request->filled('barcode') ? trim($request->barcode) : null]);
         $this->validate($request, [
             'barcode' => 'nullable|string|max:64|unique:product,barcode',
+            'category_id' => 'required|integer|exists:category,category_id',
             'regular_price' => 'required|numeric|min:0',
             'offer_price' => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
             'product_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'gallery_images' => 'nullable|array|max:10',
             'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
-            'manufacturer_id' => 'required|integer|exists:manufacturer,manufacturer_id',
+            'manufacturer_id' => 'nullable|integer|exists:manufacturer,manufacturer_id',
             'product_series_id' => ['nullable','integer',Rule::exists('product_series','id')->where(function($query)use($request){$query->where('manufacturer_id',$request->manufacturer_id);})],
+            'industry_profile' => 'required|in:general,technology,clothing,food,medicine',
+            'generic_name' => 'nullable|string|max:255', 'strength' => 'nullable|string|max:255',
+            'dosage_form' => 'nullable|string|max:255', 'storage_instructions' => 'nullable|string|max:255',
+            'allergen_information' => 'nullable|string|max:2000',
+            'variants' => 'nullable|array|max:100', 'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.sku' => 'nullable|string|max:255|distinct', 'variants.*.barcode' => 'nullable|string|max:64|distinct',
+            'variants.*.price_adjustment' => 'nullable|numeric', 'variants.*.stock_quantity' => 'nullable|integer|min:0',
+            'lots' => 'nullable|array|max:100', 'lots.*.lot_number' => 'nullable|string|max:255|distinct',
+            'lots.*.manufactured_at' => 'nullable|date', 'lots.*.expires_at' => 'nullable|date|after_or_equal:lots.*.manufactured_at',
+            'lots.*.quantity' => 'nullable|integer|min:0', 'lots.*.supplier_reference' => 'nullable|string|max:255',
         ]);
+        $this->validateVariantUniqueness($request);
         $data = array();
         $data['product_id'] = $request->product_id;
         $data['sku'] = $request->sku ?: null;
         $data['barcode'] = $request->barcode;
         $data['category_id'] = $request->category_id;
         $data['sub_category'] = $request->sub_category_id;
-        $data['manufacturer_id'] = $request->manufacturer_id;
+        $data['manufacturer_id'] = $request->manufacturer_id ?: null;
         $data['product_series_id'] = $request->product_series_id ?: null;
+        $this->setIndustryData($data, $request);
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
         $data['product_description'] = $request->product_description;
@@ -427,6 +440,7 @@ class SuperAdminController extends Controller {
         $data['product_image'] = $image ? $this->storeProductImage($image) : 'asset/front-end/img/home/pic 1.jpg';
         $productId = DB::table('product')->insertGetId($data);
         $this->syncProductAttributes($productId, $request);
+        $this->syncProductVariantsAndLots($productId, $request);
         Session::put('message', 'Save Product Successfully');
         return Redirect::to('/add-product');
     }
@@ -446,6 +460,8 @@ class SuperAdminController extends Controller {
         $catalogAttributes = DB::table('catalog_attributes')->orderBy('category_id')->orderBy('display_order')->get()->groupBy('category_id');
         $specificationTemplates = config('catalog_specification_templates', []);
         $productAttributeValues = DB::table('product_attribute_values')->where('product_id',$id)->pluck('value','attribute_id');
+        $productVariants = DB::table('product_variants')->where('product_id',$id)->orderBy('id')->get();
+        $productLots = DB::table('product_lots')->where('product_id',$id)->orderBy('expires_at')->orderBy('id')->get();
         $edit_product = view('admin.admin-pages.edit-product')
                 ->with('product_info', $product_info)
                 ->with('category', $category)
@@ -455,6 +471,7 @@ class SuperAdminController extends Controller {
                 ->with('catalogAttributes', $catalogAttributes)
                 ->with('specificationTemplates', $specificationTemplates)
                 ->with('productAttributeValues', $productAttributeValues);
+        $edit_product->with('productVariants', $productVariants)->with('productLots', $productLots);
         return view('admin.admin-master')
                         ->with('admin_main_content', $edit_product);
     }
@@ -467,6 +484,7 @@ class SuperAdminController extends Controller {
         $request->merge(['barcode' => $request->filled('barcode') ? trim($request->barcode) : null]);
         $this->validate($request, [
             'barcode' => 'nullable|string|max:64|unique:product,barcode,'.$id,
+            'category_id' => 'required|integer|exists:category,category_id',
             'regular_price' => 'required|numeric|min:0',
             'offer_price' => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
@@ -474,17 +492,29 @@ class SuperAdminController extends Controller {
             'gallery_images' => 'nullable|array|max:10',
             'gallery_images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'remove_gallery_images' => 'nullable|array',
-            'manufacturer_id' => 'required|integer|exists:manufacturer,manufacturer_id',
+            'manufacturer_id' => 'nullable|integer|exists:manufacturer,manufacturer_id',
             'product_series_id' => ['nullable','integer',Rule::exists('product_series','id')->where(function($query)use($request){$query->where('manufacturer_id',$request->manufacturer_id);})],
+            'industry_profile' => 'required|in:general,technology,clothing,food,medicine',
+            'generic_name' => 'nullable|string|max:255', 'strength' => 'nullable|string|max:255',
+            'dosage_form' => 'nullable|string|max:255', 'storage_instructions' => 'nullable|string|max:255',
+            'allergen_information' => 'nullable|string|max:2000',
+            'variants' => 'nullable|array|max:100', 'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.sku' => 'nullable|string|max:255|distinct', 'variants.*.barcode' => 'nullable|string|max:64|distinct',
+            'variants.*.price_adjustment' => 'nullable|numeric', 'variants.*.stock_quantity' => 'nullable|integer|min:0',
+            'lots' => 'nullable|array|max:100', 'lots.*.lot_number' => 'nullable|string|max:255|distinct',
+            'lots.*.manufactured_at' => 'nullable|date', 'lots.*.expires_at' => 'nullable|date|after_or_equal:lots.*.manufactured_at',
+            'lots.*.quantity' => 'nullable|integer|min:0', 'lots.*.supplier_reference' => 'nullable|string|max:255',
         ]);
+        $this->validateVariantUniqueness($request, $id);
         $beforeProduct=DB::table('product')->where('id',$id)->first();
         $data['product_id'] = $request->product_id;
         $data['sku'] = $request->sku ?: null;
         $data['barcode'] = $request->barcode;
         $data['category_id'] = $request->category_id;
         $data['sub_category'] = $request->sub_category_id;
-        $data['manufacturer_id'] = $request->manufacturer_id;
+        $data['manufacturer_id'] = $request->manufacturer_id ?: null;
         $data['product_series_id'] = $request->product_series_id ?: null;
+        $this->setIndustryData($data, $request);
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
         $data['product_description'] = $request->product_description;
@@ -518,6 +548,7 @@ class SuperAdminController extends Controller {
         if($image)$this->deleteOwnedProductImage($beforeProduct->product_image);
         foreach($removeGallery as $removedImage)$this->deleteOwnedProductImage($removedImage);
         $this->syncProductAttributes($id, $request);
+        $this->syncProductVariantsAndLots($id, $request);
         if($data['product_condition']==='In Stock' && (!$beforeProduct || $beforeProduct->product_condition!=='In Stock')) app(\App\Services\StockAlertService::class)->process($id);
         Session::put('message', 'Update Product Successfully');
         return Redirect::to('/manage-product');
@@ -1441,6 +1472,45 @@ class SuperAdminController extends Controller {
             $stored=is_array($value)?json_encode(array_values(array_filter(array_map('trim',$value)))):trim((string)$value);
             if(in_array((int)$attributeId,$allowed,true) && $stored!=='' && $stored!=='[]') DB::table('product_attribute_values')->insert(['product_id'=>$productId,'attribute_id'=>$attributeId,'value'=>$stored,'created_at'=>now(),'updated_at'=>now()]);
         }
+    }
+
+    private function setIndustryData(array &$data, Request $request)
+    {
+        $data['industry_profile']=$request->industry_profile;
+        foreach(['generic_name','strength','dosage_form','storage_instructions','allergen_information'] as $field) {
+            $data[$field]=$request->filled($field)?trim((string)$request->input($field)):null;
+        }
+        $data['prescription_required']=$request->has('prescription_required')?1:0;
+    }
+
+    private function validateVariantUniqueness(Request $request, $productId = null)
+    {
+        foreach(['sku','barcode'] as $field) {
+            $values=collect((array)$request->input('variants',[]))->pluck($field)->map(function($value){return trim((string)$value);})->filter()->values();
+            if(!$values->count())continue;
+            $query=DB::table('product_variants')->whereIn($field,$values);
+            if($productId)$query->where('product_id','<>',$productId);
+            if($query->exists())throw \Illuminate\Validation\ValidationException::withMessages(['variants'=>'A variant '.$field.' is already used by another product.']);
+            if(DB::table('product')->whereIn($field,$values)->when($productId,function($query)use($productId){$query->where('id','<>',$productId);})->exists())throw \Illuminate\Validation\ValidationException::withMessages(['variants'=>'A variant '.$field.' conflicts with a product '.$field.'.']);
+        }
+    }
+
+    private function syncProductVariantsAndLots($productId, Request $request)
+    {
+        DB::transaction(function()use($productId,$request){
+            DB::table('product_variants')->where('product_id',$productId)->delete();
+            foreach((array)$request->input('variants',[]) as $variant) {
+                $name=trim((string)($variant['name']??''));
+                if($name==='')continue;
+                DB::table('product_variants')->insert(['product_id'=>$productId,'name'=>$name,'sku'=>trim((string)($variant['sku']??''))?:null,'barcode'=>trim((string)($variant['barcode']??''))?:null,'price_adjustment'=>(float)($variant['price_adjustment']??0),'stock_quantity'=>max(0,(int)($variant['stock_quantity']??0)),'is_active'=>isset($variant['is_active'])?1:0,'created_at'=>now(),'updated_at'=>now()]);
+            }
+            DB::table('product_lots')->where('product_id',$productId)->delete();
+            foreach((array)$request->input('lots',[]) as $lot) {
+                $number=trim((string)($lot['lot_number']??''));
+                if($number==='')continue;
+                DB::table('product_lots')->insert(['product_id'=>$productId,'lot_number'=>$number,'manufactured_at'=>($lot['manufactured_at']??null)?:null,'expires_at'=>($lot['expires_at']??null)?:null,'quantity'=>max(0,(int)($lot['quantity']??0)),'supplier_reference'=>trim((string)($lot['supplier_reference']??''))?:null,'created_at'=>now(),'updated_at'=>now()]);
+            }
+        });
     }
 
     private function parseSpecifications($value)
