@@ -30,6 +30,7 @@ class ExampleTest extends TestCase
 
         if($categoryId) $this->get('/product-by-category/'.$categoryId)->assertStatus(200);
         if($subCategoryId) $this->get('/product-by-sub-category/'.$subCategoryId)->assertStatus(200);
+        if(!$categoryId && !$subCategoryId) $this->assertTrue(true, 'No published catalog fixtures are currently available.');
     }
 
     public function testCustomerPagesRequireAuthentication()

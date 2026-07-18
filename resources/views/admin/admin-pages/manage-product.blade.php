@@ -79,25 +79,25 @@
                                 if($vproduct->publication_status==1)
                                 {
                                 ?>
-                                <a class="btn btn-danger" href="{{URL::to('/unpublished-product/'.$vproduct->id)}}">
+                                <button type="submit" class="btn btn-danger" formaction="{{URL::to('/unpublished-product/'.$vproduct->id)}}" formmethod="post" aria-label="Unpublish product">
                                     <i class="halflings-icon white thumbs-down"></i>  
-                                </a>
+                                </button>
                                 <?php
                                 }
                                 else{
                                 ?>
-                                <a class="btn btn-success" href="{{URL::to('/published-product/'.$vproduct->id)}}">
+                                <button type="submit" class="btn btn-success" formaction="{{URL::to('/published-product/'.$vproduct->id)}}" formmethod="post" aria-label="Publish product">
                                     <i class="halflings-icon white thumbs-up"></i>  
-                                </a>
+                                </button>
                                 <?php
                                 }
                                 ?>
                                 <a class="btn btn-info" href="{{URL::to('/edit-product/'.$vproduct->id)}}">
                                     <i class="halflings-icon white edit"></i>  
                                 </a>
-                                <a class="btn btn-danger" href="{{URL::to('/delete-product/'.$vproduct->id)}}" onclick="return checkDelete()">
+                                <button type="submit" class="btn btn-danger" formaction="{{URL::to('/delete-product/'.$vproduct->id)}}" formmethod="post" onclick="return checkDelete()" aria-label="Delete product">
                                     <i class="halflings-icon white trash"></i> 
-                                </a>
+                                </button>
                             </td>
                         </tr>
                         <?php

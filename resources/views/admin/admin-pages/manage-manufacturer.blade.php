@@ -71,25 +71,25 @@
                                 if($vmanufacturer->publication_status==1)
                                 {
                                 ?>
-                                <a class="btn btn-danger" href="{{URL::to('/unpublished-manufacturer/'.$vmanufacturer->manufacturer_id)}}">
+                                <button type="submit" class="btn btn-danger" formaction="{{URL::to('/unpublished-manufacturer/'.$vmanufacturer->manufacturer_id)}}" formmethod="post" aria-label="Unpublish manufacturer">
                                     <i class="halflings-icon white thumbs-down"></i>  
-                                </a>
+                                </button>
                                 <?php
                                 }
                                 else{
                                 ?>
-                                <a class="btn btn-success" href="{{URL::to('/published-manufacturer/'.$vmanufacturer->manufacturer_id)}}">
+                                <button type="submit" class="btn btn-success" formaction="{{URL::to('/published-manufacturer/'.$vmanufacturer->manufacturer_id)}}" formmethod="post" aria-label="Publish manufacturer">
                                     <i class="halflings-icon white thumbs-up"></i>  
-                                </a>
+                                </button>
                                 <?php
                                 }
                                 ?>
                                 <a class="btn btn-info" href="{{URL::to('/edit-manufacturer/'.$vmanufacturer->manufacturer_id)}}">
                                     <i class="halflings-icon white edit"></i>  
                                 </a>
-                                <a class="btn btn-danger" href="{{URL::to('/delete-manufacturer/'.$vmanufacturer->manufacturer_id)}}" onclick="return checkDelete()">
+                                <button type="submit" class="btn btn-danger" formaction="{{URL::to('/delete-manufacturer/'.$vmanufacturer->manufacturer_id)}}" formmethod="post" onclick="return checkDelete()" aria-label="Delete manufacturer">
                                     <i class="halflings-icon white trash"></i> 
-                                </a>
+                                </button>
                             </td>
                         </tr>
                         <?php

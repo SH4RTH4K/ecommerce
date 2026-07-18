@@ -58,6 +58,8 @@ class DevelopmentModeTest extends TestCase
             $admin = DB::table('tbl_admin')->where('is_active', 1)->first();
             $this->assertNotNull($admin);
             $session = ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+            $this->putSetting('development_mode_enabled', '0');
+            Cache::forget('site-settings');
 
             $this->withSession($session)->from('/site-customization')->post('/site-settings', [
                 'site_name' => 'Test Store',

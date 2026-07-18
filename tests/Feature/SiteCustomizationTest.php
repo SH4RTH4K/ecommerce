@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class SiteCustomizationTest extends TestCase
@@ -39,6 +40,8 @@ class SiteCustomizationTest extends TestCase
         if(!$admin)return $this->assertTrue(true);
         DB::beginTransaction();
         try {
+            DB::table('site_settings')->where('setting_key','development_mode_enabled')->update(['setting_value'=>'0']);
+            Cache::forget('site-settings');
             $name='Store '.str_random(8);
             $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
                 ->post('/site-settings',[
@@ -52,6 +55,6 @@ class SiteCustomizationTest extends TestCase
                     'development_mode_show_admin_login'=>'1','development_mode_login_button_text'=>'Admin Login',
                 ])->assertRedirect('/site-customization')->assertSessionHas('message');
             $this->assertDatabaseHas('site_settings',['setting_key'=>'site_name','setting_value'=>$name]);
-        } finally { DB::rollBack(); }
+        } finally { DB::rollBack(); Cache::forget('site-settings'); }
     }
 }

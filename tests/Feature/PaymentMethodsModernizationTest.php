@@ -31,8 +31,8 @@ class PaymentMethodsModernizationTest extends TestCase
 
     public function testBangladeshPaymentAdminRendersWithoutSecrets()
     {
-        $this->withSession($this->adminSession())
-            ->get('/payment-methods')
+        $response = $this->withSession($this->adminSession())->get('/payment-methods');
+        $response
             ->assertStatus(200)
             ->assertSee('Payment Methods')
             ->assertSee('Cash on Delivery')
@@ -46,6 +46,7 @@ class PaymentMethodsModernizationTest extends TestCase
             ->assertSee('data-methods="mobile_financial_service"', false)
             ->assertSee('data-methods="payment_gateway card_payment"', false)
             ->assertDontSee('SUPER_SECRET_VALUE');
+        $this->assertSame(1, substr_count($response->getContent(), 'class="pm-form pm-adaptive-form"'));
     }
 
     public function testServerCalculatesFeesAndEligibility()
@@ -68,6 +69,10 @@ class PaymentMethodsModernizationTest extends TestCase
             $method->environment = 'sandbox';
             $method->allow_sandbox_at_checkout = false;
             $this->assertStringContainsString('test mode', $service->error($method, 10000));
+            $method->environment = 'live';
+            $method->integration_mode = 'hosted_checkout';
+            $method->connection_status = 'configuration_required';
+            $this->assertStringContainsString('verified gateway adapter', $service->error($method, 10000));
         } finally {
             DB::rollBack();
         }

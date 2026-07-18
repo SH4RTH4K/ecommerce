@@ -12,6 +12,7 @@ class PaymentMethodAvailabilityService
         if (!$method->is_active) return 'This payment method is temporarily unavailable.';
         if (!$method->show_at_checkout) return 'This payment method is not shown at checkout.';
         if ($method->environment === 'sandbox' && !$method->allow_sandbox_at_checkout && !$adminPreview) return 'This payment method is in test mode.';
+        if ($method->isOnline() && $method->connection_status !== 'connected') return 'This online payment method is not connected to a verified gateway adapter.';
         if ($method->minimum_order_amount !== null && $total < $method->minimum_order_amount) return 'Available for orders of at least ৳'.number_format($method->minimum_order_amount).'.';
         if ($method->maximum_order_amount !== null && $total > $method->maximum_order_amount) return 'Available for orders up to ৳'.number_format($method->maximum_order_amount).'.';
 
