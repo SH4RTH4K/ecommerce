@@ -3,18 +3,26 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    @php $siteName = $brandName; $siteLogo = $brandLogo; $metaDescription = isset($siteSettings['default_meta_description']) && $siteSettings['default_meta_description'] ? $siteSettings['default_meta_description'] : 'Shop products online from '.$brandName.'.'; @endphp
+    @php
+        $siteName = $brandName;
+        $siteLogo = $brandLogo;
+        $metaDescription = isset($siteSettings['default_meta_description']) && $siteSettings['default_meta_description'] ? $siteSettings['default_meta_description'] : 'Shop products online from '.$brandName.'.';
+        $socialImage = $siteSettings->get('default_og_image') ?: $siteLogo;
+        $organization = ['@context'=>'https://schema.org','@type'=>'Organization','name'=>$siteName,'url'=>url('/'),'email'=>isset($siteSettings['support_email'])?$siteSettings['support_email']:'support@example.com','telephone'=>isset($siteSettings['phone'])?$siteSettings['phone']:'+8801711000000','sameAs'=>array_values(array_filter([isset($siteSettings['facebook_url'])?$siteSettings['facebook_url']:null,isset($siteSettings['instagram_url'])?$siteSettings['instagram_url']:null,isset($siteSettings['youtube_url'])?$siteSettings['youtube_url']:null,isset($siteSettings['linkedin_url'])?$siteSettings['linkedin_url']:null,isset($siteSettings['twitter_url'])?$siteSettings['twitter_url']:null]))];
+        if ($siteLogo) $organization['logo'] = asset($siteLogo);
+    @endphp
     <meta name="description" content="{{ $metaDescription }}">
     <title>{{ isset($siteSettings['default_meta_title']) && $siteSettings['default_meta_title'] ? $siteSettings['default_meta_title'] : $siteName.' | Computers, Networking & Accessories' }}</title>
     <link rel="canonical" href="{{ url('/') }}">
     <meta name="robots" content="{{ isset($siteSettings['robots_directive']) && $siteSettings['robots_directive'] ? $siteSettings['robots_directive'] : 'index,follow' }}">
     @if(isset($siteSettings['meta_keywords']) && $siteSettings['meta_keywords'])<meta name="keywords" content="{{ $siteSettings['meta_keywords'] }}">@endif
     @if(isset($siteSettings['google_site_verification']) && $siteSettings['google_site_verification'])<meta name="google-site-verification" content="{{ $siteSettings['google_site_verification'] }}">@endif
-    <meta property="og:type" content="website"><meta property="og:title" content="{{ isset($siteSettings['default_meta_title']) && $siteSettings['default_meta_title'] ? $siteSettings['default_meta_title'] : $siteName.' | Computers, Networking & Accessories' }}"><meta property="og:description" content="{{ $metaDescription }}"><meta property="og:url" content="{{ url('/') }}"><meta property="og:site_name" content="{{ $siteName }}"><meta property="og:image" content="{{ asset(isset($siteSettings['default_og_image']) && $siteSettings['default_og_image'] ? $siteSettings['default_og_image'] : $siteLogo) }}"><meta name="twitter:card" content="summary_large_image">
-    <script type="application/ld+json">{!! json_encode(['@context'=>'https://schema.org','@type'=>'Organization','name'=>$siteName,'url'=>url('/'),'logo'=>asset($siteLogo),'email'=>isset($siteSettings['support_email'])?$siteSettings['support_email']:'support@example.com','telephone'=>isset($siteSettings['phone'])?$siteSettings['phone']:'+8801711000000','sameAs'=>array_values(array_filter([isset($siteSettings['facebook_url'])?$siteSettings['facebook_url']:null,isset($siteSettings['instagram_url'])?$siteSettings['instagram_url']:null,isset($siteSettings['youtube_url'])?$siteSettings['youtube_url']:null,isset($siteSettings['linkedin_url'])?$siteSettings['linkedin_url']:null,isset($siteSettings['twitter_url'])?$siteSettings['twitter_url']:null]))], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!}</script>
-    <link rel="icon" href="{{ asset(isset($siteSettings['favicon']) && $siteSettings['favicon'] ? $siteSettings['favicon'] : 'favicon.ico') }}">
+    <meta property="og:type" content="website"><meta property="og:title" content="{{ isset($siteSettings['default_meta_title']) && $siteSettings['default_meta_title'] ? $siteSettings['default_meta_title'] : $siteName.' | Computers, Networking & Accessories' }}"><meta property="og:description" content="{{ $metaDescription }}"><meta property="og:url" content="{{ url('/') }}"><meta property="og:site_name" content="{{ $siteName }}">@if($socialImage)<meta property="og:image" content="{{ asset($socialImage) }}">@endif<meta name="twitter:card" content="summary_large_image">
+    <script type="application/ld+json">{!! json_encode($organization, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!}</script>
+    @if($brandFavicon)<link rel="icon" href="{{ asset($brandFavicon) }}">@endif
     <link rel="stylesheet" href="{{ asset('asset/front-end/css/font-awesome.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/brand-tagline.css') }}?v={{ filemtime(public_path('css/brand-tagline.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
     @include('partials.google-analytics')
 </head>

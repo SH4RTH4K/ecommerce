@@ -6,10 +6,15 @@
 @php
     $siteName = $brandName;
     $siteLogo = $brandLogo;
+    $headerTagline = (string)$siteSettings->get('site_tagline', '');
+    $headerTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $headerTagline);
 @endphp
 <header class="lt-header">
     <div class="lt-container lt-header-main">
-        <div class="lt-brand-lockup"><a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home"><img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async"></a>@if($siteSettings->get('site_tagline'))<span class="lt-brand-tagline">{{ $siteSettings->get('site_tagline') }}</span>@endif</div>
+        <div class="lt-brand-lockup" style="--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
+            <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($hasCustomBrandLogo && $siteLogo)<img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async">@else<span class="lt-brand-name">{{ $siteName }}</span>@endif</a>
+            @if($headerTagline)<span class="lt-brand-tagline {{ $headerTaglineIsBengali ? 'is-bengali' : '' }}" @if($headerTaglineIsBengali) lang="bn" @endif>{{ $headerTagline }}</span>@endif
+        </div>
         <form class="lt-search" action="{{ url('/search-product') }}" method="post" role="search">
             {{ csrf_field() }}
             <label class="sr-only" for="site-search">Search products</label>

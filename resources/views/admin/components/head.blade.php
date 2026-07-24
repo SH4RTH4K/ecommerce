@@ -5,7 +5,7 @@
         <title>@yield("title", $brandName.' Dashboard')</title>
         <meta name="description" content="Bootstrap Metro Dashboard">
         <meta name="author" content="{{ $brandName }}">
-        <link rel="icon" href="{{ asset($brandFavicon) }}">
+        @if($brandFavicon)<link rel="icon" href="{{ asset($brandFavicon) }}">@endif
         <meta name="keyword" content="Metro, Metro UI, Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
         <!-- end: Meta -->
 
@@ -33,11 +33,6 @@
         <!--[if IE 9]>
                 <link id="ie9style" href="css/ie9.css" rel="stylesheet">
         <![endif]-->
-
-        <!-- start: Favicon -->
-        <link rel="shortcut icon" href="{{ asset(isset($siteSettings['favicon']) && $siteSettings['favicon'] ? $siteSettings['favicon'] : 'asset/expert-admin/img/favicon.ico') }}">
-        <!-- end: Favicon -->
-
 
         <script type="text/javascript">
             function checkDelete()

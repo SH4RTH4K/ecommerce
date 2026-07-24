@@ -8,7 +8,6 @@
             <div class="nav-no-collapse header-nav">
                 <ul class="nav pull-right">
                     @if(!empty($developmentModeActive))<li><a class="btn btn-warning" href="{{ url('/site-customization#development-mode') }}" title="Public storefront is hidden"><i class="halflings-icon white warning-sign"></i> <strong>Development Mode Active</strong></a></li>@endif
-                    @if(!$hasCustomBrandLogo || !$hasCustomBrandFavicon)<li class="hidden-phone"><a class="btn btn-warning" href="{{ url('/site-customization#identity') }}" title="Upload missing brand assets"><i class="halflings-icon white picture"></i> <strong>Upload logo &amp; icon</strong></a></li>@endif
                     <li class="admin-storefront-link"><a class="btn btn-success" href="{{ url('/') }}" target="_blank" rel="noopener noreferrer" title="{{ !empty($developmentModeActive) ? 'Preview the storefront as an administrator' : 'Open the public storefront' }}"><i class="halflings-icon white share-alt"></i> <strong>{{ !empty($developmentModeActive) ? 'Preview Storefront' : 'View Storefront' }}</strong></a></li>
                     <li class="hidden-phone"><a class="btn" href="{{ url('/admin-notifications') }}" title="Unread notifications" aria-label="Unread notifications: {{ $adminHeaderCounts['notifications'] }}"><i class="halflings-icon white bell"></i>@if($adminHeaderCounts['notifications'])<span class="badge badge-important">{{ $adminHeaderCounts['notifications'] }}</span>@endif</a></li>
                     <li class="hidden-phone">

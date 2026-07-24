@@ -59,6 +59,7 @@ class DevelopmentModeMiddleware
                     'login_button_text' => $settings->get('development_mode_login_button_text') ?: 'Admin Login',
                     'site_name' => $settings->get('site_name') ?: config('app.name', 'Ecommerce'),
                     'logo' => $settings->get('site_logo'),
+                    'favicon' => $settings->get('favicon'),
                     'copyright' => $settings->get('copyright_text'),
                 ],
             ], 503)->header('Retry-After', '3600');

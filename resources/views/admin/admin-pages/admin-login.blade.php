@@ -7,7 +7,7 @@
         <title>@yield("title", $brandName.' Login')</title>
         <meta name="description" content="Bootstrap Metro Dashboard">
         <meta name="author" content="{{ $brandName }}">
-        <link rel="icon" href="{{ asset($brandFavicon) }}">
+        @if($brandFavicon)<link rel="icon" href="{{ asset($brandFavicon) }}">@endif
         <meta name="keyword" content="Metro, Metro UI, Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
         <!-- end: Meta -->
 
@@ -36,7 +36,8 @@
         .admin-login-brand img { display:block;max-width:220px;max-height:72px;width:auto;height:auto;object-fit:contain;margin:0 auto; }
         .admin-login-brand strong { display:block;color:#164b6b;font-size:24px;line-height:1.2; }
         .admin-login-brand small { display:block;margin-top:7px;color:#7a8993;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase; }
-        .admin-login-tagline { display:inline-block;max-width:260px;margin:8px auto 0;color:#345a72;font-size:12px;font-weight:700;line-height:1.35; }
+        .admin-login-tagline { display:inline-block;max-width:260px;margin:8px auto 0;color:#345a72;font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-tagline-font-size,12px);font-weight:700;letter-spacing:.02em;line-height:1.45;overflow-wrap:anywhere;text-transform:none; }
+        .admin-login-tagline.is-bengali { font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0;line-height:1.55; }
         .admin-login-tagline:before { display:inline-block;width:18px;height:2px;margin:0 7px 3px 0;border-radius:2px;background:#f5821f;content:""; }
     </style>
 
@@ -47,10 +48,14 @@
                 <div class="row-fluid">
                     <div class="login-box">
                         <div class="icons"><a class="login-back-link" href="{{ url('/') }}"><i class="halflings-icon home"></i><span>Back to storefront</span></a></div>
-                        <div class="admin-login-brand">
+                        @php
+                            $adminTagline = (string)$siteSettings->get('site_tagline', '');
+                            $adminTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $adminTagline);
+                        @endphp
+                        <div class="admin-login-brand" style="--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
                             @if($hasCustomBrandLogo)<img src="{{ asset($brandLogo) }}" alt="{{ $brandName }} logo">@else<strong>{{ $brandName }}</strong>@endif
-                            @if($siteSettings->get('site_tagline'))<span class="admin-login-tagline">{{ $siteSettings->get('site_tagline') }}</span>@endif
-                            <small>{{ $hasCustomBrandLogo ? 'Administration' : 'Logo not uploaded · Sign in and open Website Settings' }}</small>
+                            @if($adminTagline)<span class="admin-login-tagline {{ $adminTaglineIsBengali ? 'is-bengali' : '' }}" @if($adminTaglineIsBengali) lang="bn" @endif>{{ $adminTagline }}</span>@endif
+                            <small>Administration</small>
                         </div>
                         <h2>Administrator sign in</h2>
                         <p>Use your administrator username and password. No email address is required.</p>

@@ -35,6 +35,7 @@ class DevelopmentModeTest extends TestCase
                 $this->get($path)->assertStatus(503)
                     ->assertHeader('Retry-After', '3600')
                     ->assertSee('Private test maintenance')
+                    ->assertSee('asset/front-end/img/branding/test-favicon.png', false)
                     ->assertDontSee('Featured Categories');
             }
 
@@ -101,6 +102,7 @@ class DevelopmentModeTest extends TestCase
             'development_mode_message' => 'The test storefront is temporarily unavailable.',
             'development_mode_show_admin_login' => '1',
             'development_mode_login_button_text' => 'Admin Login',
+            'favicon' => 'asset/front-end/img/branding/test-favicon.png',
         ];
         foreach ($settings as $key => $value) {
             $this->putSetting($key, $value);

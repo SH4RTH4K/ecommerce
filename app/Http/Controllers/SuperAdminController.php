@@ -631,6 +631,7 @@ class SuperAdminController extends Controller {
         $this->validate($request, [
             'site_name' => 'required|string|max:120',
             'site_tagline' => 'nullable|string|max:180',
+            'site_tagline_font_size' => 'nullable|integer|min:8|max:24',
             'notice_text' => 'nullable|string|max:300',
             'phone' => ['nullable','string','max:40','regex:/^[0-9+()\-\s.]+$/'],
             'support_phone' => ['nullable','string','max:40','regex:/^[0-9+()\-\s.]+$/'],
@@ -638,8 +639,48 @@ class SuperAdminController extends Controller {
             'support_email' => 'nullable|email|max:150',
             'shop_address' => 'nullable|string|max:500',
             'business_hours' => 'nullable|string|max:180',
-            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
-            'favicon' => 'nullable|mimes:ico,png|max:512',
+            'logo' => [
+                'nullable','file','image','mimes:png,jpg,jpeg,webp','max:5120',
+                function ($attribute, $file, $fail) {
+                    if (!$file || !$file->isValid()) return;
+                    $dimensions = @getimagesize($file->getPathname());
+                    if ($dimensions && ($dimensions[0] > 6000 || $dimensions[1] > 6000)) {
+                        $fail('The logo source image may not be larger than 6000 × 6000 pixels.');
+                    }
+                },
+            ],
+            'favicon' => [
+                'nullable','file','mimes:ico,png,jpg,jpeg,webp','max:2048',
+                function ($attribute, $file, $fail) {
+                    if (!$file || !$file->isValid() || strtolower($file->getClientOriginalExtension()) === 'ico') return;
+                    $dimensions = @getimagesize($file->getPathname());
+                    if ($dimensions && ($dimensions[0] > 4096 || $dimensions[1] > 4096)) {
+                        $fail('The browser icon source image may not be larger than 4096 × 4096 pixels.');
+                    }
+                },
+            ],
+            'logo_resize_enabled' => 'nullable|boolean',
+            'logo_resize_width' => 'nullable|required_if:logo_resize_enabled,1|integer|min:120|max:2400',
+            'logo_resize_height' => 'nullable|required_if:logo_resize_enabled,1|integer|min:40|max:1200',
+            'favicon_resize_enabled' => 'nullable|boolean',
+            'favicon_resize_width' => 'nullable|required_if:favicon_resize_enabled,1|integer|min:16|max:1024',
+            'favicon_resize_height' => 'nullable|required_if:favicon_resize_enabled,1|integer|min:16|max:1024',
+            'remove_logo' => [
+                'nullable','boolean',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->boolean('remove_logo') && $request->hasFile('logo')) {
+                        $fail('Choose either a replacement logo or remove the current logo, not both.');
+                    }
+                },
+            ],
+            'remove_favicon' => [
+                'nullable','boolean',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->boolean('remove_favicon') && $request->hasFile('favicon')) {
+                        $fail('Choose either a replacement browser icon or remove the current icon, not both.');
+                    }
+                },
+            ],
             'facebook_url' => 'nullable|url|max:255',
             'instagram_url' => 'nullable|url|max:255',
             'youtube_url' => 'nullable|url|max:255',
@@ -664,11 +705,31 @@ class SuperAdminController extends Controller {
             'development_mode_availability_text' => 'nullable|string|max:255',
             'development_mode_show_admin_login' => 'required|boolean',
             'development_mode_login_button_text' => 'nullable|string|max:100',
+        ], [
+            'logo.uploaded' => 'The logo could not be uploaded. Choose a PNG, JPG, or WebP image no larger than 5 MB.',
+            'logo.image' => 'The logo must be a valid PNG, JPG, or WebP image.',
+            'logo.mimes' => 'The logo must be a PNG, JPG, or WebP image.',
+            'logo.max' => 'The logo may not be larger than 5 MB.',
+            'favicon.uploaded' => 'The browser icon could not be uploaded. Choose an ICO, PNG, JPG, or WebP file no larger than 2 MB.',
+            'favicon.mimes' => 'The browser icon must be an ICO, PNG, JPG, or WebP file.',
+            'favicon.max' => 'The browser icon may not be larger than 2 MB.',
+            'logo_resize_width.required_if' => 'Enter the logo output width when automatic resizing is enabled.',
+            'logo_resize_width.min' => 'The logo output width must be at least 120 pixels.',
+            'logo_resize_width.max' => 'The logo output width may not exceed 2400 pixels.',
+            'logo_resize_height.required_if' => 'Enter the logo output height when automatic resizing is enabled.',
+            'logo_resize_height.min' => 'The logo output height must be at least 40 pixels.',
+            'logo_resize_height.max' => 'The logo output height may not exceed 1200 pixels.',
+            'favicon_resize_width.required_if' => 'Enter the browser icon output width when automatic resizing is enabled.',
+            'favicon_resize_width.min' => 'The browser icon output width must be at least 16 pixels.',
+            'favicon_resize_width.max' => 'The browser icon output width may not exceed 1024 pixels.',
+            'favicon_resize_height.required_if' => 'Enter the browser icon output height when automatic resizing is enabled.',
+            'favicon_resize_height.min' => 'The browser icon output height must be at least 16 pixels.',
+            'favicon_resize_height.max' => 'The browser icon output height may not exceed 1024 pixels.',
         ]);
         $previousDevelopmentMode = DB::table('site_settings')
             ->where('setting_key', 'development_mode_enabled')->value('setting_value');
         $allowed = [
-            'site_name','site_tagline','notice_text','phone','support_phone','whatsapp_number',
+            'site_name','site_tagline','site_tagline_font_size','notice_text','phone','support_phone','whatsapp_number',
             'support_email','shop_address','business_hours','facebook_url','instagram_url',
             'youtube_url','linkedin_url','twitter_url','default_meta_description',
             'default_meta_title','meta_keywords','robots_directive','google_analytics_id',
@@ -676,42 +737,80 @@ class SuperAdminController extends Controller {
             'development_mode_enabled','development_mode_message_type','development_mode_title',
             'development_mode_message','development_mode_additional_message',
             'development_mode_availability_text','development_mode_show_admin_login',
-            'development_mode_login_button_text'
+            'development_mode_login_button_text','logo_resize_enabled','logo_resize_width',
+            'logo_resize_height','favicon_resize_enabled','favicon_resize_width','favicon_resize_height'
         ];
-        foreach ($allowed as $key) {
-            $value = null;
-            if ($request->filled($key)) {
-                $value = (string)$request->input($key);
-                $value = preg_replace('/<(script|iframe|object|embed|style)\b[^>]*>.*?<\/\1>/is', '', $value);
-                $value = trim(strip_tags($value));
+        $assetKeys = ['logo' => 'site_logo', 'favicon' => 'favicon', 'seo_image' => 'default_og_image'];
+        $currentAssets = DB::table('site_settings')
+            ->whereIn('setting_key', array_values($assetKeys))
+            ->pluck('setting_value', 'setting_key');
+        $storedAssets = [];
+        $oldAssets = [];
+        $assetRemovals = [];
+        foreach (['logo' => 'site_logo', 'favicon' => 'favicon'] as $input => $settingKey) {
+            if (!$request->boolean('remove_'.$input)) continue;
+            $assetRemovals[$input] = $settingKey;
+            $oldAssets[$input] = $currentAssets->get($settingKey);
+        }
+        foreach ($assetKeys as $input => $settingKey) {
+            if (!$request->hasFile($input)) continue;
+            try {
+                $resizeOptions = $this->brandResizeOptions($request, $input);
+                $storedAssets[$input] = $this->storeBrandAsset($request->file($input), $input, $resizeOptions);
+                $oldAssets[$input] = $currentAssets->get($settingKey);
+            } catch (\Throwable $exception) {
+                foreach ($storedAssets as $storedPath) $this->removeBrandAsset($storedPath);
+                report($exception);
+                return Redirect::to('/site-customization#identity')->withInput()->withErrors([
+                    $input => 'The file passed validation, but the server could not save it. Please try again.',
+                ]);
             }
-            DB::table('site_settings')->updateOrInsert(['setting_key' => $key], [
-                'setting_value' => $value,
-                'updated_at' => now(), 'created_at' => now()
+        }
+        try {
+            DB::transaction(function () use ($allowed, $request, $assetKeys, $storedAssets, $assetRemovals) {
+                foreach ($allowed as $key) {
+                    $value = null;
+                    if ($request->filled($key)) {
+                        $value = (string)$request->input($key);
+                        $value = preg_replace('/<(script|iframe|object|embed|style)\b[^>]*>.*?<\/\1>/is', '', $value);
+                        $value = trim(strip_tags($value));
+                    }
+                    DB::table('site_settings')->updateOrInsert(['setting_key' => $key], [
+                        'setting_value' => $value,
+                        'updated_at' => now(), 'created_at' => now()
+                    ]);
+                }
+                foreach ($storedAssets as $input => $storedPath) {
+                    DB::table('site_settings')->updateOrInsert(['setting_key' => $assetKeys[$input]], [
+                        'setting_value' => $storedPath, 'updated_at' => now(), 'created_at' => now()
+                    ]);
+                }
+                foreach ($assetRemovals as $settingKey) {
+                    DB::table('site_settings')->where('setting_key', $settingKey)->delete();
+                }
+            });
+        } catch (\Throwable $exception) {
+            foreach ($storedAssets as $storedPath) $this->removeBrandAsset($storedPath);
+            report($exception);
+            return Redirect::to('/site-customization#identity')->withInput()->withErrors([
+                'settings' => 'Website settings could not be saved. No changes were applied. Please try again.',
             ]);
         }
-        foreach (['logo' => 'site_logo', 'favicon' => 'favicon', 'seo_image' => 'default_og_image'] as $input => $settingKey) {
-            if (!$request->hasFile($input)) continue;
-            $file = $request->file($input);
-            $path = 'asset/front-end/img/branding/';
-            if (!is_dir(public_path($path))) mkdir(public_path($path), 0755, true);
-            $name = $input.'-'.str_random(12).'.'.strtolower($file->getClientOriginalExtension());
-            $file->move(public_path($path), $name);
-            $oldPath = DB::table('site_settings')->where('setting_key', $settingKey)->value('setting_value');
-            DB::table('site_settings')->updateOrInsert(['setting_key' => $settingKey], [
-                'setting_value' => $path.$name, 'updated_at' => now(), 'created_at' => now()
-            ]);
-            if ($oldPath && strpos($oldPath, $path) === 0 && is_file(public_path($oldPath))) unlink(public_path($oldPath));
+        foreach (array_unique(array_filter($oldAssets)) as $oldPath) {
+            $this->removeBrandAssetIfUnused($oldPath);
         }
         Cache::forget('site-settings');
         $freshSettings=DB::table('site_settings')->pluck('setting_value','setting_key');
         $freshBrandName=$freshSettings->get('site_name') ?: config('app.name','Ecommerce');
+        $freshTaglineFontSize=(int)($freshSettings->get('site_tagline_font_size') ?: 12);
+        $freshTaglineFontSize=max(8,min(24,$freshTaglineFontSize));
         \View::share('siteSettings',$freshSettings);
         \View::share('brandName',$freshBrandName);
-        \View::share('brandLogo',$freshSettings->get('site_logo') ?: 'asset/front-end/img/ecommerce-logo.png');
-        \View::share('brandFavicon',$freshSettings->get('favicon') ?: 'favicon.ico');
+        \View::share('brandLogo',$freshSettings->get('site_logo') ?: null);
+        \View::share('brandFavicon',$freshSettings->get('favicon') ?: null);
         \View::share('hasCustomBrandLogo',(bool)$freshSettings->get('site_logo'));
         \View::share('hasCustomBrandFavicon',(bool)$freshSettings->get('favicon'));
+        \View::share('brandTaglineFontSize',$freshTaglineFontSize);
         config(['app.name'=>$freshBrandName]);
         $newDevelopmentMode = (string)$request->input('development_mode_enabled') === '1';
         $previouslyEnabled = in_array($previousDevelopmentMode, [true, 1, '1', 'true', 'on'], true);
@@ -731,6 +830,11 @@ class SuperAdminController extends Controller {
             $message = 'Development Mode has been enabled. Public visitors will now see the configured Development Mode message.';
         } elseif (!$newDevelopmentMode && $previouslyEnabled) {
             $message = 'Development Mode has been disabled. The public website is now available.';
+        } elseif ($assetRemovals) {
+            $removed = [];
+            if (isset($assetRemovals['logo'])) $removed[] = 'logo';
+            if (isset($assetRemovals['favicon'])) $removed[] = 'browser icon';
+            $message = ucfirst(implode(' and ', $removed)).' removed from the site and upload storage.';
         } else {
             $message = 'Site settings updated.';
         }
@@ -875,6 +979,171 @@ class SuperAdminController extends Controller {
             'url' => route('store.product.show', $product->id),
             'status' => $product->publication_status ? 'Published' : 'Hidden',
         ];
+    }
+
+    private function brandResizeOptions(Request $request, $prefix)
+    {
+        if (!in_array($prefix, ['logo', 'favicon'], true) || !$request->boolean($prefix.'_resize_enabled')) {
+            return null;
+        }
+
+        return [
+            'width' => (int)$request->input($prefix.'_resize_width'),
+            'height' => (int)$request->input($prefix.'_resize_height'),
+        ];
+    }
+
+    private function storeBrandAsset($file, $prefix, ?array $resizeOptions = null)
+    {
+        $relativeDirectory = 'asset/front-end/img/branding/';
+        $directory = public_path($relativeDirectory);
+        if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+            throw new \RuntimeException('The branding upload directory could not be created.');
+        }
+        if (!is_writable($directory)) {
+            throw new \RuntimeException('The branding upload directory is not writable.');
+        }
+        $extension = strtolower((string)($file->extension() ?: $file->getClientOriginalExtension()));
+        if (!in_array($extension, ['ico','png','jpg','jpeg','webp'], true)) {
+            throw new \RuntimeException('The uploaded branding file has an unsupported extension.');
+        }
+        if ($extension === 'jpeg') $extension = 'jpg';
+        do {
+            $name = $prefix.'-'.str_random(20).'.'.$extension;
+        } while (is_file($directory.DIRECTORY_SEPARATOR.$name));
+        $storedPath = $relativeDirectory.$name;
+        $destination = public_path($storedPath);
+        try {
+            if ($resizeOptions && $extension !== 'ico') {
+                $this->writeResizedBrandImage(
+                    $file->getPathname(),
+                    $destination,
+                    $extension,
+                    $resizeOptions['width'],
+                    $resizeOptions['height']
+                );
+            } else {
+                $file->move($directory, $name);
+            }
+        } catch (\Throwable $exception) {
+            if (is_file($destination)) unlink($destination);
+            throw $exception;
+        }
+        if (!is_file(public_path($storedPath)) || filesize(public_path($storedPath)) === 0) {
+            if (is_file($destination)) unlink($destination);
+            throw new \RuntimeException('The uploaded branding file was not written completely.');
+        }
+        return $storedPath;
+    }
+
+    private function writeResizedBrandImage($sourcePath, $destination, $extension, $targetWidth, $targetHeight)
+    {
+        if (!extension_loaded('gd')) {
+            throw new \RuntimeException('Automatic image resizing is not available on this server.');
+        }
+        $details = @getimagesize($sourcePath);
+        if (!$details || empty($details[0]) || empty($details[1])) {
+            throw new \RuntimeException('The uploaded image dimensions could not be read.');
+        }
+
+        $source = null;
+        $canvas = null;
+        try {
+            if ($extension === 'png') {
+                $source = @imagecreatefrompng($sourcePath);
+            } elseif ($extension === 'webp' && function_exists('imagecreatefromwebp')) {
+                $source = @imagecreatefromwebp($sourcePath);
+            } elseif (in_array($extension, ['jpg', 'jpeg'], true)) {
+                $source = @imagecreatefromjpeg($sourcePath);
+            }
+            if (!$source) {
+                throw new \RuntimeException('The uploaded image could not be opened for resizing.');
+            }
+
+            $targetWidth = (int)$targetWidth;
+            $targetHeight = (int)$targetHeight;
+            $sourceWidth = (int)$details[0];
+            $sourceHeight = (int)$details[1];
+            $canvas = imagecreatetruecolor($targetWidth, $targetHeight);
+            if (!$canvas) {
+                throw new \RuntimeException('The resized image canvas could not be created.');
+            }
+
+            if (in_array($extension, ['png', 'webp'], true)) {
+                imagealphablending($canvas, false);
+                imagesavealpha($canvas, true);
+                $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
+                imagefill($canvas, 0, 0, $transparent);
+            } else {
+                $white = imagecolorallocate($canvas, 255, 255, 255);
+                imagefill($canvas, 0, 0, $white);
+            }
+
+            $scale = min($targetWidth / $sourceWidth, $targetHeight / $sourceHeight);
+            $drawWidth = max(1, (int)round($sourceWidth * $scale));
+            $drawHeight = max(1, (int)round($sourceHeight * $scale));
+            $drawX = (int)floor(($targetWidth - $drawWidth) / 2);
+            $drawY = (int)floor(($targetHeight - $drawHeight) / 2);
+            if (!imagecopyresampled(
+                $canvas,
+                $source,
+                $drawX,
+                $drawY,
+                0,
+                0,
+                $drawWidth,
+                $drawHeight,
+                $sourceWidth,
+                $sourceHeight
+            )) {
+                throw new \RuntimeException('The uploaded image could not be resized.');
+            }
+
+            if ($extension === 'png') {
+                $written = imagepng($canvas, $destination, 6);
+            } elseif ($extension === 'webp' && function_exists('imagewebp')) {
+                $written = imagewebp($canvas, $destination, 88);
+            } else {
+                $written = imagejpeg($canvas, $destination, 88);
+            }
+            if (!$written) {
+                throw new \RuntimeException('The resized image could not be written.');
+            }
+        } finally {
+            if ($source) imagedestroy($source);
+            if ($canvas) imagedestroy($canvas);
+        }
+    }
+
+    private function removeBrandAsset($path)
+    {
+        $fullPath = $this->managedBrandAssetPath($path);
+        if (!$fullPath || (!is_file($fullPath) && !is_link($fullPath))) return false;
+        if (@unlink($fullPath)) return true;
+        report(new \RuntimeException('A retired branding upload could not be deleted: '.$path));
+        return false;
+    }
+
+    private function removeBrandAssetIfUnused($path)
+    {
+        if (!$path || DB::table('site_settings')->where('setting_value', $path)->exists()) return false;
+        return $this->removeBrandAsset($path);
+    }
+
+    private function managedBrandAssetPath($path)
+    {
+        if (!is_string($path)) return null;
+        $path = str_replace('\\', '/', trim($path));
+        $prefix = 'asset/front-end/img/branding/';
+        if (strpos($path, $prefix) !== 0) return null;
+        $filename = substr($path, strlen($prefix));
+        if (!$filename || basename($filename) !== $filename) return null;
+        if (!preg_match('/^(logo|favicon|seo_image)-[A-Za-z0-9][A-Za-z0-9._-]*\.(ico|png|jpe?g|webp)$/i', $filename)) {
+            return null;
+        }
+        $directory = realpath(public_path($prefix));
+        if (!$directory) return null;
+        return $directory.DIRECTORY_SEPARATOR.$filename;
     }
 
     private function storeBannerImage($file, $prefix)

@@ -16,10 +16,10 @@
     <meta property="og:site_name" content="{{ $brandName }}">
     @hasSection('og_image')<meta property="og:image" content="@yield('og_image')">@elseif(isset($siteSettings['default_og_image']) && $siteSettings['default_og_image'])<meta property="og:image" content="{{ asset($siteSettings['default_og_image']) }}">@endif
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" href="{{ asset($brandFavicon) }}">
+    @if($brandFavicon)<link rel="icon" href="{{ asset($brandFavicon) }}">@endif
     <link rel="stylesheet" href="{{ asset('asset/front-end/css/font-awesome.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/brand-tagline.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/brand-tagline.css') }}?v={{ filemtime(public_path('css/brand-tagline.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
     @include('partials.google-analytics')
     @stack('structured_data')
