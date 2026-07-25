@@ -1,11 +1,13 @@
 .lt-brand-lockup{display:inline-flex;max-width:205px;min-width:0;flex-direction:column;align-items:flex-start;gap:4px}
 .lt-brand-lockup .lt-logo{display:block;max-width:100%;min-width:0}
-.lt-brand-name{display:-webkit-box;max-width:205px;overflow:hidden;color:#0b3d62;font-size:23px;font-weight:900;letter-spacing:-.02em;line-height:1.12;overflow-wrap:anywhere;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.lt-brand-name{display:-webkit-box;max-width:205px;overflow:hidden;color:#0b3d62;font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-name-font-size,23px);font-weight:900;letter-spacing:-.02em;line-height:1.15;overflow-wrap:anywhere;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.lt-brand-name.is-bengali{font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0;line-height:1.35}
 .lt-brand-tagline{display:-webkit-box;max-width:100%;overflow:hidden;color:#38566c;font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-tagline-font-size,12px);font-weight:700;letter-spacing:.02em;line-height:1.4;overflow-wrap:anywhere;text-transform:none;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .lt-brand-tagline::before{display:inline-block;width:14px;height:2px;margin:0 6px 3px 0;border-radius:2px;background:#f5821f;content:""}
 .lt-brand-tagline.is-bengali{font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0;line-height:1.5}
 .lt-brand-tagline.is-bengali::before{display:none}
-.lt-footer-brand-name{display:block;margin-bottom:12px;color:#fff;font-size:24px;font-weight:900;line-height:1.2;overflow-wrap:anywhere}
+.lt-footer-brand-name{display:block;margin-bottom:12px;color:#fff;font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-name-font-size,23px);font-weight:900;line-height:1.2;overflow-wrap:anywhere}
+.lt-footer-brand-name.is-bengali{font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0;line-height:1.4}
 .lt-footer-tagline{font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-tagline-font-size,12px);line-height:1.5}
 .lt-footer-tagline.is-bengali{font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0}
-@media(max-width:720px){.lt-brand-lockup{max-width:150px}.lt-brand-name{max-width:150px;font-size:19px}.lt-brand-tagline{letter-spacing:0}.lt-brand-tagline::before{width:10px;margin-right:4px}}
+@media(max-width:720px){.lt-brand-lockup{max-width:150px}.lt-brand-name{max-width:150px}.lt-brand-tagline{letter-spacing:0}.lt-brand-tagline::before{width:10px;margin-right:4px}}

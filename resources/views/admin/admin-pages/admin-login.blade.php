@@ -34,7 +34,8 @@
         .login-box .login-back-link:hover,.login-box .login-back-link:focus { color:#1f6f96;text-decoration:none; }
         .admin-login-brand { margin:8px 0 22px;text-align:center; }
         .admin-login-brand img { display:block;max-width:220px;max-height:72px;width:auto;height:auto;object-fit:contain;margin:0 auto; }
-        .admin-login-brand strong { display:block;color:#164b6b;font-size:24px;line-height:1.2; }
+        .admin-login-name { display:block;color:#164b6b;font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-name-font-size,23px);font-weight:800;letter-spacing:-.01em;line-height:1.2;overflow-wrap:anywhere; }
+        .admin-login-name.is-bengali { font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0;line-height:1.4; }
         .admin-login-brand small { display:block;margin-top:7px;color:#7a8993;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase; }
         .admin-login-tagline { display:inline-block;max-width:260px;margin:8px auto 0;color:#345a72;font-family:"Segoe UI","Noto Sans Bengali","Nirmala UI","Vrinda",Arial,sans-serif;font-size:var(--brand-tagline-font-size,12px);font-weight:700;letter-spacing:.02em;line-height:1.45;overflow-wrap:anywhere;text-transform:none; }
         .admin-login-tagline.is-bengali { font-family:"Noto Sans Bengali","Nirmala UI","Vrinda","Segoe UI",sans-serif;letter-spacing:0;line-height:1.55; }
@@ -51,9 +52,10 @@
                         @php
                             $adminTagline = (string)$siteSettings->get('site_tagline', '');
                             $adminTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $adminTagline);
+                            $adminNameIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $brandName);
                         @endphp
-                        <div class="admin-login-brand" style="--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
-                            @if($hasCustomBrandLogo)<img src="{{ asset($brandLogo) }}" alt="{{ $brandName }} logo">@else<strong>{{ $brandName }}</strong>@endif
+                        <div class="admin-login-brand" style="--brand-name-font-size:{{ $brandNameFontSize }}px;--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
+                            @if($hasCustomBrandLogo)<img src="{{ asset($brandLogo) }}" alt="{{ $brandName }} logo">@else<strong class="admin-login-name {{ $adminNameIsBengali ? 'is-bengali' : '' }}" @if($adminNameIsBengali) lang="bn" @endif>{{ $brandName }}</strong>@endif
                             @if($adminTagline)<span class="admin-login-tagline {{ $adminTaglineIsBengali ? 'is-bengali' : '' }}" @if($adminTaglineIsBengali) lang="bn" @endif>{{ $adminTagline }}</span>@endif
                             <small>Administration</small>
                         </div>

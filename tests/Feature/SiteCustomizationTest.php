@@ -30,6 +30,7 @@ class SiteCustomizationTest extends TestCase
             ->assertSee('Maximum upload: 5 MB')->assertSee('Maximum upload: 2 MB')
             ->assertSee('logo_resize_width',false)->assertSee('favicon_resize_width',false)
             ->assertSee('data-image-details',false)
+            ->assertSee('Website name font size')->assertSee('Bengali Website names are usually clearest at 22–28 px.',false)
             ->assertSee('Tagline font size')->assertSee('Bengali text is usually clearest at 13–16 px.',false)
             ->assertSee('data-remove-input="logo"',false)->assertSee('data-remove-input="favicon"',false);
     }
@@ -39,8 +40,8 @@ class SiteCustomizationTest extends TestCase
         $admin=$this->settingsAdmin();
         if(!$admin)return $this->assertTrue(true);
         $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
-            ->from('/site-customization')->post('/site-settings',['site_name'=>'','phone'=>'call-me','site_tagline_font_size'=>'25'])
-            ->assertRedirect('/site-customization')->assertSessionHasErrors(['site_name','phone','site_tagline_font_size']);
+            ->from('/site-customization')->post('/site-settings',['site_name'=>'','phone'=>'call-me','site_name_font_size'=>'33','site_tagline_font_size'=>'25'])
+            ->assertRedirect('/site-customization')->assertSessionHasErrors(['site_name','phone','site_name_font_size','site_tagline_font_size']);
     }
 
     public function testValidWebsiteSettingsCanBeSaved()
@@ -55,6 +56,7 @@ class SiteCustomizationTest extends TestCase
             $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
                 ->post('/site-settings',[
                     'site_name'=>$name,'site_tagline'=>'Trusted technology store','phone'=>'+880 1700-000000',
+                    'site_name_font_size'=>'26',
                     'site_tagline_font_size'=>'16',
                     'support_email'=>'support@example.com','robots_directive'=>'index,follow',
                     'default_meta_title'=>'Technology products and support',
@@ -65,8 +67,10 @@ class SiteCustomizationTest extends TestCase
                     'development_mode_show_admin_login'=>'1','development_mode_login_button_text'=>'Admin Login',
                 ])->assertRedirect('/site-customization')->assertSessionHas('message');
             $this->assertDatabaseHas('site_settings',['setting_key'=>'site_name','setting_value'=>$name]);
+            $this->assertDatabaseHas('site_settings',['setting_key'=>'site_name_font_size','setting_value'=>'26']);
             $this->assertDatabaseHas('site_settings',['setting_key'=>'site_tagline_font_size','setting_value'=>'16']);
             $this->get('/')->assertOk()->assertSee('lt-brand-tagline',false)->assertSee('Trusted technology store')
+                ->assertSee('--brand-name-font-size:26px',false)
                 ->assertSee('--brand-tagline-font-size:16px',false)
                 ->assertSee('css/brand-tagline.css',false);
             $this->app['session']->flush();
@@ -191,10 +195,12 @@ class SiteCustomizationTest extends TestCase
             DB::table('site_settings')->where('setting_key','development_mode_enabled')->update(['setting_value'=>'0']);
             Cache::forget('site-settings');
             $tagline='আমরা আপনার অনুভূতির যত্ন নিই';
+            $bengaliName='ই-কমার্স স্টোর';
 
             $upload=$this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
                 ->post('/site-settings',[
-                    'site_name'=>'Removal Test Store',
+                    'site_name'=>$bengaliName,
+                    'site_name_font_size'=>'26',
                     'site_tagline'=>$tagline,
                     'site_tagline_font_size'=>'16',
                     'logo'=>UploadedFile::fake()->image('removal-logo.png',600,200),
@@ -217,7 +223,8 @@ class SiteCustomizationTest extends TestCase
 
             $remove=$this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
                 ->post('/site-settings',[
-                    'site_name'=>'Removal Test Store',
+                    'site_name'=>$bengaliName,
+                    'site_name_font_size'=>'26',
                     'site_tagline'=>$tagline,
                     'site_tagline_font_size'=>'16',
                     'logo_resize_enabled'=>'1','logo_resize_width'=>'600','logo_resize_height'=>'200',
@@ -236,13 +243,16 @@ class SiteCustomizationTest extends TestCase
             foreach($storedPaths as $path)$this->assertFileDoesNotExist(public_path($path));
 
             $this->get('/')->assertOk()
-                ->assertSee('class="lt-brand-name"',false)->assertSee('Removal Test Store')
+                ->assertSee('class="lt-brand-name is-bengali"',false)->assertSee($bengaliName)
+                ->assertSee('lt-footer-brand-name is-bengali',false)
+                ->assertSee('--brand-name-font-size:26px',false)
                 ->assertSee($tagline)->assertSee('lang="bn"',false)
                 ->assertSee('--brand-tagline-font-size:16px',false)
                 ->assertDontSee('rel="icon"',false)
                 ->assertDontSee($storedPaths[0],false)->assertDontSee($storedPaths[1],false);
             $this->app['session']->flush();
-            $this->get('/admin/login')->assertOk()->assertSee('Removal Test Store')
+            $this->get('/admin/login')->assertOk()->assertSee($bengaliName)
+                ->assertSee('admin-login-name is-bengali',false)->assertSee('--brand-name-font-size:26px',false)
                 ->assertSee($tagline)->assertSee('lang="bn"',false)->assertDontSee('rel="icon"',false);
         } finally {
             DB::rollBack();

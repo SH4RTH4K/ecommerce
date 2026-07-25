@@ -630,6 +630,7 @@ class SuperAdminController extends Controller {
         $this->authCheck();
         $this->validate($request, [
             'site_name' => 'required|string|max:120',
+            'site_name_font_size' => 'nullable|integer|min:14|max:32',
             'site_tagline' => 'nullable|string|max:180',
             'site_tagline_font_size' => 'nullable|integer|min:8|max:24',
             'notice_text' => 'nullable|string|max:300',
@@ -729,7 +730,7 @@ class SuperAdminController extends Controller {
         $previousDevelopmentMode = DB::table('site_settings')
             ->where('setting_key', 'development_mode_enabled')->value('setting_value');
         $allowed = [
-            'site_name','site_tagline','site_tagline_font_size','notice_text','phone','support_phone','whatsapp_number',
+            'site_name','site_name_font_size','site_tagline','site_tagline_font_size','notice_text','phone','support_phone','whatsapp_number',
             'support_email','shop_address','business_hours','facebook_url','instagram_url',
             'youtube_url','linkedin_url','twitter_url','default_meta_description',
             'default_meta_title','meta_keywords','robots_directive','google_analytics_id',
@@ -802,6 +803,8 @@ class SuperAdminController extends Controller {
         Cache::forget('site-settings');
         $freshSettings=DB::table('site_settings')->pluck('setting_value','setting_key');
         $freshBrandName=$freshSettings->get('site_name') ?: config('app.name','Ecommerce');
+        $freshNameFontSize=(int)($freshSettings->get('site_name_font_size') ?: 23);
+        $freshNameFontSize=max(14,min(32,$freshNameFontSize));
         $freshTaglineFontSize=(int)($freshSettings->get('site_tagline_font_size') ?: 12);
         $freshTaglineFontSize=max(8,min(24,$freshTaglineFontSize));
         \View::share('siteSettings',$freshSettings);
@@ -810,6 +813,7 @@ class SuperAdminController extends Controller {
         \View::share('brandFavicon',$freshSettings->get('favicon') ?: null);
         \View::share('hasCustomBrandLogo',(bool)$freshSettings->get('site_logo'));
         \View::share('hasCustomBrandFavicon',(bool)$freshSettings->get('favicon'));
+        \View::share('brandNameFontSize',$freshNameFontSize);
         \View::share('brandTaglineFontSize',$freshTaglineFontSize);
         config(['app.name'=>$freshBrandName]);
         $newDevelopmentMode = (string)$request->input('development_mode_enabled') === '1';

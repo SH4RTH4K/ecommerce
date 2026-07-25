@@ -6,13 +6,14 @@
 @php
     $siteName = $brandName;
     $siteLogo = $brandLogo;
+    $siteNameIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $siteName);
     $headerTagline = (string)$siteSettings->get('site_tagline', '');
     $headerTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $headerTagline);
 @endphp
 <header class="lt-header">
     <div class="lt-container lt-header-main">
-        <div class="lt-brand-lockup" style="--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
-            <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($hasCustomBrandLogo && $siteLogo)<img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async">@else<span class="lt-brand-name">{{ $siteName }}</span>@endif</a>
+        <div class="lt-brand-lockup" style="--brand-name-font-size:{{ $brandNameFontSize }}px;--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
+            <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($hasCustomBrandLogo && $siteLogo)<img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async">@else<span class="lt-brand-name {{ $siteNameIsBengali ? 'is-bengali' : '' }}" @if($siteNameIsBengali) lang="bn" @endif>{{ $siteName }}</span>@endif</a>
             @if($headerTagline)<span class="lt-brand-tagline {{ $headerTaglineIsBengali ? 'is-bengali' : '' }}" @if($headerTaglineIsBengali) lang="bn" @endif>{{ $headerTagline }}</span>@endif
         </div>
         <form class="lt-search" action="{{ url('/search-product') }}" method="post" role="search">

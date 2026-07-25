@@ -30,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
             // Installation and migration commands must still run before the database exists.
         }
         $brandName = $siteSettings->get('site_name') ?: config('app.name', 'Ecommerce');
+        $brandNameFontSize = (int)($siteSettings->get('site_name_font_size') ?: 23);
+        $brandNameFontSize = max(14, min(32, $brandNameFontSize));
         $brandTaglineFontSize = (int)($siteSettings->get('site_tagline_font_size') ?: 12);
         $brandTaglineFontSize = max(8, min(24, $brandTaglineFontSize));
         config(['app.name' => $brandName]);
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         View::share('brandFavicon', $siteSettings->get('favicon') ?: null);
         View::share('hasCustomBrandLogo', (bool)$siteSettings->get('site_logo'));
         View::share('hasCustomBrandFavicon', (bool)$siteSettings->get('favicon'));
+        View::share('brandNameFontSize', $brandNameFontSize);
         View::share('brandTaglineFontSize', $brandTaglineFontSize);
         View::composer('partials.topbar', function ($view) {
             $view->with('topBar', app(\App\Services\TopBarService::class)->data());
