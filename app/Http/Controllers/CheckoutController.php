@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use App\Services\OrderNotifier;
 use App\Services\PaymentMethodAvailabilityService;
+use App\Support\PublicUpload;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class CheckoutController extends Controller
@@ -32,7 +32,7 @@ class CheckoutController extends Controller
 
     public function store(Request $request)
     {
-        $this->validate($request,['customer_name'=>'required|max:120','phone'=>'required|max:30','address'=>'required|max:1000','email'=>'nullable|email|max:150','payment_method_id'=>'required|integer|exists:payment_methods,id','emi_plan_id'=>'nullable|integer|exists:emi_plans,id','delivery_zone_id'=>'required|integer|exists:delivery_zones,id','payment_transaction_id'=>'nullable|string|max:150','payment_sender_number'=>'nullable|string|max:40','payment_proof'=>'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096']);
+        $this->validate($request,['customer_name'=>'required|max:120','phone'=>'required|max:30','address'=>'required|max:1000','email'=>'nullable|email|max:150','payment_method_id'=>'required|integer|exists:payment_methods,id','emi_plan_id'=>'nullable|integer|exists:emi_plans,id','delivery_zone_id'=>'required|integer|exists:delivery_zones,id','payment_transaction_id'=>'nullable|string|max:150','payment_sender_number'=>'nullable|string|max:40','payment_proof'=>'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:4096']);
         $items=$this->items($request);
         if($items->isEmpty()) return redirect()->route('cart.index');
         $subtotal=$items->sum('subtotal');
@@ -48,7 +48,13 @@ class CheckoutController extends Controller
         $paymentMethod=PaymentMethod::where('is_active',1)->where('show_at_checkout',1)->where('is_archived',0)->findOrFail($request->payment_method_id);$emiPlan=null;$emiMonthly=null;
         $orderTotal=$subtotal-$discount+$deliveryCharge;
         $availability=app(PaymentMethodAvailabilityService::class);if($error=$availability->error($paymentMethod,$orderTotal,$zone->id,session()->has('admin_id')))return redirect()->back()->withInput()->withErrors(['payment_method_id'=>$error]);$paymentCharge=$availability->charge($paymentMethod,$orderTotal);$orderTotal+=$paymentCharge;
-        if($paymentMethod->require_transaction_id&&!$request->filled('payment_transaction_id'))return redirect()->back()->withInput()->withErrors(['payment_transaction_id'=>'Enter the provider Transaction ID or payment reference.']);if($request->filled('payment_transaction_id')&&DB::table('payment_transactions')->where('provider_reference',trim($request->payment_transaction_id))->exists())return redirect()->back()->withInput()->withErrors(['payment_transaction_id'=>'This Transaction ID has already been submitted.']);if($paymentMethod->require_sender_number&&!$request->filled('payment_sender_number'))return redirect()->back()->withInput()->withErrors(['payment_sender_number'=>'Enter the number used to make the payment.']);if($paymentMethod->require_payment_screenshot&&!$request->hasFile('payment_proof'))return redirect()->back()->withInput()->withErrors(['payment_proof'=>'Upload the payment proof.']);$proofPath=$request->hasFile('payment_proof')?$request->file('payment_proof')->store('payment-proofs'):null;
+        if($paymentMethod->require_transaction_id&&!$request->filled('payment_transaction_id'))return redirect()->back()->withInput()->withErrors(['payment_transaction_id'=>'Enter the provider Transaction ID or payment reference.']);if($request->filled('payment_transaction_id')&&DB::table('payment_transactions')->where('provider_reference',trim($request->payment_transaction_id))->exists())return redirect()->back()->withInput()->withErrors(['payment_transaction_id'=>'This Transaction ID has already been submitted.']);if($paymentMethod->require_sender_number&&!$request->filled('payment_sender_number'))return redirect()->back()->withInput()->withErrors(['payment_sender_number'=>'Enter the number used to make the payment.']);if($paymentMethod->require_payment_screenshot&&!$request->hasFile('payment_proof'))return redirect()->back()->withInput()->withErrors(['payment_proof'=>'Upload the payment proof.']);
+        try {
+            $proofPath=$request->hasFile('payment_proof')?PublicUpload::store($request->file('payment_proof'),'asset/front-end/img/payment-proofs/','proof-',['jpg','jpeg','png','webp','pdf']):null;
+        } catch (Throwable $exception) {
+            report($exception);
+            return redirect()->back()->withInput()->withErrors(['payment_proof'=>'The payment proof could not be saved. Please try again.']);
+        }
         if($paymentMethod->supports_emi){if(!$request->emi_plan_id)return redirect()->back()->withInput()->withErrors(['emi_plan_id'=>'Select an EMI plan.']);$emiPlan=EmiPlan::where('id',$request->emi_plan_id)->where('payment_method_id',$paymentMethod->id)->where('is_active',1)->first();if(!$emiPlan)return redirect()->back()->withInput()->withErrors(['emi_plan_id'=>'Selected EMI plan is unavailable.']);if($orderTotal<$emiPlan->minimum_order)return redirect()->back()->withInput()->withErrors(['emi_plan_id'=>'This EMI plan requires a minimum total of ৳'.number_format($emiPlan->minimum_order).'.']);$emiMonthly=$emiPlan->monthlyAmount($orderTotal);}
 
         try {
@@ -82,15 +88,15 @@ class CheckoutController extends Controller
                 return $id;
             });
         } catch (RuntimeException $exception) {
-            if($proofPath) Storage::delete($proofPath);
+            if($proofPath) PublicUpload::remove($proofPath);
             return redirect()->route('cart.index')->with('error',$exception->getMessage());
         } catch (QueryException $exception) {
-            if($proofPath) Storage::delete($proofPath);
+            if($proofPath) PublicUpload::remove($proofPath);
             if($request->filled('payment_transaction_id')&&str_contains(strtolower($exception->getMessage()),'provider_reference'))return redirect()->back()->withInput()->withErrors(['payment_transaction_id'=>'This Transaction ID has already been submitted.']);
             report($exception);
             return redirect()->back()->withInput()->withErrors(['payment_method_id'=>'The payment could not be recorded. Please try again.']);
         } catch (Throwable $exception) {
-            if($proofPath) Storage::delete($proofPath);
+            if($proofPath) PublicUpload::remove($proofPath);
             report($exception);
             return redirect()->back()->withInput()->withErrors(['payment_method_id'=>'The order could not be completed. Please try again.']);
         }

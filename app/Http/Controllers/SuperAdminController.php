@@ -10,6 +10,7 @@ use DB;
 use App\Banner;
 use App\Category;
 use App\Product;
+use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -422,7 +423,14 @@ class SuperAdminController extends Controller {
         $data['short_description'] = $request->short_description;
         $data['key_features'] = json_encode($this->parseList($request->key_features));
         $data['specifications'] = json_encode($this->parseSpecifications($request->specifications));
-        $data['gallery_images'] = json_encode($this->storeProductImages((array)$request->file('gallery_images', [])));
+        try {
+            $data['gallery_images'] = json_encode($this->storeProductImages((array)$request->file('gallery_images', [])));
+        } catch (\Throwable $exception) {
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'gallery_images' => 'The product gallery image(s) could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
         $regularPrice = max(0,(float)$request->regular_price);
         $offerPrice = $request->filled('offer_price') ? max(0,(float)$request->offer_price) : null;
         $data['regular_price'] = $regularPrice;
@@ -437,7 +445,15 @@ class SuperAdminController extends Controller {
         $data['seo_title'] = $request->seo_title;
         $data['seo_description'] = $request->seo_description;
         $image = $request->file('product_image');
-        $data['product_image'] = $image ? $this->storeProductImage($image) : 'asset/front-end/img/home/pic 1.jpg';
+        try {
+            $data['product_image'] = $image ? $this->storeProductImage($image) : 'asset/front-end/img/home/pic 1.jpg';
+        } catch (\Throwable $exception) {
+            foreach ((array)json_decode($data['gallery_images'], true) as $storedGalleryImage) $this->deleteOwnedProductImage($storedGalleryImage);
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'product_image' => 'The product image could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
         $productId = DB::table('product')->insertGetId($data);
         $this->syncProductAttributes($productId, $request);
         $this->syncProductVariantsAndLots($productId, $request);
@@ -526,7 +542,14 @@ class SuperAdminController extends Controller {
         $keptGallery=array_values(array_diff($currentGallery,$removeGallery));
         $galleryUploads=(array)$request->file('gallery_images',[]);
         if(count($keptGallery)+count($galleryUploads)>10)return Redirect::back()->withInput()->withErrors(['gallery_images'=>'A product can have a maximum of 10 gallery images. Remove existing images or select fewer new files.']);
-        $newGallery=$this->storeProductImages($galleryUploads);
+        try {
+            $newGallery=$this->storeProductImages($galleryUploads);
+        } catch (\Throwable $exception) {
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'gallery_images' => 'The product gallery image(s) could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
         $data['gallery_images']=json_encode(array_values(array_unique(array_merge($keptGallery,$newGallery))));
         $regularPrice = max(0,(float)$request->regular_price);
         $offerPrice = $request->filled('offer_price') ? max(0,(float)$request->offer_price) : null;
@@ -542,7 +565,15 @@ class SuperAdminController extends Controller {
         $data['seo_description'] = $request->seo_description;
         $image = $request->file('product_image');
         if ($image) {
-            $data['product_image']=$this->storeProductImage($image);
+            try {
+                $data['product_image']=$this->storeProductImage($image);
+            } catch (\Throwable $exception) {
+                foreach ($newGallery as $storedGalleryImage) $this->deleteOwnedProductImage($storedGalleryImage);
+                report($exception);
+                return Redirect::back()->withInput()->withErrors([
+                    'product_image' => 'The product image could not be saved. Please try again or check upload storage permissions.',
+                ]);
+            }
         }
         DB::table('product')->where('id',$id)->update($data);
         if($image)$this->deleteOwnedProductImage($beforeProduct->product_image);
@@ -852,8 +883,16 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         $data = $this->validatedBannerData($request);
-        $desktopImage = $request->hasFile('desktop_image') ? $this->storeBannerImage($request->file('desktop_image'), 'desktop') : null;
-        $mobileImage = $request->hasFile('mobile_image') ? $this->storeBannerImage($request->file('mobile_image'), 'mobile') : null;
+        try {
+            $desktopImage = $request->hasFile('desktop_image') ? $this->storeBannerImage($request->file('desktop_image'), 'desktop') : null;
+            $mobileImage = $request->hasFile('mobile_image') ? $this->storeBannerImage($request->file('mobile_image'), 'mobile') : null;
+        } catch (\Throwable $exception) {
+            if (isset($desktopImage)) $this->removeBannerFile($desktopImage);
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'desktop_image' => 'The banner image could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
         $data['image_path'] = $desktopImage;
         $data['mobile_image'] = $mobileImage;
         try { Banner::create($data); }
@@ -868,8 +907,16 @@ class SuperAdminController extends Controller {
         $data = $this->validatedBannerData($request, $banner);
         $oldDesktop = $banner->image_path;
         $oldMobile = $banner->mobile_image;
-        $newDesktop = $request->hasFile('desktop_image') ? $this->storeBannerImage($request->file('desktop_image'), 'desktop') : null;
-        $newMobile = $request->hasFile('mobile_image') ? $this->storeBannerImage($request->file('mobile_image'), 'mobile') : null;
+        try {
+            $newDesktop = $request->hasFile('desktop_image') ? $this->storeBannerImage($request->file('desktop_image'), 'desktop') : null;
+            $newMobile = $request->hasFile('mobile_image') ? $this->storeBannerImage($request->file('mobile_image'), 'mobile') : null;
+        } catch (\Throwable $exception) {
+            if (isset($newDesktop)) $this->removeBannerFile($newDesktop);
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'desktop_image' => 'The banner image could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
         if ($newDesktop) $data['image_path'] = $newDesktop;
         if ($newMobile) $data['mobile_image'] = $newMobile;
         if ($request->has('remove_mobile_image')) $data['mobile_image'] = null;
@@ -999,6 +1046,9 @@ class SuperAdminController extends Controller {
 
     private function storeBrandAsset($file, $prefix, ?array $resizeOptions = null)
     {
+        if (!$file || !$file->isValid()) {
+            throw new \RuntimeException('The uploaded branding file is not valid.');
+        }
         $relativeDirectory = 'asset/front-end/img/branding/';
         $directory = public_path($relativeDirectory);
         if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
@@ -1007,7 +1057,7 @@ class SuperAdminController extends Controller {
         if (!is_writable($directory)) {
             throw new \RuntimeException('The branding upload directory is not writable.');
         }
-        $extension = strtolower((string)($file->extension() ?: $file->getClientOriginalExtension()));
+        $extension = strtolower((string)($file->getClientOriginalExtension() ?: $file->extension()));
         if (!in_array($extension, ['ico','png','jpg','jpeg','webp'], true)) {
             throw new \RuntimeException('The uploaded branding file has an unsupported extension.');
         }
@@ -1018,7 +1068,7 @@ class SuperAdminController extends Controller {
         $storedPath = $relativeDirectory.$name;
         $destination = public_path($storedPath);
         try {
-            if ($resizeOptions && $extension !== 'ico') {
+            if ($resizeOptions && $extension !== 'ico' && $this->canResizeBrandImage($extension)) {
                 $this->writeResizedBrandImage(
                     $file->getPathname(),
                     $destination,
@@ -1038,6 +1088,15 @@ class SuperAdminController extends Controller {
             throw new \RuntimeException('The uploaded branding file was not written completely.');
         }
         return $storedPath;
+    }
+
+    private function canResizeBrandImage($extension)
+    {
+        if (!extension_loaded('gd')) return false;
+        if (in_array($extension, ['jpg', 'jpeg'], true)) return function_exists('imagecreatefromjpeg') && function_exists('imagejpeg');
+        if ($extension === 'png') return function_exists('imagecreatefrompng') && function_exists('imagepng');
+        if ($extension === 'webp') return function_exists('imagecreatefromwebp') && function_exists('imagewebp');
+        return false;
     }
 
     private function writeResizedBrandImage($sourcePath, $destination, $extension, $targetWidth, $targetHeight)
@@ -1152,11 +1211,7 @@ class SuperAdminController extends Controller {
 
     private function storeBannerImage($file, $prefix)
     {
-        $path = 'asset/front-end/img/banners/';
-        if (!is_dir(public_path($path))) mkdir(public_path($path), 0755, true);
-        $name = $prefix.'-'.str_random(24).'.'.strtolower($file->getClientOriginalExtension());
-        $file->move(public_path($path), $name);
-        return $path.$name;
+        return PublicUpload::store($file, 'asset/front-end/img/banners/', $prefix.'-', ['jpg','jpeg','png','webp']);
     }
 
     private function isSafeBannerUrl($url)
@@ -1688,16 +1743,19 @@ class SuperAdminController extends Controller {
 
     private function storeProductImage($image)
     {
-        $path='asset/front-end/img/Product_image/';
-        if(!is_dir(public_path($path)))mkdir(public_path($path),0755,true);
-        $name=str_random(20).'.'.strtolower($image->getClientOriginalExtension());
-        $image->move(public_path($path),$name);
-        return $path.$name;
+        return PublicUpload::store($image, 'asset/front-end/img/Product_image/', 'product-', ['jpg','jpeg','png','webp']);
     }
 
     private function storeProductImages(array $images)
     {
-        $paths=[];foreach($images as $image)if($image)$paths[]=$this->storeProductImage($image);return $paths;
+        $paths=[];
+        try {
+            foreach($images as $image)if($image)$paths[]=$this->storeProductImage($image);
+        } catch (\Throwable $exception) {
+            foreach ($paths as $path) $this->deleteOwnedProductImage($path);
+            throw $exception;
+        }
+        return $paths;
     }
 
     private function deleteOwnedProductImage($path)
