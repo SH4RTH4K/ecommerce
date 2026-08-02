@@ -2,14 +2,16 @@
 
 # Ecommerce
 
-### A modern, white-label commerce platform for technology retailers
+A modern Laravel commerce platform for technology retailers.
 
 [![Laravel 13](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com/)
 [![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
-[![Tests](https://img.shields.io/badge/tests-42%20passing-16A34A)](#quality-and-testing)
+[![Tests](https://img.shields.io/badge/tests-passing-16A34A)](#quality-and-testing)
 [![License](https://img.shields.io/badge/license-MIT-0F4C75)](#license)
 
-Responsive storefront · Bangladesh-ready payments · Inventory and purchasing · Business-focused administration
+Built for storefront sales, inventory control, customer care, and day-to-day administration.
+
+[Overview](#overview) | [Screenshots](#screenshots) | [What you get](#what-you-get) | [Quick start](#quick-start) | [Configuration](#configuration) | [Production deployment](#production-deployment) | [Testing](#quality-and-testing)
 
 </div>
 
@@ -17,9 +19,22 @@ Responsive storefront · Bangladesh-ready payments · Inventory and purchasing �
 
 ## Overview
 
-Ecommerce is a Laravel-powered platform for computers, laptops, networking equipment, accessories, and other technology products. It combines a responsive customer storefront with checkout, customer self-service, inventory, purchasing, reporting, integrations, and a role-aware administration workspace.
+Ecommerce is a Laravel-powered platform for computers, laptops, networking equipment, accessories, and related technology products. It combines a customer storefront with checkout, customer self-service, inventory, purchasing, reporting, integrations, and a role-aware administration workspace.
 
 The name **Ecommerce** is only the default installation identity. Store name, logos, contact information, SEO metadata, social links, announcements, and other public branding can be changed from the administration panel without editing source code.
+
+## At a glance
+
+| Item | Details |
+| --- | --- |
+| Framework | Laravel 13 |
+| PHP | 8.3 or newer |
+| Database | MySQL or MariaDB |
+| Frontend | Blade, Bootstrap, jQuery, Vue 2, and Laravel Mix |
+| Focus | Storefront, inventory, sales, payments, and admin tools |
+
+> [!IMPORTANT]
+> Both the command-line runtime and the web server must use PHP 8.3 or newer. If Composer says your platform is unsupported, check `php -v` first and make sure the server is not still pointing to PHP 8.2 or older.
 
 ## Screenshots
 
@@ -33,17 +48,15 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 
 > Screenshots reflect the local demonstration database. Catalog sections populate automatically when published categories and products are available.
 
-## What is included
+## What you get
 
-| Area | Capabilities |
-| --- | --- |
-| Storefront | Responsive homepage, catalog browsing, search, specifications, comparison, wishlist, reviews, questions, stock alerts, and PC builder |
-| Sales | Cart, coupons, delivery zones, checkout, order tracking, invoices, Bangladesh payment methods, manual-payment review, and EMI plans |
-| Customer care | Customer accounts, returns, refunds, credit notes, warranty/service claims, support requests, and notifications |
-| Catalog | Categories, optional Company → Brand → Collection/Product Line hierarchy, multi-industry products, variants, lot/expiry traceability, attributes, pricing, imports, exports, and media |
-| Operations | Multi-location inventory, suppliers, purchasing, stock receipts, transfers, and low-stock workflows |
-| Growth | Banners, announcements, customer segments, campaigns, abandoned carts, analytics, SEO, and configurable branding |
-| Administration | Role-based permissions, activity history, sales reports, system monitoring, backups, API clients, and signed webhooks |
+- **Storefront** - Responsive homepage, catalog browsing, search, specifications, comparison, wishlist, reviews, questions, stock alerts, and PC builder.
+- **Sales** - Cart, coupons, delivery zones, checkout, order tracking, invoices, Bangladesh payment methods, manual-payment review, and EMI plans.
+- **Customer care** - Customer accounts, returns, refunds, credit notes, warranty and service claims, support requests, and notifications.
+- **Catalog** - Categories, optional Company -> Brand -> Collection/Product Line hierarchy, multi-industry products, variants, lot and expiry traceability, attributes, pricing, imports, exports, and media.
+- **Operations** - Multi-location inventory, suppliers, purchasing, stock receipts, transfers, and low-stock workflows.
+- **Growth** - Banners, announcements, customer segments, campaigns, abandoned carts, analytics, SEO, and configurable branding.
+- **Administration** - Role-based permissions, activity history, sales reports, system monitoring, backups, API clients, and signed webhooks.
 
 ## Technology
 
@@ -52,9 +65,6 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 - MySQL or MariaDB
 - Blade, Bootstrap, jQuery, Vue 2, and Laravel Mix
 - PHPUnit 12
-
-> [!IMPORTANT]
-> Both the command-line runtime and web server must use PHP 8.3 or newer. Verify with `php -v` before installing dependencies or running Artisan.
 
 ## Quick start
 
@@ -161,7 +171,7 @@ The `.env` file controls the application URL, database, mail, cache, sessions, q
 
 ### Branding and public information
 
-Open **Administration → Website Settings** (`/site-customization`) to configure:
+Open **Administration > Website Settings** (`/site-customization`) to configure:
 
 - Store name, tagline, logos, and favicon
 - Support email, phone, WhatsApp, address, and business hours
@@ -169,7 +179,7 @@ Open **Administration → Website Settings** (`/site-customization`) to configur
 - SEO metadata, robots directives, analytics, and social profiles
 - Homepage content, notices, and public contact actions
 
-Announcements and top-bar contact actions are managed separately at `/top-bar-management`. Homepage banners have their own management workspace so each public communication channel remains understandable.
+Announcements and top-bar contact actions are managed separately at `/top-bar-management`. Homepage banners have their own workspace so each public communication channel stays easy to manage.
 
 ### Payment methods
 
@@ -177,7 +187,9 @@ The payment workspace at `/payment-methods` supports Bangladesh-focused methods,
 
 ### Multi-industry catalog
 
-Products can be classified as general merchandise, technology, clothing, food, or medicine. **Company → Brand → Collection/Product Line** is optional, so unbranded goods are supported. Category attributes provide flexible filters, variants hold sellable choices such as size/color/pack size with separate SKU and stock, and food/medicine products can record batch, manufacture, and expiry details. Medicine fields provide operational traceability only; deployment still requires applicable legal and pharmacy review.
+Products can be classified as general merchandise, technology, clothing, food, or medicine. **Company -> Brand -> Collection/Product Line** is optional, so unbranded goods are supported. Category attributes provide flexible filters, variants hold sellable choices such as size, color, or pack size with separate SKU and stock, and food or medicine products can record batch, manufacture, and expiry details.
+
+Medicine fields provide operational traceability only; deployment still requires applicable legal and pharmacy review.
 
 Open `/catalog-hierarchy` to manage optional branded-product identity. The workspace supports individual editing and CSV transfer for every level. Existing legacy manufacturer records remain compatible and operate as brands.
 
@@ -199,7 +211,7 @@ For production, enable HTTPS, keep `APP_DEBUG=false`, use strong unique credenti
 > [!NOTE]
 > The `vendor/` directory is intentionally ignored by Git. After a fresh clone, or if `vendor/` has been removed locally, run `composer install` before using `vendor/bin/pest` or `php artisan test`.
 
-Run the complete test suite:
+Run the test suite:
 
 ```bash
 php artisan test
@@ -214,7 +226,12 @@ php artisan view:cache
 php artisan route:list --except-vendor
 ```
 
-The current verified baseline is **42 passing tests with 355 assertions** and no known Composer security advisories.
+## Troubleshooting
+
+- `Composer detected issues in your platform` usually means the CLI PHP version is too old. Check `php -v` and make sure PHP 8.3+ is active.
+- If `vendor/` is missing, run `composer install` before `vendor/bin/pest` or `php artisan test`.
+- If `php artisan serve` still fails after Composer runs successfully, confirm that the same PHP version is active for both the terminal and the web server.
+- If cPanel has no SSH or Terminal, use the GitHub Actions deploy workflow instead of trying to run Composer on the server.
 
 ## Project structure
 
@@ -235,8 +252,8 @@ tests/                   PHPUnit unit and feature tests
 ### Recommended cPanel layout
 
 ```text
-/home/CPANEL_USER/ecommerce/       Laravel application
-/home/CPANEL_USER/ecommerce/public Domain document root
+/home/CPANEL_USER/ecommerce/        Laravel application
+/home/CPANEL_USER/ecommerce/public  Domain document root
 ```
 
 1. Select PHP 8.3+ in **MultiPHP Manager** and enable Laravel/MySQL extensions.
