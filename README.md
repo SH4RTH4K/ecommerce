@@ -73,6 +73,9 @@ cd ecommerce
 composer install
 ```
 
+> [!NOTE]
+> The `vendor/` directory is intentionally ignored by Git. If you clone the project fresh or remove `vendor/` locally, run `composer install` before using `vendor/bin/pest` or `php artisan test`.
+
 Create the environment file:
 
 ```powershell
@@ -193,6 +196,9 @@ For production, enable HTTPS, keep `APP_DEBUG=false`, use strong unique credenti
 
 ## Quality and testing
 
+> [!NOTE]
+> The `vendor/` directory is intentionally ignored by Git. After a fresh clone, or if `vendor/` has been removed locally, run `composer install` before using `vendor/bin/pest` or `php artisan test`.
+
 Run the complete test suite:
 
 ```bash
@@ -263,7 +269,18 @@ Generate `APP_KEY` only for a new installation. Never replace an existing produc
 
 ### cPanel without Terminal
 
-Run `composer install --no-dev --optimize-autoloader` locally with PHP 8.3+, then upload the project including `vendor`. Import a prepared database using phpMyAdmin or ask the hosting provider to run migrations. Generate a new-installation key locally with `php artisan key:generate --show` and place it in the server `.env`.
+If your cPanel plan does not include SSH or Terminal access, you cannot run Composer on the server. The easiest no-terminal path is to let GitHub Actions run `composer install --no-dev --optimize-autoloader` and deploy the result over FTP.
+
+To use the automated deploy workflow in `.github/workflows/deploy-cpanel.yml`, add these GitHub repository secrets:
+
+- `CPANEL_FTP_SERVER`
+- `CPANEL_FTP_USERNAME`
+- `CPANEL_FTP_PASSWORD`
+- `CPANEL_FTP_SERVER_DIR`
+
+If your host requires FTPS or a nonstandard port, edit the workflow and change the `protocol` and `port` values. This keeps `vendor/` out of Git and removes the need to zip and upload it by hand after the first setup.
+
+If you prefer a manual fallback, run `composer install --no-dev --optimize-autoloader` locally with PHP 8.3+ - ideally in the same OS family as the host, such as WSL, Docker, or Linux - then upload the project including `vendor`. Import a prepared database using phpMyAdmin or ask the hosting provider to run migrations. Generate a new-installation key locally with `php artisan key:generate --show` and place it in the server `.env`.
 
 If the host cannot change the document root, keep the Laravel application outside `public_html`, copy only the contents of `public` into `public_html`, and update the two paths in `public_html/index.php`. Never expose `.env`, `vendor`, backups, or the complete application directory publicly.
 
@@ -279,6 +296,10 @@ If the host cannot change the document root, keep the Laravel application outsid
 - [ ] `storage` and `bootstrap/cache` permissions are correct
 - [ ] Tests, Composer audit, migrations, and cache builds pass before release
 - [ ] `php artisan serve` is not used as the production web server
+
+## Contributing
+
+If `vendor/` is missing after a fresh clone or cleanup, run `composer install` before `vendor/bin/pest` or `php artisan test`.
 
 ## License
 

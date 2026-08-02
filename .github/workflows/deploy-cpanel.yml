@@ -1,0 +1,71 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: cpanel-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+          extensions: >-
+            bcmath, ctype, curl, dom, fileinfo, filter, hash, mbstring,
+            mysqli, openssl, pdo, pdo_mysql, session, tokenizer, xml, xmlwriter, zip
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Verify FTP settings
+        env:
+          CPANEL_FTP_SERVER: ${{ secrets.CPANEL_FTP_SERVER }}
+          CPANEL_FTP_USERNAME: ${{ secrets.CPANEL_FTP_USERNAME }}
+          CPANEL_FTP_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          CPANEL_FTP_SERVER_DIR: ${{ secrets.CPANEL_FTP_SERVER_DIR }}
+        run: |
+          if [ -z "$CPANEL_FTP_SERVER" ] || [ -z "$CPANEL_FTP_USERNAME" ] || [ -z "$CPANEL_FTP_PASSWORD" ] || [ -z "$CPANEL_FTP_SERVER_DIR" ]; then
+            echo "Missing FTP secrets. Add CPANEL_FTP_SERVER, CPANEL_FTP_USERNAME, CPANEL_FTP_PASSWORD, and CPANEL_FTP_SERVER_DIR in GitHub."
+            exit 1
+          fi
+
+      - name: Deploy over FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./
+          server-dir: ${{ secrets.CPANEL_FTP_SERVER_DIR }}
+          timeout: 600000
+          log-level: standard
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/.runtime/**
+            **/.phpunit.*
+            **/node_modules/**
+            **/tests/**
+            **/docs/**
+            **/*.log
+            .env
+            .env.*
+            vendor.zip
