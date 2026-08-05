@@ -75,4 +75,58 @@ class MultiIndustryCatalogTest extends TestCase
             $this->get('/product-details/'.$medicine)->assertOk()->assertSee('Medicine Information')->assertSee('Prescription')->assertSee('Required');
         } finally { DB::rollBack(); }
     }
+
+    public function testProductDetailsPageShowsLegacyLongDescriptionColumn(): void
+    {
+        DB::beginTransaction();
+        try {
+            $suffix = str_random(8);
+            $category = DB::table('category')->insertGetId([
+                'category_name' => 'Legacy description '.$suffix,
+                'category_description' => 'Test',
+                'publication_status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $productId = DB::table('product')->insertGetId([
+                'product_id' => 'LEG-'.$suffix,
+                'sku' => 'LEG-'.$suffix,
+                'category_id' => $category,
+                'sub_category' => '',
+                'manufacturer_id' => '',
+                'product_series_id' => null,
+                'industry_profile' => 'general',
+                'product_model' => 'Legacy-'.$suffix,
+                'product_name' => 'Legacy Description Product '.$suffix,
+                'Product_description' => 'This long description should appear on the product details page.',
+                'short_description' => 'Short description for meta and summary.',
+                'key_features' => '[]',
+                'specifications' => '{"Manufacture Warranty":{"Warranty":"No Warranty"}}',
+                'gallery_images' => '[]',
+                'offer_price' => null,
+                'regular_price' => 1999,
+                'purchase_price' => 1000,
+                'product_condition' => 'In Stock',
+                'stock_quantity' => 5,
+                'stock_tracking' => 0,
+                'warranty' => null,
+                'product_image' => 'asset/front-end/img/home/pic 1.jpg',
+                'publication_status' => 1,
+                'top_product' => 0,
+                'is_new_arrival' => 0,
+                'seo_title' => 'Legacy description '.$suffix,
+                'seo_description' => 'Legacy summary '.$suffix,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->get('/product-details/'.$productId)
+                ->assertOk()
+                ->assertSee('This long description should appear on the product details page.')
+                ->assertSee('Legacy Description Product '.$suffix)
+                ->assertSee('Product Description')
+                ->assertSee('No Warranty');
+        } finally { DB::rollBack(); }
+    }
 }

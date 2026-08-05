@@ -12,7 +12,7 @@
 @endphp
 <header class="lt-header">
     <div class="lt-container lt-header-main">
-        <div class="lt-brand-lockup" style="--brand-name-font-size:{{ $brandNameFontSize }}px;--brand-tagline-font-size:{{ $brandTaglineFontSize }}px">
+        <div class="lt-brand-lockup" style="--brand-name-font-size:{{ $brandNameFontSize }}px;--brand-tagline-font-size:{{ $brandTaglineFontSize }}px;--brand-logo-width:{{ $brandLogoDisplayWidth }}px;--brand-logo-height:{{ $brandLogoDisplayHeight }}px;--brand-logo-mobile-width:{{ $brandLogoMobileWidth }}px;--brand-logo-mobile-height:{{ $brandLogoMobileHeight }}px">
             <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($hasCustomBrandLogo && $siteLogo)<img src="{{ asset($siteLogo) }}" alt="{{ $siteName }}" decoding="async">@else<span class="lt-brand-name {{ $siteNameIsBengali ? 'is-bengali' : '' }}" @if($siteNameIsBengali) lang="bn" @endif>{{ $siteName }}</span>@endif</a>
             @if($headerTagline)<span class="lt-brand-tagline {{ $headerTaglineIsBengali ? 'is-bengali' : '' }}" @if($headerTaglineIsBengali) lang="bn" @endif>{{ $headerTagline }}</span>@endif
         </div>

@@ -3,9 +3,13 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 class PaymentMethod extends Model
 {
+    use SoftDeletes;
+
     protected $guarded = [];
     protected $hidden = ['credentials'];
     protected $casts = [
@@ -20,6 +24,12 @@ class PaymentMethod extends Model
 
     protected static function booted()
     {
+        static::deleted(function () {
+            Cache::forget('active_payment_methods');
+        });
+        static::restored(function () {
+            Cache::forget('active_payment_methods');
+        });
         static::saving(function (PaymentMethod $method) {
             if ($method->method_type === 'cash_on_delivery') $method->integration_mode = 'offline';
             if ($method->method_type === 'bank_transfer') $method->integration_mode = 'manual';

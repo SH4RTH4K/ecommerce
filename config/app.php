@@ -16,6 +16,19 @@ return [
     'name' => env('APP_NAME', 'Ecommerce'),
 
     /*
+    |---------------------------------------------------------------------------
+    | Factory Default Application Name
+    |---------------------------------------------------------------------------
+    |
+    | The store branding layer can change the live application name at runtime.
+    | Keep this value stable so controllers and views can still restore the
+    | factory default branding after a reset.
+    |
+    */
+
+    'default_name' => env('APP_DEFAULT_NAME', env('APP_NAME', 'Ecommerce')),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

@@ -57,7 +57,7 @@ class DevelopmentModeMiddleware
                     'availability_text' => $settings->get('development_mode_availability_text'),
                     'show_admin_login' => $this->enabled($settings->get('development_mode_show_admin_login', '1')),
                     'login_button_text' => $settings->get('development_mode_login_button_text') ?: 'Admin Login',
-                    'site_name' => $settings->get('site_name') ?: config('app.name', 'Ecommerce'),
+                    'site_name' => $settings->get('site_name') ?: config('app.default_name', 'Ecommerce'),
                     'logo' => $settings->get('site_logo'),
                     'favicon' => $settings->get('favicon'),
                     'copyright' => $settings->get('copyright_text'),

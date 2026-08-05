@@ -14,8 +14,30 @@
     @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
     @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
     @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
+    @php
+        $catalogSourceAddress = catalog_import_source_address($siteSettings->get('catalog_import_source_address'));
+        $catalogSourceLabel = catalog_import_source_label($catalogSourceAddress);
+    @endphp
     <div style="margin-bottom:16px"><a class="btn btn-primary" href="{{ url('/add-product') }}"><i class="halflings-icon white plus"></i> Add Product</a></div>
     @include('admin.components.data-transfer',['resource'=>'products'])
+    @include('admin.components.startech-import', [
+        'title' => $catalogSourceLabel.' source import for products',
+        'description' => 'Refresh the current catalog source structure and live product data before you create, edit, or assign products. You can narrow the product crawl to one source category or paste one product link to import only that item.',
+        'stepLabels' => [
+            'categories' => 'Categories',
+            'subcategories' => 'Subcategories',
+            'brands' => 'Brands',
+            'series' => 'Series',
+            'products' => 'Products',
+        ],
+        'submitLabel' => 'Refresh catalog source structure and products',
+        'helpText' => 'Use this when the source changes and you want the hierarchy and product feed ready before product entry. A pasted product link imports only that product.',
+        'noteTitle' => 'Recommended before product work',
+        'noteBody' => 'Import the latest source hierarchy and product feed here, or paste a product page link to import only one item before you continue managing products against those categories, brands, and series.',
+        'productCategoryOptions' => $productImportCategories ?? [],
+        'allowSingleProductImport' => true,
+        'importState' => $startechProductImportState ?? null,
+    ])
 
     <div class="row-fluid sortable">		
         <div class="box span12">
@@ -36,6 +58,7 @@
                             <th style="width:32px"><input type="checkbox" id="select-all-products" aria-label="Select all products"></th>
                             <th>ID</th>
                             <th>Product Name</th>
+                            <th>Product Code</th>
                             <th>Barcode</th>
                             <th>Regular Price</th>
                             <th>Offer Price</th>
@@ -55,6 +78,7 @@
                             <td><input type="checkbox" class="bulk-row-checkbox" name="product_ids[]" value="{{ $vproduct->id }}" aria-label="Select {{ $vproduct->product_name }}"></td>
                             <td>{{$vproduct->id}}</td>
                             <td class="center">{{$vproduct->product_name}}</td>
+                            <td class="center">{{ $vproduct->product_code ?: $vproduct->sku ?: '—' }}</td>
                             <td class="center">{{$vproduct->barcode ?: '—'}}</td>
                             <td class="center">{{$vproduct->regular_price}}</td>
                             <td class="center">{{$vproduct->offer_price !== null && $vproduct->offer_price < $vproduct->regular_price ? $vproduct->offer_price : '—'}}</td>

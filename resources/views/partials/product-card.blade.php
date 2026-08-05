@@ -6,16 +6,18 @@
 @endphp
 <article class="lt-product-card">
     <a class="lt-product-image" href="{{ url('/product-details/'.$product->id) }}">
-        @if($discount)<span class="lt-discount">-{{ $discount }}%</span>@endif
+        @if($discount)
+            <span class="lt-discount">-{{ $discount }}%</span>
+        @endif
         <img src="{{ $imageUrl }}" alt="{{ $productName }}" loading="lazy" onerror="this.onerror=null;this.src='{{ asset('asset/front-end/img/home/pic 1.jpg') }}';">
     </a>
     <div class="lt-product-body">
         <p class="lt-model">{{ $product->product_model ?: $brandName }}</p>
         <h3><a href="{{ url('/product-details/'.$product->id) }}">{{ $productName }}</a></h3>
         <div class="lt-price">
-            <strong>৳{{ number_format($productPrice) }}</strong>
+            <strong>&#2547;{{ number_format($productPrice) }}</strong>
             @if($product->has_offer)
-                <del>৳{{ number_format($product->regular_price) }}</del>
+                <del>&#2547;{{ number_format($product->regular_price) }}</del>
             @endif
         </div>
         <div class="lt-card-actions">

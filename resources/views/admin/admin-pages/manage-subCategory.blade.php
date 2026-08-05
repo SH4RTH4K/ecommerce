@@ -14,7 +14,30 @@
     @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
     @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
     @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
+    @php
+        $catalogSourceAddress = catalog_import_source_address($siteSettings->get('catalog_import_source_address'));
+        $catalogSourceLabel = catalog_import_source_label($catalogSourceAddress);
+        $subcategoryImportOptions = isset($categories) ? $categories->pluck('category_name', 'category_id')->all() : [];
+    @endphp
     <div style="margin-bottom:16px"><a class="btn btn-primary" href="{{ url('/add-subCategory') }}"><i class="halflings-icon white plus"></i> Add Subcategory</a></div>
+    @include('admin.components.startech-import', [
+        'title' => $catalogSourceLabel.' source import for subcategories',
+        'description' => 'Fetch the live source hierarchy first, then choose which category should receive the imported subcategories.',
+        'sourceAddress' => $catalogSourceAddress,
+        'stepLabels' => [
+            'subcategories' => 'Subcategories',
+        ],
+        'selectedSteps' => ['subcategories'],
+        'submitLabel' => 'Import source subcategories',
+        'helpText' => 'Use Fetch only to preview the selected source first, then import the subcategory set you want to keep in sync.',
+        'noteTitle' => 'Subcategory import scope',
+        'noteBody' => 'Pick one category to limit the import, or leave All categories selected to import subcategories for every mapped category in the source.',
+        'scopeSelectLabel' => 'Category',
+        'scopeSelectName' => 'category_id',
+        'scopeSelectOptions' => $subcategoryImportOptions,
+        'scopeSelectPlaceholder' => 'All categories',
+        'scopeSelectHelp' => 'Choose a category to import only its source subcategories.',
+    ])
     @include('admin.components.data-transfer',['resource'=>'subcategories'])
 
     <div class="row-fluid sortable">		
@@ -41,6 +64,7 @@
                             <th>ID</th>
                             <th>Category Name</th>
                             <th>Sub Category Name</th>
+                            <th>Subcategory Code</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -57,6 +81,7 @@
                             <td>{{$vsubcategory->sub_category_id}}</td>
                             <td>{{$vsubcategory->category_name}}</td>
                             <td class="center">{{$vsubcategory->sub_category_name}}</td>
+                            <td class="center">{{ $vsubcategory->subcategory_code ?: '-' }}</td>
                             <td class="center">
                                 <?php
                                 if($vsubcategory->publication_status==1)

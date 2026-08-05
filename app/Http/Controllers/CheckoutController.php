@@ -60,7 +60,7 @@ class CheckoutController extends Controller
         try {
             $id=DB::transaction(function() use($request,$items,$subtotal,$zone,$deliveryCharge,$coupon,$discount,$paymentMethod,$emiPlan,$emiMonthly,$paymentCharge,$orderTotal,$proofPath) {
                 foreach($items as $item) {
-                    $stock=DB::table('product')->where('id',$item['product']->id)->lockForUpdate()->first();
+                    $stock=DB::table('product')->whereNull('deleted_at')->where('id',$item['product']->id)->lockForUpdate()->first();
                     if($stock->product_condition !== 'In Stock') throw new RuntimeException($stock->product_name.' is currently out of stock.');
                     if($stock->stock_tracking && $stock->stock_quantity < $item['quantity']) throw new RuntimeException($stock->product_name.' has only '.$stock->stock_quantity.' unit(s) available.');
                     if($stock->stock_tracking) {

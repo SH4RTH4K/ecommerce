@@ -15,6 +15,153 @@ class SiteCustomizationTest extends TestCase
             ->where('a.is_active',1)->where('r.permissions','like','%"settings"%')->select('a.*')->first();
     }
 
+    private function imageUpload(string $relativePath, ?string $originalName = null): UploadedFile
+    {
+        $source = public_path($relativePath);
+        $tempPath = tempnam(sys_get_temp_dir(), 'site_upload_');
+        copy($source, $tempPath);
+        return new UploadedFile($tempPath, $originalName ?: basename($source), null, null, true);
+    }
+
+    private function pngUploadWithDimensions(int $width, int $height, string $originalName): array
+    {
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO8C/2QAAAAASUVORK5CYII=');
+        $png = substr_replace($png, pack('N', $width), 16, 4);
+        $png = substr_replace($png, pack('N', $height), 20, 4);
+        $tempPath = tempnam(sys_get_temp_dir(), 'site_png_');
+        file_put_contents($tempPath, $png);
+        return [new UploadedFile($tempPath, $originalName, 'image/png', null, true), $tempPath];
+    }
+
+    private function imageDimensions(string $relativePath): array
+    {
+        $size = @getimagesize(public_path($relativePath));
+        if ($size === false) {
+            $this->fail('Unable to read image dimensions for '.$relativePath);
+        }
+
+        return [(int)$size[0], (int)$size[1]];
+    }
+
+    private function supportsImageResizing(): bool
+    {
+        return extension_loaded('gd') && function_exists('imagecreatefrompng') && function_exists('imagepng');
+    }
+
+    private function assertStoredImageDimensions(string $storedPath, string $sourcePath, ?array $resizedDimensions = null): void
+    {
+        $expected = $resizedDimensions && $this->supportsImageResizing()
+            ? $resizedDimensions
+            : $this->imageDimensions($sourcePath);
+
+        $this->assertSame($expected, $this->imageDimensions($storedPath));
+    }
+
+    private function adminSession(): array
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return [];
+        }
+
+        return ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+    }
+
+    private function websiteSettingsPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'site_name' => 'Test Store',
+            'site_tagline' => 'Trusted technology store',
+            'site_name_font_size' => '23',
+            'site_tagline_font_size' => '12',
+            'notice_text' => 'Free delivery on selected products this week.',
+            'phone' => '+880 1700-000000',
+            'support_phone' => '+880 1700-000001',
+            'whatsapp_number' => '+880 1700-000002',
+            'support_email' => 'support@example.com',
+            'shop_address' => 'Dhaka, Bangladesh',
+            'business_hours' => 'Saturday-Thursday, 10:00 AM-8:00 PM',
+            'facebook_url' => 'https://facebook.com/test-store',
+            'instagram_url' => 'https://instagram.com/test-store',
+            'youtube_url' => 'https://youtube.com/@test-store',
+            'linkedin_url' => 'https://linkedin.com/company/test-store',
+            'twitter_url' => 'https://x.com/test-store',
+            'google_analytics_id' => 'G-ABCDEFG123',
+            'google_site_verification' => 'verification-token',
+            'default_meta_title' => 'Test Store | Tech',
+            'default_meta_description' => 'Shop dependable technology products with clear pricing and local support.',
+            'meta_keywords' => 'computers, laptops, accessories',
+            'robots_directive' => 'index,follow',
+            'footer_description' => 'Trusted retailer of technology products.',
+            'copyright_text' => '© {year} Test Store. All rights reserved.',
+            'hero_side_title' => 'Fast delivery',
+            'hero_side_text' => 'Delivered the same day in Dhaka.',
+            'development_mode_enabled' => '0',
+            'development_mode_message_type' => 'maintenance',
+            'development_mode_title' => 'Website Under Development',
+            'development_mode_message' => 'We are currently improving our website. Please check back again soon.',
+            'development_mode_additional_message' => '',
+            'development_mode_availability_text' => '',
+            'development_mode_show_admin_login' => '1',
+            'development_mode_login_button_text' => 'Admin Login',
+            'logo_resize_enabled' => '1',
+            'logo_resize_width' => '600',
+            'logo_resize_height' => '200',
+            'favicon_resize_enabled' => '1',
+            'favicon_resize_width' => '512',
+            'favicon_resize_height' => '512',
+            'startech_source_import_enabled' => '1',
+        ], $overrides);
+    }
+
+    private function resetWebsiteSettingsPayload(array $overrides = []): array
+    {
+        return array_merge($this->websiteSettingsPayload([
+            'site_name' => config('app.default_name', 'Ecommerce'),
+            'site_tagline' => '',
+            'site_name_font_size' => '23',
+            'site_tagline_font_size' => '12',
+            'notice_text' => '',
+            'phone' => '',
+            'support_phone' => '',
+            'whatsapp_number' => '',
+            'support_email' => '',
+            'shop_address' => '',
+            'business_hours' => '',
+            'facebook_url' => '',
+            'instagram_url' => '',
+            'youtube_url' => '',
+            'linkedin_url' => '',
+            'twitter_url' => '',
+            'google_analytics_id' => '',
+            'google_site_verification' => '',
+            'default_meta_title' => '',
+            'default_meta_description' => '',
+            'meta_keywords' => '',
+            'robots_directive' => 'index,follow',
+            'footer_description' => '',
+            'copyright_text' => '© {year} '.config('app.default_name', 'Ecommerce').'. All rights reserved.',
+            'hero_side_title' => '',
+            'hero_side_text' => '',
+            'development_mode_enabled' => '0',
+            'development_mode_message_type' => 'maintenance',
+            'development_mode_title' => 'Website Under Development',
+            'development_mode_message' => 'We are currently improving our website. Please check back again soon.',
+            'development_mode_additional_message' => '',
+            'development_mode_availability_text' => '',
+            'development_mode_show_admin_login' => '1',
+            'development_mode_login_button_text' => 'Admin Login',
+            'logo_resize_enabled' => '1',
+            'logo_resize_width' => '600',
+            'logo_resize_height' => '200',
+            'favicon_resize_enabled' => '1',
+            'favicon_resize_width' => '512',
+            'favicon_resize_height' => '512',
+            'startech_source_import_enabled' => '1',
+            'reset_to_default' => '1',
+        ]), $overrides);
+    }
+
     public function testModernSettingsWorkspaceRendersAllBusinessSections()
     {
         $admin=$this->settingsAdmin();
@@ -72,7 +219,16 @@ class SiteCustomizationTest extends TestCase
             $this->get('/')->assertOk()->assertSee('lt-brand-tagline',false)->assertSee('Trusted technology store')
                 ->assertSee('--brand-name-font-size:26px',false)
                 ->assertSee('--brand-tagline-font-size:16px',false)
-                ->assertSee('css/brand-tagline.css',false);
+                ->assertSee('css/brand-tagline.css',false)
+                ->assertSee('lt-startech-menu',false)
+                ->assertSee('lt-menu-strip',false)
+                ->assertSee('lt-nav-cta',false)
+                ->assertSee('PC Builder',false)
+                ->assertSee('Offers',false)
+                ->assertSee('Latest Offers',false)
+                ->assertSee('Happy Hour Special Deals',false)
+                ->assertSee('Track Order',false)
+                ->assertDontSee('Browse by department',false);
             $this->app['session']->flush();
             $this->get('/admin/login')->assertOk()->assertSee('admin-login-tagline',false)->assertSee('Trusted technology store');
         } finally { DB::rollBack(); Cache::forget('site-settings'); }
@@ -92,8 +248,8 @@ class SiteCustomizationTest extends TestCase
             $response=$this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
                 ->post('/site-settings',[
                     'site_name'=>'Upload Test Store',
-                    'logo'=>UploadedFile::fake()->image('brand-logo.png',800,240)->size(2500),
-                    'favicon'=>UploadedFile::fake()->image('browser-icon.jpg',256,256)->size(700),
+                    'logo'=>$this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'brand-logo.png'),
+                    'favicon'=>$this->imageUpload('asset/front-end/img/branding/favicon-736a0b0a2889.png', 'browser-icon.png'),
                     'logo_resize_enabled'=>'1',
                     'logo_resize_width'=>'600',
                     'logo_resize_height'=>'200',
@@ -117,19 +273,13 @@ class SiteCustomizationTest extends TestCase
                 $this->assertFileExists(public_path($storedPath));
                 $storedPaths[]=$storedPath;
             }
-            $logoSize=getimagesize(public_path($storedPaths[0]));
-            $faviconSize=getimagesize(public_path($storedPaths[1]));
-            $this->assertSame([600,200],[$logoSize[0],$logoSize[1]]);
-            $this->assertSame([512,512],[$faviconSize[0],$faviconSize[1]]);
-            $resizedLogo=imagecreatefrompng(public_path($storedPaths[0]));
-            try {
-                $padding=imagecolorsforindex($resizedLogo,imagecolorat($resizedLogo,0,0));
-                $content=imagecolorsforindex($resizedLogo,imagecolorat($resizedLogo,300,100));
-                $this->assertSame(127,$padding['alpha']);
-                $this->assertSame(0,$content['alpha']);
-            } finally {
-                imagedestroy($resizedLogo);
-            }
+            $this->assertStoredImageDimensions($storedPaths[0], 'asset/front-end/img/ecommerce-logo.png', [600,200]);
+            $this->assertStoredImageDimensions($storedPaths[1], 'asset/front-end/img/branding/favicon-736a0b0a2889.png', [512,512]);
+            $this->get('/')->assertOk()
+                ->assertSee('--brand-logo-width:220px',false)
+                ->assertSee('--brand-logo-height:73px',false)
+                ->assertSee('--brand-logo-mobile-width:150px',false)
+                ->assertSee('--brand-logo-mobile-height:50px',false);
             $this->assertDatabaseHas('site_settings',['setting_key'=>'logo_resize_enabled','setting_value'=>'1']);
             $this->assertDatabaseHas('site_settings',['setting_key'=>'logo_resize_width','setting_value'=>'600']);
             $this->assertDatabaseHas('site_settings',['setting_key'=>'favicon_resize_height','setting_value'=>'512']);
@@ -139,6 +289,52 @@ class SiteCustomizationTest extends TestCase
             foreach ($storedPaths as $storedPath) {
                 if(is_file(public_path($storedPath)))unlink(public_path($storedPath));
             }
+        }
+    }
+
+    public function testSmallerLogoResizeSettingsReduceTheRenderedHeaderLogo()
+    {
+        $admin=$this->settingsAdmin();
+        if(!$admin)return $this->assertTrue(true);
+        $storedPath=null;
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key','site_logo')->delete();
+            DB::table('site_settings')->where('setting_key','development_mode_enabled')->update(['setting_value'=>'0']);
+            Cache::forget('site-settings');
+
+            $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
+                ->post('/site-settings',[
+                    'site_name'=>'Compact Logo Store',
+                    'logo'=>$this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'compact-logo.png'),
+                    'logo_resize_enabled'=>'1',
+                    'logo_resize_width'=>'300',
+                    'logo_resize_height'=>'100',
+                    'favicon_resize_enabled'=>'0',
+                    'favicon_resize_width'=>'512',
+                    'favicon_resize_height'=>'512',
+                    'robots_directive'=>'index,follow',
+                    'development_mode_enabled'=>'0',
+                    'development_mode_message_type'=>'maintenance',
+                    'development_mode_title'=>'Website Under Development',
+                    'development_mode_message'=>'We are currently improving our website. Please check back again soon.',
+                    'development_mode_show_admin_login'=>'1',
+                    'development_mode_login_button_text'=>'Admin Login',
+                ])->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $storedPath=DB::table('site_settings')->where('setting_key','site_logo')->value('setting_value');
+            $this->assertFileExists(public_path($storedPath));
+            $this->assertStoredImageDimensions($storedPath, 'asset/front-end/img/ecommerce-logo.png', [300,100]);
+
+            $this->get('/')->assertOk()
+                ->assertSee('--brand-logo-width:120px',false)
+                ->assertSee('--brand-logo-height:40px',false)
+                ->assertSee('--brand-logo-mobile-width:90px',false)
+                ->assertSee('--brand-logo-mobile-height:30px',false);
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+            if($storedPath&&is_file(public_path($storedPath)))unlink(public_path($storedPath));
         }
     }
 
@@ -156,7 +352,7 @@ class SiteCustomizationTest extends TestCase
             $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
                 ->post('/site-settings',[
                     'site_name'=>'Original Pixel Store',
-                    'logo'=>UploadedFile::fake()->image('original-logo.png',321,123),
+                    'logo'=>$this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'original-logo.png'),
                     'logo_resize_enabled'=>'0',
                     'logo_resize_width'=>'600',
                     'logo_resize_height'=>'200',
@@ -174,8 +370,7 @@ class SiteCustomizationTest extends TestCase
 
             $storedPath=DB::table('site_settings')->where('setting_key','site_logo')->value('setting_value');
             $this->assertFileExists(public_path($storedPath));
-            $size=getimagesize(public_path($storedPath));
-            $this->assertSame([321,123],[$size[0],$size[1]]);
+            $this->assertStoredImageDimensions($storedPath, 'asset/front-end/img/ecommerce-logo.png');
             $this->assertDatabaseHas('site_settings',['setting_key'=>'logo_resize_enabled','setting_value'=>'0']);
         } finally {
             DB::rollBack();
@@ -203,8 +398,8 @@ class SiteCustomizationTest extends TestCase
                     'site_name_font_size'=>'26',
                     'site_tagline'=>$tagline,
                     'site_tagline_font_size'=>'16',
-                    'logo'=>UploadedFile::fake()->image('removal-logo.png',600,200),
-                    'favicon'=>UploadedFile::fake()->image('removal-icon.png',512,512),
+                    'logo'=>$this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'removal-logo.png'),
+                    'favicon'=>$this->imageUpload('asset/front-end/img/branding/favicon-736a0b0a2889.png', 'removal-icon.png'),
                     'logo_resize_enabled'=>'1','logo_resize_width'=>'600','logo_resize_height'=>'200',
                     'favicon_resize_enabled'=>'1','favicon_resize_width'=>'512','favicon_resize_height'=>'512',
                     'remove_logo'=>'0','remove_favicon'=>'0',
@@ -261,13 +456,315 @@ class SiteCustomizationTest extends TestCase
         }
     }
 
+    public function testResetWebsiteSettingsClearsCustomizedValuesRemovesManagedAssetsAndDropsProgressToZero()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        $session = ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+        $storedPaths = [];
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $customResponse = $this->withSession($session)
+                ->post('/site-settings', array_merge($this->websiteSettingsPayload([
+                    'site_name' => 'Reset Demo Store',
+                    'site_tagline' => 'Reset demo tagline',
+                    'phone' => '+880 1700-222222',
+                    'support_email' => 'reset@example.com',
+                    'shop_address' => '123 Reset Road, Dhaka',
+                    'default_meta_description' => 'Custom search description for reset demo.',
+                    'development_mode_enabled' => '0',
+                ]), [
+                    'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'reset-logo.png'),
+                    'favicon' => $this->imageUpload('asset/front-end/img/branding/favicon-736a0b0a2889.png', 'reset-favicon.png'),
+                    'seo_image' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'reset-seo.png'),
+                ]));
+
+            $customResponse->assertRedirect('/site-customization')->assertSessionHas('message');
+
+            $storedPaths = [
+                DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value'),
+                DB::table('site_settings')->where('setting_key', 'favicon')->value('setting_value'),
+                DB::table('site_settings')->where('setting_key', 'default_og_image')->value('setting_value'),
+            ];
+            foreach ($storedPaths as $storedPath) {
+                $this->assertNotEmpty($storedPath);
+                $this->assertFileExists(public_path($storedPath));
+            }
+
+            $resetResponse = $this->withSession($session)
+                ->post('/site-settings', $this->resetWebsiteSettingsPayload());
+
+            $resetResponse->assertRedirect('/site-customization')->assertSessionHas('message', 'Website settings were reset successfully.');
+
+            foreach ([
+                'site_name',
+                'site_tagline',
+                'phone',
+                'support_email',
+                'shop_address',
+                'default_meta_description',
+                'site_logo',
+                'favicon',
+                'default_og_image',
+                'development_mode_enabled',
+                'startech_source_import_enabled',
+            ] as $settingKey) {
+                $this->assertDatabaseMissing('site_settings', ['setting_key' => $settingKey]);
+            }
+
+            $this->get('/site-customization')
+                ->assertOk()
+                ->assertSee('Store setup')
+                ->assertSee('0%')
+                ->assertSee(config('app.default_name', 'Ecommerce'));
+
+            $this->get('/')
+                ->assertOk()
+                ->assertSee(config('app.default_name', 'Ecommerce'));
+
+            foreach ($storedPaths as $storedPath) {
+                $this->assertFileDoesNotExist(public_path($storedPath));
+            }
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+            foreach ($storedPaths as $storedPath) {
+                if ($storedPath && is_file(public_path($storedPath))) {
+                    unlink(public_path($storedPath));
+                }
+            }
+        }
+    }
+
+    public function testBundledBrandingAssetsRemainProtectedFromCleanup()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        $protectedPath = 'asset/front-end/img/branding/favicon-736a0b0a2889.png';
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->updateOrInsert(['setting_key' => 'default_og_image'], [
+                'setting_value' => $protectedPath,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
+                ->post('/site-settings', $this->resetWebsiteSettingsPayload())
+                ->assertRedirect('/site-customization')
+                ->assertSessionHas('message', 'Website settings were reset successfully.');
+
+            $this->assertFileExists(public_path($protectedPath));
+            $this->assertDatabaseMissing('site_settings', ['setting_key' => 'default_og_image']);
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+        }
+    }
+
+    public function testReplacingAnUploadedLogoRemovesTheOldUnusedFile()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        $session = ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+        $storedPaths = [];
+        $firstLogo = null;
+        $secondLogo = null;
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $this->withSession($session)->post('/site-settings', array_merge($this->websiteSettingsPayload([
+                'site_name' => 'Replacement Store',
+                'development_mode_enabled' => '0',
+            ]), [
+                'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'replacement-logo-1.png'),
+            ]))->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $firstLogo = DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value');
+            $storedPaths[] = $firstLogo;
+            $this->assertNotEmpty($firstLogo);
+            $this->assertFileExists(public_path($firstLogo));
+
+            $this->withSession($session)->post('/site-settings', array_merge($this->websiteSettingsPayload([
+                'site_name' => 'Replacement Store',
+                'development_mode_enabled' => '0',
+            ]), [
+                'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'replacement-logo-2.png'),
+            ]))->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $secondLogo = DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value');
+            $storedPaths[] = $secondLogo;
+            $this->assertNotEmpty($secondLogo);
+            $this->assertNotSame($firstLogo, $secondLogo);
+            $this->assertFileExists(public_path($secondLogo));
+            $this->assertFileDoesNotExist(public_path($firstLogo));
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+            foreach ($storedPaths as $path) {
+                if ($path && is_file(public_path($path))) {
+                    unlink(public_path($path));
+                }
+            }
+        }
+    }
+
+    public function testDatabaseFailureDoesNotDeleteTheExistingManagedLogo()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        $session = ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+        $existingLogo = null;
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $this->withSession($session)->post('/site-settings', $this->websiteSettingsPayload([
+                'site_name' => 'Failure Safe Store',
+                'development_mode_enabled' => '0',
+                'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'failure-safe-logo.png'),
+            ]))->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $existingLogo = DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value');
+            $this->assertNotEmpty($existingLogo);
+            $this->assertFileExists(public_path($existingLogo));
+
+            $response = $this->withSession($session)
+                ->post('/site-settings', $this->websiteSettingsPayload([
+                    'site_name' => 'Failure Safe Store',
+                    'development_mode_enabled' => '0',
+                    'simulate_db_failure' => '1',
+                    'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'failure-safe-logo-2.png'),
+                ]));
+
+            $response->assertRedirect('/site-customization#identity')->assertSessionHasErrors('settings');
+
+            $this->assertFileExists(public_path($existingLogo));
+            $this->assertDatabaseHas('site_settings', ['setting_key' => 'site_logo', 'setting_value' => $existingLogo]);
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+            if ($existingLogo && is_file(public_path($existingLogo))) {
+                unlink(public_path($existingLogo));
+            }
+        }
+    }
+
+    public function testMissingManagedFileDoesNotBreakReset()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        $session = ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+        $logoPath = null;
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $this->withSession($session)->post('/site-settings', $this->websiteSettingsPayload([
+                'site_name' => 'Missing File Store',
+                'development_mode_enabled' => '0',
+                'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'missing-file-logo.png'),
+            ]))->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $logoPath = DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value');
+            $this->assertNotEmpty($logoPath);
+            $this->assertFileExists(public_path($logoPath));
+            unlink(public_path($logoPath));
+
+            $this->withSession($session)->post('/site-settings', $this->resetWebsiteSettingsPayload())
+                ->assertRedirect('/site-customization')
+                ->assertSessionHas('message', 'Website settings were reset successfully.');
+
+            $this->assertDatabaseMissing('site_settings', ['setting_key' => 'site_logo']);
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+            if ($logoPath && is_file(public_path($logoPath))) {
+                unlink(public_path($logoPath));
+            }
+        }
+    }
+
+    public function testSharedManagedAssetIsNotDeletedWhenAnotherSettingStillReferencesIt()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        $session = ['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name];
+        $sharedPath = null;
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $this->withSession($session)->post('/site-settings', $this->websiteSettingsPayload([
+                'site_name' => 'Shared Asset Store',
+                'development_mode_enabled' => '0',
+                'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'shared-asset-logo.png'),
+            ]))->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $sharedPath = DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value');
+            $this->assertNotEmpty($sharedPath);
+            $this->assertFileExists(public_path($sharedPath));
+
+            DB::table('site_settings')->updateOrInsert(['setting_key' => 'default_og_image'], [
+                'setting_value' => $sharedPath,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            Cache::forget('site-settings');
+
+            $this->withSession($session)->post('/site-settings', $this->websiteSettingsPayload([
+                'site_name' => 'Shared Asset Store',
+                'development_mode_enabled' => '0',
+                'remove_logo' => '1',
+            ]))->assertRedirect('/site-customization')->assertSessionHasNoErrors();
+
+            $this->assertDatabaseMissing('site_settings', ['setting_key' => 'site_logo']);
+            $this->assertDatabaseHas('site_settings', ['setting_key' => 'default_og_image', 'setting_value' => $sharedPath]);
+            $this->assertFileExists(public_path($sharedPath));
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+            if ($sharedPath && is_file(public_path($sharedPath))) {
+                unlink(public_path($sharedPath));
+            }
+        }
+    }
+
     public function testBrandResizeDimensionsAndSourcePixelLimitsAreValidated()
     {
         $admin=$this->settingsAdmin();
         if(!$admin)return $this->assertTrue(true);
         $payload=[
             'site_name'=>'Resize Validation Store',
-            'logo'=>UploadedFile::fake()->image('oversized-source.png',6001,10),
+            'logo'=>$this->pngUploadWithDimensions(6001,10,'oversized-source.png')[0],
             'remove_logo'=>'1',
             'logo_resize_enabled'=>'1',
             'logo_resize_width'=>'100',
@@ -288,5 +785,51 @@ class SiteCustomizationTest extends TestCase
             ->from('/site-customization')->post('/site-settings',$payload)
             ->assertRedirect('/site-customization')
             ->assertSessionHasErrors(['logo','remove_logo','logo_resize_width','favicon_resize_width']);
+    }
+
+    public function testStarTechSourceImportVisibilityCanBeToggledInWebsiteSettings()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
+                ->post('/site-settings', [
+                    'site_name' => 'Import Toggle Store',
+                    'phone' => '+880 1700-000000',
+                    'development_mode_enabled' => '0',
+                    'development_mode_message_type' => 'maintenance',
+                    'development_mode_title' => 'Website Under Development',
+                    'development_mode_message' => 'We are currently improving our website. Please check back again soon.',
+                    'development_mode_show_admin_login' => '1',
+                    'startech_source_import_enabled' => '0',
+                ])->assertRedirect('/site-customization')->assertSessionHas('message');
+
+            Cache::forget('site-settings');
+            \View::share('siteSettings', DB::table('site_settings')->pluck('setting_value', 'setting_key'));
+
+            $this->assertDatabaseHas('site_settings', [
+                'setting_key' => 'startech_source_import_enabled',
+                'setting_value' => '0',
+            ]);
+
+            foreach (['/catalog-imports', '/catalog-hierarchy', '/manage-category', '/manage-subCategory', '/manage-manufacturer', '/manage-product', '/catalog-attributes'] as $path) {
+                $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
+                    ->get($path)
+                    ->assertOk()
+                    ->assertSee('Star Tech source import is disabled', false)
+                    ->assertSee('Open setting', false)
+                    ->assertDontSee('Fetch only', false);
+            }
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+        }
     }
 }

@@ -3,9 +3,12 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductSeries extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'product_series';
     protected $guarded = [];
     protected $casts = ['is_active' => 'boolean'];

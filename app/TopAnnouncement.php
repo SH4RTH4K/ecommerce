@@ -3,11 +3,26 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 
 class TopAnnouncement extends Model
 {
+    use SoftDeletes;
+
     protected $guarded = [];
     protected $casts = ['is_active'=>'boolean','show_type_badge'=>'boolean','open_in_new_tab'=>'boolean','show_on_desktop'=>'boolean','show_on_mobile'=>'boolean','starts_at'=>'datetime','expires_at'=>'datetime'];
+
+    protected static function booted()
+    {
+        static::deleted(function () {
+            Cache::forget('site-top-bar');
+        });
+
+        static::restored(function () {
+            Cache::forget('site-top-bar');
+        });
+    }
 
     public function scopeCurrentlyVisible($query)
     {

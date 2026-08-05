@@ -3,10 +3,13 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 
 class Category extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'category';
     protected $primaryKey = 'category_id';
     protected $guarded = [];
@@ -17,6 +20,7 @@ class Category extends Model
 
         static::saved(function () { Cache::forget('mega-menu-tree'); Cache::forget('xml-sitemap'); });
         static::deleted(function () { Cache::forget('mega-menu-tree'); Cache::forget('xml-sitemap'); });
+        static::restored(function () { Cache::forget('mega-menu-tree'); Cache::forget('xml-sitemap'); });
     }
 
     public function subCategories()

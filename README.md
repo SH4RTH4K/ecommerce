@@ -193,6 +193,35 @@ Medicine fields provide operational traceability only; deployment still requires
 
 Open `/catalog-hierarchy` to manage optional branded-product identity. The workspace supports individual editing and CSV transfer for every level. Existing legacy manufacturer records remain compatible and operate as brands.
 
+### Star Tech catalog import
+
+Use the built-in Artisan command to import the Star Tech-style catalog hierarchy in order:
+
+1. Categories
+2. Subcategories
+3. Brands
+4. Series
+
+Run the full import:
+
+```powershell
+php artisan startech:import-catalog
+```
+
+Run only selected steps in the order you want:
+
+```powershell
+php artisan startech:import-catalog categories subcategories
+```
+
+Preview the changes without writing to the database:
+
+```powershell
+php artisan startech:import-catalog --dry-run
+```
+
+You can also run the same import from **Administration > Companies, Brands & Product Lines** (`/catalog-hierarchy`) by using the Star Tech import panel at the top of the page.
+
 ## Security baseline
 
 - CSRF protection for state-changing web actions

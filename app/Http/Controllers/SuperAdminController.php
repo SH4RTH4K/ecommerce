@@ -9,9 +9,21 @@ use Session;
 use DB;
 use App\Banner;
 use App\Category;
+use App\Company;
+use App\InventoryLocation;
+use App\Manufacturer;
 use App\Product;
+use App\ProductCodeConfiguration;
+use App\ProductSeries;
+use App\SubCategory;
+use App\Services\MediaLifecycleService;
+use App\Services\RecycleBinService;
+use App\Services\StarTechCatalogImporter;
+use App\Services\ProductCodeGenerator;
+use App\Services\SafeMediaDeletionService;
 use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class SuperAdminController extends Controller {
@@ -29,8 +41,8 @@ class SuperAdminController extends Controller {
             'pending_orders' => DB::table('orders')->whereIn('status',['pending','confirmed','processing'])->count(),
             'today_orders' => DB::table('orders')->whereDate('created_at',date('Y-m-d'))->count(),
             'revenue' => DB::table('orders')->where('status','<>','cancelled')->sum('total'),
-            'products' => DB::table('product')->where('publication_status',1)->count(),
-            'low_stock' => DB::table('product')->where('stock_tracking',1)->where('stock_quantity','<=',5)->count(),
+            'products' => DB::table('product')->whereNull('deleted_at')->where('publication_status',1)->count(),
+            'low_stock' => DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->where('stock_quantity','<=',5)->count(),
             'support' => DB::table('support_requests')->whereIn('status',['new','in_progress'])->count(),
             'feedback' => DB::table('product_reviews')->where('is_approved',0)->count() + DB::table('product_questions')->where('is_approved',0)->count(),
             'customers' => DB::table('users')->count(),
@@ -45,7 +57,7 @@ class SuperAdminController extends Controller {
         ];
         $yesterdayVisits=DB::table('page_visits')->whereDate('visited_at',$yesterday)->count();$stats['visit_change']=$yesterdayVisits?round((($stats['today_visits']-$yesterdayVisits)/$yesterdayVisits)*100,1):($stats['today_visits']?100:0);$stats['conversion_rate']=$stats['unique_visitors']?round(($stats['orders']/$stats['unique_visitors'])*100,2):0;
         $recentOrders = DB::table('orders')->latest()->limit(8)->get();
-        $lowStockProducts = DB::table('product')->where('stock_tracking',1)->where('stock_quantity','<=',5)->orderBy('stock_quantity')->limit(8)->get();
+        $lowStockProducts = DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->where('stock_quantity','<=',5)->orderBy('stock_quantity')->limit(8)->get();
         $topProducts = DB::table('order_items')->select('product_name',DB::raw('SUM(quantity) as units'),DB::raw('SUM(subtotal) as sales'))->groupBy('product_name')->orderByDesc('units')->limit(5)->get();
         $trafficTrend=DB::table('page_visits')->where('visited_at','>=',now()->subDays(6)->startOfDay())->selectRaw('DATE(visited_at) visit_date, COUNT(*) visits, COUNT(DISTINCT visitor_session_id) visitors')->groupBy(DB::raw('DATE(visited_at)'))->orderBy('visit_date')->get();
         $popularPages=DB::table('page_visits')->select('path',DB::raw('COUNT(*) visits'),DB::raw('COUNT(DISTINCT visitor_session_id) visitors'))->groupBy('path')->orderByDesc('visits')->limit(8)->get();
@@ -73,8 +85,24 @@ class SuperAdminController extends Controller {
     }
 
     public function saveCategory(Request $request) {
+        $categoryName = trim((string) $request->category_name);
+        $requestedCode = trim((string) $request->input('category_code', ''));
+        $categoryCode = $requestedCode !== ''
+            ? normalize_business_code($requestedCode, 30)
+            : $this->nextUniqueBusinessCode('category', 'category_code', $categoryName, 30, 'CAT', null, 'category_id');
+
+        if ($categoryCode === null) {
+            return Redirect::back()->withInput()->withErrors(['category_code' => 'Please enter a valid category code.']);
+        }
+
+        if ($requestedCode !== '' && DB::table('category')->where('category_code', $categoryCode)->exists()) {
+            return Redirect::back()->withInput()->withErrors(['category_code' => 'That category code already exists.']);
+        }
+
         $data = array();
-        $data['category_name'] = $request->category_name;
+        $data['category_name'] = $categoryName;
+        $data['category_code'] = $categoryCode;
+        $data['slug'] = $this->nextUniqueSlug('category', 'slug', $categoryName, null, 'category_id');
         $data['category_description'] = $request->category_description;
         $allowedIcons = ['fa-folder-open','fa-music','fa-signal','fa-link','fa-archive','fa-refresh','fa-picture-o','fa-desktop','fa-dot-circle-o','fa-gamepad','fa-hdd-o','fa-headphones','fa-video-camera','fa-keyboard-o','fa-laptop','fa-mouse-pointer','fa-print','fa-clock-o','fa-volume-up','fa-bolt','fa-camera','fa-mobile','fa-cogs','fa-shield','fa-globe','fa-sitemap','fa-shopping-cart'];
         $data['icon_class'] = in_array($request->icon_class, $allowedIcons, true) ? $request->icon_class : 'fa-folder-open';
@@ -89,8 +117,7 @@ class SuperAdminController extends Controller {
 
     public function manageCategory() {
         $this->authCheck();
-        $all_category = DB::table('category')
-                ->get();
+        $all_category = Category::orderBy('display_order')->orderBy('category_name')->get();
         $manage_category = view('admin.admin-pages.manage-category')
                 ->with('all_category_info', $all_category);
         return view('admin.admin-master')
@@ -115,9 +142,7 @@ class SuperAdminController extends Controller {
 
     public function editCategory($category_id) {
         $this->authCheck();
-        $category_info = DB::table('category')
-                ->where('category_id', $category_id)
-                ->first();
+        $category_info = Category::find($category_id);
         $edit_category = view('admin.admin-pages.edit-category')
                 ->with('category_info', $category_info);
         return view('admin.admin-master')
@@ -126,25 +151,57 @@ class SuperAdminController extends Controller {
 
     public function updateCategory(Request $request) {
         $this->authCheck();
+        $categoryId = (int) $request->category_id;
+        $existing = Category::find($categoryId);
+        if (! $existing) {
+            return Redirect::back()->with('exception', 'Category not found.');
+        }
+
+        $categoryName = trim((string) $request->category_name);
+        $requestedCode = trim((string) $request->input('category_code', (string) ($existing->category_code ?? '')));
+        if ($requestedCode !== '') {
+            $categoryCode = normalize_business_code($requestedCode, 30);
+            if ($categoryCode === null) {
+                return Redirect::back()->withInput()->withErrors(['category_code' => 'Please enter a valid category code.']);
+            }
+
+            if (DB::table('category')->where('category_code', $categoryCode)->where('category_id', '<>', $categoryId)->exists()) {
+                return Redirect::back()->withInput()->withErrors(['category_code' => 'That category code already exists.']);
+            }
+        } elseif (trim((string) ($existing->category_code ?? '')) !== '') {
+            $categoryCode = (string) $existing->category_code;
+        } else {
+            $categoryCode = $this->nextUniqueBusinessCode('category', 'category_code', $categoryName, 30, 'CAT', $categoryId, 'category_id');
+        }
+
         $data = array();
-        $data['category_name'] = $request->category_name;
+        $data['category_name'] = $categoryName;
+        $data['category_code'] = $categoryCode;
+        $data['slug'] = $this->nextUniqueSlug('category', 'slug', $categoryName, $categoryId, 'category_id');
         $data['category_description'] = $request->category_description;
         $allowedIcons = ['fa-folder-open','fa-music','fa-signal','fa-link','fa-archive','fa-refresh','fa-picture-o','fa-desktop','fa-dot-circle-o','fa-gamepad','fa-hdd-o','fa-headphones','fa-video-camera','fa-keyboard-o','fa-laptop','fa-mouse-pointer','fa-print','fa-clock-o','fa-volume-up','fa-bolt','fa-camera','fa-mobile','fa-cogs','fa-shield','fa-globe','fa-sitemap','fa-shopping-cart'];
         $data['icon_class'] = in_array($request->icon_class, $allowedIcons, true) ? $request->icon_class : 'fa-folder-open';
         $data['is_featured'] = $request->has('is_featured') ? 1 : 0;
         $data['display_order'] = max(0, (int) $request->display_order);
-        $category_id = $request->category_id;
-        DB::table('category')
-                ->where('category_id', $category_id)
-                ->update($data);
+        $existing->update($data);
         Cache::forget('mega-menu-tree');
         return Redirect::to('/manage-category');
     }
 
     public function deleteCategory($category_id) {
-        DB::table('category')
-                ->where('category_id', $category_id)
-                ->delete();
+        if (! Category::find($category_id)) {
+            return Redirect::to('/manage-category')->with('exception', 'Category not found.');
+        }
+
+        if (Product::where('category_id', $category_id)->exists()) {
+            return Redirect::to('/manage-category')->with('exception', 'This category is used by active products and cannot be deleted yet.');
+        }
+
+        if (SubCategory::where('category_id', $category_id)->exists()) {
+            return Redirect::to('/manage-category')->with('exception', 'Move or delete this category\'s subcategories before deleting the category.');
+        }
+
+        app(RecycleBinService::class)->softDelete('category', (int) $category_id, session('admin_id'), 'Category moved to Recycle Bin.');
         Cache::forget('mega-menu-tree');
         return Redirect::to('/manage-category');
     }
@@ -154,11 +211,19 @@ class SuperAdminController extends Controller {
         $this->validate($request,['category_ids'=>'required|array|min:1','category_ids.*'=>'required|integer|distinct|exists:category,category_id']);
         $ids=array_values(array_unique(array_map('intval',$request->category_ids)));
         $used=array_unique(array_merge(
-            DB::table('product')->whereIn('category_id',$ids)->pluck('category_id')->map(function($id){return (int)$id;})->all(),
-            DB::table('sub_category')->whereIn('category_id',$ids)->pluck('category_id')->map(function($id){return (int)$id;})->all()
+            Product::whereIn('category_id',$ids)->pluck('category_id')->map(function($id){return (int)$id;})->all(),
+            SubCategory::whereIn('category_id',$ids)->pluck('category_id')->map(function($id){return (int)$id;})->all()
         ));
         $deletable=array_values(array_diff($ids,$used));
-        $deleted=$deletable?DB::transaction(function()use($deletable){return DB::table('category')->whereIn('category_id',$deletable)->delete();}):0;
+        $deleted=0;
+        if ($deletable) {
+            DB::transaction(function () use ($deletable, &$deleted) {
+                foreach ($deletable as $id) {
+                    app(RecycleBinService::class)->softDelete('category', (int) $id, session('admin_id'), 'Category moved to Recycle Bin.');
+                    $deleted++;
+                }
+            });
+        }
         Cache::forget('mega-menu-tree');Cache::forget('xml-sitemap');
         return $this->bulkDeleteResult('/manage-category',$deleted,count($used),'categor','products or subcategories');
     }
@@ -167,6 +232,7 @@ class SuperAdminController extends Controller {
     public function addSubCategory() {
         $this->authCheck();
         $all_category=DB::table('category')
+                ->whereNull('deleted_at')
                 ->whereIn('category_id',[14,15])
                 ->get();
         $addSubCategory = view('admin.admin-pages.add-subCategory')
@@ -176,9 +242,26 @@ class SuperAdminController extends Controller {
     }
 
     public function saveSubCategory(Request $request) {
+        $subCategoryName = trim((string) $request->subCategory_name);
+        $categoryId = (int) $request->category_id;
+        $requestedCode = trim((string) $request->input('sub_category_code', ''));
+        $subCategoryCode = $requestedCode !== ''
+            ? normalize_business_code($requestedCode, 30)
+            : $this->nextUniqueBusinessCode('sub_category', 'subcategory_code', $subCategoryName, 30, 'SUB', null, 'sub_category_id');
+
+        if ($subCategoryCode === null) {
+            return Redirect::back()->withInput()->withErrors(['sub_category_code' => 'Please enter a valid subcategory code.']);
+        }
+
+        if ($requestedCode !== '' && DB::table('sub_category')->where('subcategory_code', $subCategoryCode)->exists()) {
+            return Redirect::back()->withInput()->withErrors(['sub_category_code' => 'That subcategory code already exists.']);
+        }
+
         $data = array();
-        $data['sub_category_name'] = $request->subCategory_name;
-        $data['category_id'] = $request->category_id;
+        $data['sub_category_name'] = $subCategoryName;
+        $data['subcategory_code'] = $subCategoryCode;
+        $data['slug'] = $this->nextUniqueSlug('sub_category', 'slug', $subCategoryName, null, 'sub_category_id', ['category_id' => $categoryId]);
+        $data['category_id'] = $categoryId;
         $data['publication_status'] = $request->publication_status;
         DB::table('sub_category')
                 ->insert($data);
@@ -188,15 +271,20 @@ class SuperAdminController extends Controller {
 
     public function manageSubCategory() {
         $this->authCheck();
-        $category_details = DB::table('sub_category')
-                ->join('category', 'sub_category.category_id', '=', 'category.category_id')
-                ->select('sub_category.*', 'category.category_name')
+        $category_details = DB::table('sub_category as s')
+                ->join('category as c', 's.category_id', '=', 'c.category_id')
+                ->whereNull('s.deleted_at')
+                ->whereNull('c.deleted_at')
+                ->select('s.*', 'c.category_name')
+                ->get();
+        $categories = Category::orderBy('category_name')
                 ->get();
 //        $all_subCategory = DB::table('sub_category')
 //                ->get();
         $manage_subCategory = view('admin.admin-pages.manage-subCategory')
 //                ->with('all_subCategory', $all_subCategory)
-                ->with('category_details',$category_details);
+                ->with('category_details',$category_details)
+                ->with('categories', $categories);
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_subCategory);
     }
@@ -216,9 +304,15 @@ class SuperAdminController extends Controller {
     }
 
     public function deleteSubCategory($sub_category_id) {
-        DB::table('sub_category')
-                ->where('sub_category_id', $sub_category_id)
-                ->delete();
+        if (! SubCategory::find($sub_category_id)) {
+            return Redirect::to('/manage-subCategory')->with('exception', 'Subcategory not found.');
+        }
+
+        if (Product::where('sub_category', $sub_category_id)->exists()) {
+            return Redirect::to('/manage-subCategory')->with('exception', 'This subcategory is used by active products and cannot be deleted yet.');
+        }
+
+        app(RecycleBinService::class)->softDelete('sub_category', (int) $sub_category_id, session('admin_id'), 'Subcategory moved to Recycle Bin.');
         return Redirect::to('/manage-subCategory');
     }
 
@@ -230,14 +324,17 @@ class SuperAdminController extends Controller {
         ]);
 
         $ids = array_values(array_unique(array_map('intval', $request->sub_category_ids)));
-        $usedIds = DB::table('product')->whereIn('sub_category', $ids)
+        $usedIds = Product::whereIn('sub_category', $ids)
             ->pluck('sub_category')->map(function ($id) { return (int) $id; })->unique()->all();
         $deletableIds = array_values(array_diff($ids, $usedIds));
         $deleted = 0;
 
         if ($deletableIds) {
-            $deleted = DB::transaction(function () use ($deletableIds) {
-                return DB::table('sub_category')->whereIn('sub_category_id', $deletableIds)->delete();
+            DB::transaction(function () use ($deletableIds, &$deleted) {
+                foreach ($deletableIds as $id) {
+                    app(RecycleBinService::class)->softDelete('sub_category', (int) $id, session('admin_id'), 'Subcategory moved to Recycle Bin.');
+                    $deleted++;
+                }
             });
         }
 
@@ -249,11 +346,10 @@ class SuperAdminController extends Controller {
     public function editSubCategory($sub_category_id) {
         $this->authCheck();
         $all_category=DB::table('category')
+                ->whereNull('deleted_at')
                 ->whereIn('category_id',[14,15])
                 ->get();
-        $subCategory_info = DB::table('sub_category')
-                ->where('sub_category_id', $sub_category_id)
-                ->first();
+        $subCategory_info = SubCategory::find($sub_category_id);
         $edit_subCategory = view('admin.admin-pages.edit-subCategory')
                 ->with('subCategory_info', $subCategory_info)
                 ->with('all_category',$all_category);
@@ -263,13 +359,36 @@ class SuperAdminController extends Controller {
 
     public function updateSubCategory(Request $request) {
         $this->authCheck();
+        $subCategoryId = (int) $request->subCategory_id;
+        $existing = SubCategory::find($subCategoryId);
+        if (! $existing) {
+            return Redirect::back()->with('exception', 'Subcategory not found.');
+        }
+
+        $subCategoryName = trim((string) $request->subCategory_name);
+        $categoryId = (int) $request->category_id;
+        $requestedCode = trim((string) $request->input('sub_category_code', (string) ($existing->subcategory_code ?? '')));
+        if ($requestedCode !== '') {
+            $subCategoryCode = normalize_business_code($requestedCode, 30);
+            if ($subCategoryCode === null) {
+                return Redirect::back()->withInput()->withErrors(['sub_category_code' => 'Please enter a valid subcategory code.']);
+            }
+
+            if (DB::table('sub_category')->where('subcategory_code', $subCategoryCode)->where('sub_category_id', '<>', $subCategoryId)->exists()) {
+                return Redirect::back()->withInput()->withErrors(['sub_category_code' => 'That subcategory code already exists.']);
+            }
+        } elseif (trim((string) ($existing->subcategory_code ?? '')) !== '') {
+            $subCategoryCode = (string) $existing->subcategory_code;
+        } else {
+            $subCategoryCode = $this->nextUniqueBusinessCode('sub_category', 'subcategory_code', $subCategoryName, 30, 'SUB', $subCategoryId, 'sub_category_id');
+        }
+
         $data = array();
-        $data['sub_category_name'] = $request->subCategory_name;
-        $data['category_id'] = $request->category_id;
-        $sub_category_id=$request->subCategory_id;
-        DB::table('sub_category')
-                ->where('sub_category_id', $sub_category_id)
-                ->update($data);
+        $data['sub_category_name'] = $subCategoryName;
+        $data['subcategory_code'] = $subCategoryCode;
+        $data['slug'] = $this->nextUniqueSlug('sub_category', 'slug', $subCategoryName, $subCategoryId, 'sub_category_id', ['category_id' => $categoryId]);
+        $data['category_id'] = $categoryId;
+        $existing->update($data);
         return Redirect::to('/manage-subCategory');
     }
     
@@ -279,14 +398,34 @@ class SuperAdminController extends Controller {
 
     public function addManufacturer() {
         $this->authCheck();
+        $companies = DB::table('companies')->whereNull('deleted_at')->orderBy('name')->get();
         $add_manufacturer = view('admin.admin-pages.add-manufacturer');
         return view('admin.admin-master')
-                        ->with('admin_main_content', $add_manufacturer);
+                        ->with('admin_main_content', $add_manufacturer)
+                        ->with('companies', $companies);
     }
 
     public function saveManufacturer(Request $request) {
+        $manufacturerName = trim((string) $request->manufacturer_name);
+        $companyId = $request->filled('company_id') ? (int) $request->company_id : null;
+        $requestedCode = trim((string) $request->input('brand_code', ''));
+        $brandCode = $requestedCode !== ''
+            ? normalize_business_code($requestedCode, 30)
+            : $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $manufacturerName, 30, 'BR', null, 'manufacturer_id');
+
+        if ($brandCode === null) {
+            return Redirect::back()->withInput()->withErrors(['brand_code' => 'Please enter a valid brand code.']);
+        }
+
+        if ($requestedCode !== '' && DB::table('manufacturer')->where('brand_code', $brandCode)->exists()) {
+            return Redirect::back()->withInput()->withErrors(['brand_code' => 'That brand code already exists.']);
+        }
+
         $data = array();
-        $data['manufacturer_name'] = $request->manufacturer_name;
+        $data['company_id'] = $companyId;
+        $data['manufacturer_name'] = $manufacturerName;
+        $data['brand_code'] = $brandCode;
+        $data['slug'] = $this->nextUniqueSlug('manufacturer', 'slug', $manufacturerName, null, 'manufacturer_id', ['company_id' => $companyId]);
         $data['publication_status'] = $request->publication_status;
         DB::table('manufacturer')
                 ->insert($data);
@@ -296,10 +435,17 @@ class SuperAdminController extends Controller {
 
     public function manageManufacturer() {
         $this->authCheck();
-        $all_manufacturer = DB::table('manufacturer')
+        $all_manufacturer = DB::table('manufacturer as m')
+                ->leftJoin('companies as c', 'c.id', '=', 'm.company_id')
+                ->whereNull('m.deleted_at')
+                ->whereNull('c.deleted_at')
+                ->select('m.*', 'c.name as company_name')
+                ->get();
+        $manufacturerOptions = Manufacturer::orderBy('manufacturer_name')
                 ->get();
         $manage_manufacturer = view('admin.admin-pages.manage-manufacturer')
-                ->with('all_manufacturer', $all_manufacturer);
+                ->with('all_manufacturer', $all_manufacturer)
+                ->with('manufacturerOptions', $manufacturerOptions);
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_manufacturer);
     }
@@ -319,9 +465,19 @@ class SuperAdminController extends Controller {
     }
 
     public function deleteManufacturer($manufacturer_id) {
-        DB::table('manufacturer')
-                ->where('manufacturer_id', $manufacturer_id)
-                ->delete();
+        if (! Manufacturer::find($manufacturer_id)) {
+            return Redirect::to('/manage-manufacturer')->with('exception', 'Brand not found.');
+        }
+
+        if (Product::where('manufacturer_id', $manufacturer_id)->exists()) {
+            return Redirect::to('/manage-manufacturer')->with('exception', 'This brand is used by active products and cannot be deleted yet.');
+        }
+
+        if (ProductSeries::where('manufacturer_id', $manufacturer_id)->exists()) {
+            return Redirect::to('/manage-manufacturer')->with('exception', 'Move or delete this brand\'s product series before deleting the brand.');
+        }
+
+        app(RecycleBinService::class)->softDelete('manufacturer', (int) $manufacturer_id, session('admin_id'), 'Brand moved to Recycle Bin.');
         return Redirect::to('/manage-manufacturer');
     }
 
@@ -329,31 +485,64 @@ class SuperAdminController extends Controller {
     {
         $this->validate($request,['manufacturer_ids'=>'required|array|min:1','manufacturer_ids.*'=>'required|integer|distinct|exists:manufacturer,manufacturer_id']);
         $ids=array_values(array_unique(array_map('intval',$request->manufacturer_ids)));
-        $used=DB::table('product')->whereIn('manufacturer_id',$ids)->pluck('manufacturer_id')->map(function($id){return (int)$id;})->unique()->all();
+        $used=Product::whereIn('manufacturer_id',$ids)->pluck('manufacturer_id')->map(function($id){return (int)$id;})->unique()->all();
+        $used=array_values(array_unique(array_merge($used, ProductSeries::whereIn('manufacturer_id',$ids)->pluck('manufacturer_id')->map(function($id){return (int)$id;})->unique()->all())));
         $deletable=array_values(array_diff($ids,$used));
-        $deleted=$deletable?DB::transaction(function()use($deletable){return DB::table('manufacturer')->whereIn('manufacturer_id',$deletable)->delete();}):0;
+        $deleted=0;
+        if ($deletable) {
+            DB::transaction(function () use ($deletable, &$deleted) {
+                foreach ($deletable as $id) {
+                    app(RecycleBinService::class)->softDelete('manufacturer', (int) $id, session('admin_id'), 'Brand moved to Recycle Bin.');
+                    $deleted++;
+                }
+            });
+        }
         return $this->bulkDeleteResult('/manage-manufacturer',$deleted,count($used),'manufacturer','products');
     }
 
     public function editManufacturer($manufacturer_id) {
         $this->authCheck();
-        $manufacturer_info = DB::table('manufacturer')
-                ->where('manufacturer_id', $manufacturer_id)
-                ->first();
+        $manufacturer_info = Manufacturer::find($manufacturer_id);
+        $companies = DB::table('companies')->orderBy('name')->get();
         $edit_manufacturer = view('admin.admin-pages.edit-manufacturer')
-                ->with('manufacturer_info', $manufacturer_info);
+                ->with('manufacturer_info', $manufacturer_info)
+                ->with('companies', $companies);
         return view('admin.admin-master')
                         ->with('admin_main_content', $edit_manufacturer);
     }
 
     public function updateManufacturer(Request $request) {
         $this->authCheck();
+        $manufacturerId = (int) $request->manufacturer_id;
+        $existing = Manufacturer::find($manufacturerId);
+        if (! $existing) {
+            return Redirect::back()->with('exception', 'Brand not found.');
+        }
+
+        $manufacturerName = trim((string) $request->manufacturer_name);
+        $companyId = $request->filled('company_id') ? (int) $request->company_id : ($existing->company_id ?? null);
+        $requestedCode = trim((string) $request->input('brand_code', (string) ($existing->brand_code ?? '')));
+        if ($requestedCode !== '') {
+            $brandCode = normalize_business_code($requestedCode, 30);
+            if ($brandCode === null) {
+                return Redirect::back()->withInput()->withErrors(['brand_code' => 'Please enter a valid brand code.']);
+            }
+
+            if (DB::table('manufacturer')->where('brand_code', $brandCode)->where('manufacturer_id', '<>', $manufacturerId)->exists()) {
+                return Redirect::back()->withInput()->withErrors(['brand_code' => 'That brand code already exists.']);
+            }
+        } elseif (trim((string) ($existing->brand_code ?? '')) !== '') {
+            $brandCode = (string) $existing->brand_code;
+        } else {
+            $brandCode = $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $manufacturerName, 30, 'BR', $manufacturerId, 'manufacturer_id');
+        }
+
         $data = array();
-        $data['manufacturer_name'] = $request->manufacturer_name;
-        $manufacturer_id = $request->manufacturer_id;
-        DB::table('manufacturer')
-                ->where('manufacturer_id', $manufacturer_id)
-                ->update($data);
+        $data['company_id'] = $companyId;
+        $data['manufacturer_name'] = $manufacturerName;
+        $data['brand_code'] = $brandCode;
+        $data['slug'] = $this->nextUniqueSlug('manufacturer', 'slug', $manufacturerName, $manufacturerId, 'manufacturer_id', ['company_id' => $companyId]);
+        $existing->update($data);
         return Redirect::to('/manage-manufacturer');
     }
 
@@ -363,31 +552,49 @@ class SuperAdminController extends Controller {
     public function addProduct() {
         $this->authCheck();
         $category = DB::table('category')
+                ->whereNull('deleted_at')
                 ->orderBy("category_name","asc")
                 ->get();
         $sub_category = DB::table('sub_category')
+                ->whereNull('deleted_at')
                 ->get();
-        $manufacturer = DB::table('manufacturer as m')->leftJoin('companies as c','c.id','=','m.company_id')->select('m.*','c.name as company_name')->orderBy('c.name')->orderBy('m.manufacturer_name')->get();
-        $productSeries = DB::table('product_series')->where('is_active',1)->orderBy('name')->get();
+        $companies = DB::table('companies')->orderBy('name')->get();
+        $branches = DB::table('inventory_locations')->where('type', 'branch')->where('is_active', 1)->orderBy('name')->get();
+        $manufacturer = DB::table('manufacturer as m')->leftJoin('companies as c','c.id','=','m.company_id')->whereNull('m.deleted_at')->whereNull('c.deleted_at')->select('m.*','c.name as company_name')->orderBy('c.name')->orderBy('m.manufacturer_name')->get();
+        $productSeries = DB::table('product_series as s')->leftJoin('manufacturer as m','m.manufacturer_id','=','s.manufacturer_id')->whereNull('s.deleted_at')->whereNull('m.deleted_at')->select('s.*','m.company_id','m.manufacturer_name as brand_name')->where('s.is_active',1)->orderBy('s.name')->get();
         $catalogAttributes = DB::table('catalog_attributes')->orderBy('category_id')->orderBy('display_order')->get()->groupBy('category_id');
         $specificationTemplates = config('catalog_specification_templates', []);
+        $productCodeConfiguration = app(ProductCodeGenerator::class)->resolveConfiguration([]);
+        $productCodeSnapshot = $productCodeConfiguration ? app(ProductCodeGenerator::class)->snapshot($productCodeConfiguration) : null;
         $home = view('admin.admin-pages.add-product')
                 ->with('category', $category)
+                ->with('companies', $companies)
+                ->with('branches', $branches)
                 ->with('manufacturer', $manufacturer)
                 ->with('productSeries', $productSeries)
                 ->with('sub_category', $sub_category)
                 ->with('catalogAttributes', $catalogAttributes)
-                ->with('specificationTemplates', $specificationTemplates);
+                ->with('specificationTemplates', $specificationTemplates)
+                ->with('productCodeConfiguration', $productCodeConfiguration)
+                ->with('productCodeSnapshot', $productCodeSnapshot);
         return view('admin.admin-master')
                         ->with('admin_main_content', $home);
     }
 
-    public function saveProduct(Request $request) {
+    public function saveProduct(Request $request, ProductCodeGenerator $generator) {
         $this->authCheck();
-        $request->merge(['barcode' => $request->filled('barcode') ? trim($request->barcode) : null]);
+        $request->merge([
+            'barcode' => $request->filled('barcode') ? trim($request->barcode) : null,
+            'product_code' => $request->filled('product_code') ? trim($request->product_code) : trim((string) $request->input('sku', '')),
+        ]);
         $this->validate($request, [
             'barcode' => 'nullable|string|max:64|unique:product,barcode',
+            'company_id' => 'nullable|integer|exists:companies,id',
+            'branch_id' => 'nullable|integer|exists:inventory_locations,id',
+            'product_code' => 'nullable|string|max:100',
+            'product_id' => 'nullable|string|max:255',
             'category_id' => 'required|integer|exists:category,category_id',
+            'sub_category_id' => 'nullable|integer|exists:sub_category,sub_category_id',
             'regular_price' => 'required|numeric|min:0',
             'offer_price' => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
@@ -407,11 +614,74 @@ class SuperAdminController extends Controller {
             'lots.*.manufactured_at' => 'nullable|date', 'lots.*.expires_at' => 'nullable|date|after_or_equal:lots.*.manufactured_at',
             'lots.*.quantity' => 'nullable|integer|min:0', 'lots.*.supplier_reference' => 'nullable|string|max:255',
         ]);
+
         $this->validateVariantUniqueness($request);
+
+        $companyId = $request->filled('company_id') ? (int) $request->company_id : null;
+        $brandCompanyId = null;
+        if ($request->filled('manufacturer_id')) {
+            $brandCompanyId = Manufacturer::where('manufacturer_id', $request->manufacturer_id)->value('company_id');
+        }
+        if ($companyId !== null && $brandCompanyId !== null && (int) $companyId !== (int) $brandCompanyId) {
+            return Redirect::back()->withInput()->withErrors([
+                'company_id' => 'The selected brand belongs to a different company.',
+            ]);
+        }
+        if ($companyId === null) {
+            $companyId = $brandCompanyId ? (int) $brandCompanyId : null;
+        }
+
+        $galleryFiles = (array) $request->file('gallery_images', []);
+        try {
+            $galleryImages = $this->storeProductImages($galleryFiles);
+        } catch (\Throwable $exception) {
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'gallery_images' => 'The product gallery image(s) could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
+
+        $image = $request->file('product_image');
+        try {
+            $productImage = $image ? $this->storeProductImage($image) : 'asset/front-end/img/home/pic 1.jpg';
+        } catch (\Throwable $exception) {
+            foreach ($galleryImages as $storedGalleryImage) {
+                $this->deleteOwnedProductImage($storedGalleryImage);
+            }
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'product_image' => 'The product image could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
+
+        $context = [
+            'company_id' => $companyId,
+            'branch_id' => $request->filled('branch_id') ? (int) $request->branch_id : null,
+            'category_id' => (int) $request->category_id,
+            'subcategory_id' => $request->filled('sub_category_id') ? (int) $request->sub_category_id : null,
+            'manufacturer_id' => $request->filled('manufacturer_id') ? (int) $request->manufacturer_id : null,
+            'series_id' => $request->filled('product_series_id') ? (int) $request->product_series_id : null,
+            'industry_profile' => $request->industry_profile,
+        ];
+        $configuration = $generator->resolveConfiguration($context) ?: ProductCodeConfiguration::with('components')->where('is_active', 1)->orderByDesc('id')->first();
+        $manualProductCode = trim((string) $request->input('product_code', $request->input('sku', '')));
+        $productCode = null;
+        if ($manualProductCode !== '' && $configuration && ((bool) $configuration->allow_manual_override || ! (bool) $configuration->auto_generate) && $this->adminHasPermission('override_product_code')) {
+            $productCode = normalize_product_code($manualProductCode, 100);
+            if ($productCode === null) {
+                return Redirect::back()->withInput()->withErrors(['product_code' => 'Please enter a valid product code.']);
+            }
+
+            if ($this->productCodeExists($productCode)) {
+                return Redirect::back()->withInput()->withErrors(['product_code' => 'That product code already exists.']);
+            }
+        }
+
         $data = array();
-        $data['product_id'] = $request->product_id;
-        $data['sku'] = $request->sku ?: null;
+        $data['product_id'] = trim((string) $request->product_id);
         $data['barcode'] = $request->barcode;
+        $data['company_id'] = $companyId;
+        $data['branch_id'] = $request->filled('branch_id') ? (int) $request->branch_id : null;
         $data['category_id'] = $request->category_id;
         $data['sub_category'] = $request->sub_category_id;
         $data['manufacturer_id'] = $request->manufacturer_id ?: null;
@@ -423,14 +693,7 @@ class SuperAdminController extends Controller {
         $data['short_description'] = $request->short_description;
         $data['key_features'] = json_encode($this->parseList($request->key_features));
         $data['specifications'] = json_encode($this->parseSpecifications($request->specifications));
-        try {
-            $data['gallery_images'] = json_encode($this->storeProductImages((array)$request->file('gallery_images', [])));
-        } catch (\Throwable $exception) {
-            report($exception);
-            return Redirect::back()->withInput()->withErrors([
-                'gallery_images' => 'The product gallery image(s) could not be saved. Please try again or check upload storage permissions.',
-            ]);
-        }
+        $data['gallery_images'] = json_encode(array_values(array_unique($galleryImages)));
         $regularPrice = max(0,(float)$request->regular_price);
         $offerPrice = $request->filled('offer_price') ? max(0,(float)$request->offer_price) : null;
         $data['regular_price'] = $regularPrice;
@@ -444,63 +707,109 @@ class SuperAdminController extends Controller {
         $data['is_new_arrival'] = $request->has('is_new_arrival') ? 1 : 0;
         $data['seo_title'] = $request->seo_title;
         $data['seo_description'] = $request->seo_description;
-        $image = $request->file('product_image');
+        $data['product_image'] = $productImage;
+
         try {
-            $data['product_image'] = $image ? $this->storeProductImage($image) : 'asset/front-end/img/home/pic 1.jpg';
+            $productId = DB::transaction(function () use ($data, $request, &$productCode, $generator, $context, $configuration) {
+                if ($productCode === null) {
+                    $allocation = $generator->allocate($context, $configuration);
+                    $productCode = $allocation['product_code'];
+                }
+
+                $data['product_id'] = trim((string) ($data['product_id'] ?? '')) !== '' ? trim((string) $data['product_id']) : $productCode;
+                $data['product_code'] = $productCode;
+                $data['sku'] = $productCode;
+                $data['created_at'] = now();
+                $data['updated_at'] = now();
+
+                $productId = DB::table('product')->insertGetId($data);
+                $this->syncProductAttributes($productId, $request);
+                $this->syncProductVariantsAndLots($productId, $request);
+
+                return $productId;
+            });
         } catch (\Throwable $exception) {
-            foreach ((array)json_decode($data['gallery_images'], true) as $storedGalleryImage) $this->deleteOwnedProductImage($storedGalleryImage);
+            foreach ($galleryImages as $storedGalleryImage) {
+                $this->deleteOwnedProductImage($storedGalleryImage);
+            }
+            if ($productImage !== 'asset/front-end/img/home/pic 1.jpg') {
+                $this->deleteOwnedProductImage($productImage);
+            }
             report($exception);
             return Redirect::back()->withInput()->withErrors([
-                'product_image' => 'The product image could not be saved. Please try again or check upload storage permissions.',
+                'product_code' => 'The product could not be saved. Please check the submitted values and try again.',
             ]);
         }
-        $productId = DB::table('product')->insertGetId($data);
-        $this->syncProductAttributes($productId, $request);
-        $this->syncProductVariantsAndLots($productId, $request);
+
         Session::put('message', 'Save Product Successfully');
         return Redirect::to('/add-product');
     }
     
-   public function editProduct($id) {
+    public function editProduct($id) {
         $this->authCheck();
-        $product_info=DB::table('product')
-                ->where('id',$id)
-                ->first();
+        $product_info = Product::find($id);
+        if (! $product_info) {
+            return Redirect::to('/manage-product')->with('exception', 'Product not found.');
+        }
         $category = DB::table('category')
+                ->whereNull('deleted_at')
                 ->orderBy("category_name","asc")
                 ->get();
         $sub_category = DB::table('sub_category')
+                ->whereNull('deleted_at')
                 ->get();
-        $manufacturer = DB::table('manufacturer as m')->leftJoin('companies as c','c.id','=','m.company_id')->select('m.*','c.name as company_name')->orderBy('c.name')->orderBy('m.manufacturer_name')->get();
-        $productSeries = DB::table('product_series')->orderBy('name')->get();
+        $companies = DB::table('companies')->orderBy('name')->get();
+        $branches = DB::table('inventory_locations')->where('type', 'branch')->where('is_active', 1)->orderBy('name')->get();
+        $manufacturer = DB::table('manufacturer as m')->leftJoin('companies as c','c.id','=','m.company_id')->whereNull('m.deleted_at')->whereNull('c.deleted_at')->select('m.*','c.name as company_name')->orderBy('c.name')->orderBy('m.manufacturer_name')->get();
+        $productSeries = DB::table('product_series as s')->leftJoin('manufacturer as m','m.manufacturer_id','=','s.manufacturer_id')->whereNull('s.deleted_at')->whereNull('m.deleted_at')->select('s.*','m.company_id','m.manufacturer_name as brand_name')->orderBy('s.name')->get();
         $catalogAttributes = DB::table('catalog_attributes')->orderBy('category_id')->orderBy('display_order')->get()->groupBy('category_id');
         $specificationTemplates = config('catalog_specification_templates', []);
         $productAttributeValues = DB::table('product_attribute_values')->where('product_id',$id)->pluck('value','attribute_id');
         $productVariants = DB::table('product_variants')->where('product_id',$id)->orderBy('id')->get();
         $productLots = DB::table('product_lots')->where('product_id',$id)->orderBy('expires_at')->orderBy('id')->get();
+        $productCodeConfiguration = app(ProductCodeGenerator::class)->resolveConfiguration([
+            'company_id' => $product_info->company_id ?? null,
+            'branch_id' => $product_info->branch_id ?? null,
+            'category_id' => $product_info->category_id ?? null,
+            'subcategory_id' => $product_info->sub_category ?? null,
+            'manufacturer_id' => $product_info->manufacturer_id ?? null,
+            'series_id' => $product_info->product_series_id ?? null,
+        ]);
+        $productCodeSnapshot = $productCodeConfiguration ? app(ProductCodeGenerator::class)->snapshot($productCodeConfiguration) : null;
         $edit_product = view('admin.admin-pages.edit-product')
                 ->with('product_info', $product_info)
                 ->with('category', $category)
+                ->with('companies', $companies)
+                ->with('branches', $branches)
                 ->with('manufacturer', $manufacturer)
                 ->with('productSeries', $productSeries)
                 ->with('sub_category', $sub_category)
                 ->with('catalogAttributes', $catalogAttributes)
                 ->with('specificationTemplates', $specificationTemplates)
-                ->with('productAttributeValues', $productAttributeValues);
+                ->with('productAttributeValues', $productAttributeValues)
+                ->with('productCodeConfiguration', $productCodeConfiguration)
+                ->with('productCodeSnapshot', $productCodeSnapshot);
         $edit_product->with('productVariants', $productVariants)->with('productLots', $productLots);
         return view('admin.admin-master')
                         ->with('admin_main_content', $edit_product);
     }
             
 
-    public function updateProduct(Request $request) {
+    public function updateProduct(Request $request, ProductCodeGenerator $generator) {
         $this->authCheck();
-        $data = array();
-        $id=$request->id;
-        $request->merge(['barcode' => $request->filled('barcode') ? trim($request->barcode) : null]);
+        $id = $request->id;
+        $request->merge([
+            'barcode' => $request->filled('barcode') ? trim($request->barcode) : null,
+            'product_code' => $request->filled('product_code') ? trim($request->product_code) : trim((string) $request->input('sku', '')),
+        ]);
         $this->validate($request, [
             'barcode' => 'nullable|string|max:64|unique:product,barcode,'.$id,
+            'company_id' => 'nullable|integer|exists:companies,id',
+            'branch_id' => 'nullable|integer|exists:inventory_locations,id',
+            'product_code' => 'nullable|string|max:100',
+            'product_id' => 'nullable|string|max:255',
             'category_id' => 'required|integer|exists:category,category_id',
+            'sub_category_id' => 'nullable|integer|exists:sub_category,sub_category_id',
             'regular_price' => 'required|numeric|min:0',
             'offer_price' => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
@@ -522,10 +831,107 @@ class SuperAdminController extends Controller {
             'lots.*.quantity' => 'nullable|integer|min:0', 'lots.*.supplier_reference' => 'nullable|string|max:255',
         ]);
         $this->validateVariantUniqueness($request, $id);
-        $beforeProduct=DB::table('product')->where('id',$id)->first();
-        $data['product_id'] = $request->product_id;
-        $data['sku'] = $request->sku ?: null;
+
+        $beforeProduct = Product::find($id);
+        if (! $beforeProduct) {
+            return Redirect::to('/manage-product')->with('exception', 'Product not found.');
+        }
+
+        $companyId = $request->filled('company_id') ? (int) $request->company_id : null;
+        $brandCompanyId = null;
+        if ($request->filled('manufacturer_id')) {
+            $brandCompanyId = Manufacturer::where('manufacturer_id', $request->manufacturer_id)->value('company_id');
+        }
+        if ($companyId !== null && $brandCompanyId !== null && (int) $companyId !== (int) $brandCompanyId) {
+            return Redirect::back()->withInput()->withErrors([
+                'company_id' => 'The selected brand belongs to a different company.',
+            ]);
+        }
+        if ($companyId === null) {
+            $companyId = $brandCompanyId ? (int) $brandCompanyId : null;
+        }
+
+        $currentGallery = array_values(array_filter((array) json_decode($beforeProduct->gallery_images, true)));
+        $removeGallery = array_values(array_intersect($currentGallery, (array) $request->input('remove_gallery_images', [])));
+        $keptGallery = array_values(array_diff($currentGallery, $removeGallery));
+        $galleryUploads = (array) $request->file('gallery_images', []);
+        if (count($keptGallery) + count($galleryUploads) > 10) {
+            return Redirect::back()->withInput()->withErrors(['gallery_images' => 'A product can have a maximum of 10 gallery images. Remove existing images or select fewer new files.']);
+        }
+        try {
+            $newGallery = $this->storeProductImages($galleryUploads);
+        } catch (\Throwable $exception) {
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'gallery_images' => 'The product gallery image(s) could not be saved. Please try again or check upload storage permissions.',
+            ]);
+        }
+
+        $image = $request->file('product_image');
+        $newProductImage = null;
+        if ($image) {
+            try {
+                $newProductImage = $this->storeProductImage($image);
+            } catch (\Throwable $exception) {
+                foreach ($newGallery as $storedGalleryImage) {
+                    $this->deleteOwnedProductImage($storedGalleryImage);
+                }
+                report($exception);
+                return Redirect::back()->withInput()->withErrors([
+                    'product_image' => 'The product image could not be saved. Please try again or check upload storage permissions.',
+                ]);
+            }
+        }
+
+        $context = [
+            'company_id' => $companyId,
+            'branch_id' => $request->filled('branch_id') ? (int) $request->branch_id : null,
+            'category_id' => (int) $request->category_id,
+            'subcategory_id' => $request->filled('sub_category_id') ? (int) $request->sub_category_id : null,
+            'manufacturer_id' => $request->filled('manufacturer_id') ? (int) $request->manufacturer_id : null,
+            'series_id' => $request->filled('product_series_id') ? (int) $request->product_series_id : null,
+            'industry_profile' => $request->industry_profile,
+        ];
+        $configuration = $generator->resolveConfiguration($context) ?: ProductCodeConfiguration::with('components')->where('is_active', 1)->orderByDesc('id')->first();
+        $requestedCode = trim((string) $request->input('product_code', $request->input('sku', '')));
+        $existingCode = trim((string) ($beforeProduct->product_code ?: $beforeProduct->sku ?: $beforeProduct->product_id ?: ''));
+        $productCode = $existingCode;
+        $historyReason = trim((string) $request->input('product_code_reason', 'Product code updated'));
+        $canRegenerate = $configuration && (bool) $configuration->allow_regeneration && $this->adminHasPermission('regenerate_product_code');
+        $canManualOverride = $configuration && ((bool) $configuration->allow_manual_override || ! (bool) $configuration->auto_generate) && $this->adminHasPermission('override_product_code');
+
+        if ($requestedCode !== '' && $requestedCode !== $existingCode) {
+            if ($existingCode !== '' && ! $canRegenerate) {
+                return Redirect::back()->withInput()->withErrors([
+                    'product_code' => 'You do not have permission to regenerate this product code.',
+                ]);
+            }
+
+                if ($existingCode === '' && ! $canManualOverride) {
+                    $requestedCode = '';
+                } else {
+                    $normalizedRequestedCode = normalize_product_code($requestedCode, 100);
+                    if ($normalizedRequestedCode === null) {
+                        return Redirect::back()->withInput()->withErrors([
+                            'product_code' => 'Please enter a valid product code.',
+                    ]);
+                }
+
+                if ($this->productCodeExists($normalizedRequestedCode, $id)) {
+                    return Redirect::back()->withInput()->withErrors([
+                        'product_code' => 'That product code already exists.',
+                    ]);
+                }
+
+                $productCode = $normalizedRequestedCode;
+            }
+        }
+
+        $data = array();
+        $data['product_id'] = trim((string) $request->product_id) !== '' ? trim((string) $request->product_id) : ($beforeProduct->product_id ?: null);
         $data['barcode'] = $request->barcode;
+        $data['company_id'] = $companyId;
+        $data['branch_id'] = $request->filled('branch_id') ? (int) $request->branch_id : null;
         $data['category_id'] = $request->category_id;
         $data['sub_category'] = $request->sub_category_id;
         $data['manufacturer_id'] = $request->manufacturer_id ?: null;
@@ -537,20 +943,7 @@ class SuperAdminController extends Controller {
         $data['short_description'] = $request->short_description;
         $data['key_features'] = json_encode($this->parseList($request->key_features));
         $data['specifications'] = json_encode($this->parseSpecifications($request->specifications));
-        $currentGallery=array_values(array_filter((array)json_decode($beforeProduct->gallery_images,true)));
-        $removeGallery=array_values(array_intersect($currentGallery,(array)$request->input('remove_gallery_images',[])));
-        $keptGallery=array_values(array_diff($currentGallery,$removeGallery));
-        $galleryUploads=(array)$request->file('gallery_images',[]);
-        if(count($keptGallery)+count($galleryUploads)>10)return Redirect::back()->withInput()->withErrors(['gallery_images'=>'A product can have a maximum of 10 gallery images. Remove existing images or select fewer new files.']);
-        try {
-            $newGallery=$this->storeProductImages($galleryUploads);
-        } catch (\Throwable $exception) {
-            report($exception);
-            return Redirect::back()->withInput()->withErrors([
-                'gallery_images' => 'The product gallery image(s) could not be saved. Please try again or check upload storage permissions.',
-            ]);
-        }
-        $data['gallery_images']=json_encode(array_values(array_unique(array_merge($keptGallery,$newGallery))));
+        $data['gallery_images'] = json_encode(array_values(array_unique(array_merge($keptGallery, $newGallery))));
         $regularPrice = max(0,(float)$request->regular_price);
         $offerPrice = $request->filled('offer_price') ? max(0,(float)$request->offer_price) : null;
         $data['regular_price'] = $regularPrice;
@@ -563,36 +956,70 @@ class SuperAdminController extends Controller {
         $data['warranty'] = $request->warranty;
         $data['seo_title'] = $request->seo_title;
         $data['seo_description'] = $request->seo_description;
-        $image = $request->file('product_image');
-        if ($image) {
-            try {
-                $data['product_image']=$this->storeProductImage($image);
-            } catch (\Throwable $exception) {
-                foreach ($newGallery as $storedGalleryImage) $this->deleteOwnedProductImage($storedGalleryImage);
-                report($exception);
-                return Redirect::back()->withInput()->withErrors([
-                    'product_image' => 'The product image could not be saved. Please try again or check upload storage permissions.',
-                ]);
-            }
+        if ($newProductImage) {
+            $data['product_image'] = $newProductImage;
         }
-        DB::table('product')->where('id',$id)->update($data);
-        if($image)$this->deleteOwnedProductImage($beforeProduct->product_image);
-        foreach($removeGallery as $removedImage)$this->deleteOwnedProductImage($removedImage);
-        $this->syncProductAttributes($id, $request);
-        $this->syncProductVariantsAndLots($id, $request);
-        if($data['product_condition']==='In Stock' && (!$beforeProduct || $beforeProduct->product_condition!=='In Stock')) app(\App\Services\StockAlertService::class)->process($id);
+
+        try {
+            DB::transaction(function () use ($id, &$productCode, $data, $request, $generator, $context, $configuration, $existingCode, $historyReason, $beforeProduct, $newProductImage) {
+                if ($productCode === '' || $productCode === null) {
+                    $allocation = $generator->allocate($context, $configuration);
+                    $productCode = $allocation['product_code'];
+                }
+
+                $data['product_code'] = $productCode;
+                $data['sku'] = $productCode;
+                if (! trim((string) ($data['product_id'] ?? ''))) {
+                    $data['product_id'] = $productCode;
+                }
+                $data['updated_at'] = now();
+
+                DB::table('product')->where('id', $id)->update($data);
+                $updatedProduct = Product::find($id);
+                if ($existingCode !== '' && $existingCode !== $productCode) {
+                    $generator->recordHistory($configuration, $updatedProduct, $existingCode, $productCode, $historyReason, session('admin_id'));
+                }
+
+                $this->syncProductAttributes($id, $request);
+                $this->syncProductVariantsAndLots($id, $request);
+            });
+        } catch (\Throwable $exception) {
+            foreach ($newGallery as $storedGalleryImage) {
+                $this->deleteOwnedProductImage($storedGalleryImage);
+            }
+            if ($newProductImage) {
+                $this->deleteOwnedProductImage($newProductImage);
+            }
+            report($exception);
+            return Redirect::back()->withInput()->withErrors([
+                'product_code' => 'The product could not be updated. Please check the submitted values and try again.',
+            ]);
+        }
+
+        if ($newProductImage) {
+            $this->deleteOwnedProductImage($beforeProduct->product_image);
+        }
+        foreach ($removeGallery as $removedImage) {
+            $this->deleteOwnedProductImage($removedImage);
+        }
+        if ($data['product_condition'] === 'In Stock' && (!$beforeProduct || $beforeProduct->product_condition !== 'In Stock')) app(\App\Services\StockAlertService::class)->process($id);
         Session::put('message', 'Update Product Successfully');
         return Redirect::to('/manage-product');
     }
     
     
     
-    public function manageProduct()
+    public function manageProduct(StarTechCatalogImporter $importer)
     {
         $this->authCheck();
-        $all_product=DB::table('product')->select('product.*')->selectRaw(\App\Product::sellingPriceSql().' selling_price')->orderBy('id','DESC')->get();
+        $all_product=Product::query()->select('product.*')->selectRaw(\App\Product::sellingPriceSql().' selling_price')->orderBy('id','DESC')->get();
+        $productImportCategories = collect($importer->categoryMap())
+            ->mapWithKeys(fn (array $meta, string $slug) => [$slug => $meta['name']])
+            ->all();
         $manage_product = view('admin.admin-pages.manage-product')
-                ->with('all_product', $all_product);
+                ->with('all_product', $all_product)
+                ->with('productImportCategories', $productImportCategories)
+                ->with('startechProductImportState', session('startech_product_import_state'));
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_product);
     }
@@ -612,9 +1039,12 @@ class SuperAdminController extends Controller {
     }
 
     public function deleteproduct($id) {
-        DB::table('product')
-                ->where('id', $id)
-                ->delete();
+        $product = Product::find($id);
+        if (! $product) {
+            return Redirect::to('/manage-product')->with('exception', 'Product not found.');
+        }
+
+        app(RecycleBinService::class)->softDelete('product', (int) $id, session('admin_id'), 'Product moved to Recycle Bin.');
         return Redirect::to('/manage-product');
     }
 
@@ -622,20 +1052,15 @@ class SuperAdminController extends Controller {
     {
         $this->validate($request,['product_ids'=>'required|array|min:1','product_ids.*'=>'required|integer|distinct|exists:product,id']);
         $ids=array_values(array_unique(array_map('intval',$request->product_ids)));
-        $protected=[];
-        foreach(['order_items','purchase_order_items','stock_receipts','service_claims','order_return_items','stock_transfer_items'] as $table) {
-            if(\Schema::hasTable($table)) $protected=array_merge($protected,DB::table($table)->whereIn('product_id',$ids)->pluck('product_id')->map(function($id){return (int)$id;})->all());
-        }
-        $protected=array_values(array_unique($protected));$deletable=array_values(array_diff($ids,$protected));
-        $products=$deletable?DB::table('product')->whereIn('id',$deletable)->select('id','product_image')->get():collect();
         $deleted=0;
-        if($deletable) $deleted=DB::transaction(function()use($deletable){
-            foreach(['product_attribute_values','product_reviews','product_questions','wishlists','stock_alerts','product_location_stock'] as $table) if(\Schema::hasTable($table)) DB::table($table)->whereIn('product_id',$deletable)->delete();
-            return DB::table('product')->whereIn('id',$deletable)->delete();
+        DB::transaction(function () use ($ids, &$deleted) {
+            foreach ($ids as $id) {
+                app(RecycleBinService::class)->softDelete('product', (int) $id, session('admin_id'), 'Product moved to Recycle Bin.');
+                $deleted++;
+            }
         });
-        foreach($products as $product){$path=ltrim((string)$product->product_image,'/');if(strpos($path,'asset/front-end/img/Product_image/')===0&&is_file(public_path($path)))unlink(public_path($path));}
         Cache::forget('xml-sitemap');
-        return $this->bulkDeleteResult('/manage-product',$deleted,count($protected),'product','orders, purchasing, returns, service claims, or transfer history');
+        return $this->bulkDeleteResult('/manage-product',$deleted,0,'product','orders, purchasing, returns, service claims, or transfer history');
     }
 
     public function siteCustomization()
@@ -644,7 +1069,15 @@ class SuperAdminController extends Controller {
         $settings = DB::table('site_settings')->pluck('setting_value', 'setting_key');
         $topAnnouncements = \Schema::hasTable('top_announcements') ? \App\TopAnnouncement::orderByDesc('priority')->orderBy('display_order')->get() : collect();
         $siteContactItems = \Schema::hasTable('site_contact_items') ? \App\SiteContactItem::orderByDesc('is_primary')->orderBy('display_order')->get() : collect();
-        return view('admin.admin-pages.site-customization', compact('settings','topAnnouncements','siteContactItems'));
+        $setup = $this->siteCustomizationSetup($settings);
+        return view('admin.admin-pages.site-customization', [
+            'settings' => $settings,
+            'topAnnouncements' => $topAnnouncements,
+            'siteContactItems' => $siteContactItems,
+            'storeSetupChecks' => $setup['checks'],
+            'storeSetupPercent' => $setup['percent'],
+            'siteCustomizationDefaults' => $this->siteCustomizationDefaults(),
+        ]);
     }
 
     public function bannerManagement()
@@ -659,6 +1092,12 @@ class SuperAdminController extends Controller {
     public function updateSiteSettings(Request $request)
     {
         $this->authCheck();
+        $resetRequested = $request->boolean('reset_to_default');
+        $settingsDefaults = $this->siteCustomizationDefaults();
+        $settingKeys = $this->siteCustomizationSettingKeys();
+        $assetKeys = $this->siteCustomizationAssetKeys();
+        $currentSettings = DB::table('site_settings')->pluck('setting_value', 'setting_key');
+        $previousDevelopmentMode = $currentSettings->get('development_mode_enabled');
         $this->validate($request, [
             'site_name' => 'required|string|max:120',
             'site_name_font_size' => 'nullable|integer|min:14|max:32',
@@ -713,6 +1152,16 @@ class SuperAdminController extends Controller {
                     }
                 },
             ],
+            'remove_seo_image' => [
+                'nullable','boolean',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->boolean('remove_seo_image') && $request->hasFile('seo_image')) {
+                        $fail('Choose either a replacement social sharing image or remove the current image, not both.');
+                    }
+                },
+            ],
+            'reset_to_default' => 'nullable|boolean',
+            'simulate_db_failure' => 'nullable|boolean',
             'facebook_url' => 'nullable|url|max:255',
             'instagram_url' => 'nullable|url|max:255',
             'youtube_url' => 'nullable|url|max:255',
@@ -758,65 +1207,84 @@ class SuperAdminController extends Controller {
             'favicon_resize_height.min' => 'The browser icon output height must be at least 16 pixels.',
             'favicon_resize_height.max' => 'The browser icon output height may not exceed 1024 pixels.',
         ]);
-        $previousDevelopmentMode = DB::table('site_settings')
-            ->where('setting_key', 'development_mode_enabled')->value('setting_value');
-        $allowed = [
-            'site_name','site_name_font_size','site_tagline','site_tagline_font_size','notice_text','phone','support_phone','whatsapp_number',
-            'support_email','shop_address','business_hours','facebook_url','instagram_url',
-            'youtube_url','linkedin_url','twitter_url','default_meta_description',
-            'default_meta_title','meta_keywords','robots_directive','google_analytics_id',
-            'google_site_verification','footer_description','copyright_text','hero_side_title','hero_side_text',
-            'development_mode_enabled','development_mode_message_type','development_mode_title',
-            'development_mode_message','development_mode_additional_message',
-            'development_mode_availability_text','development_mode_show_admin_login',
-            'development_mode_login_button_text','logo_resize_enabled','logo_resize_width',
-            'logo_resize_height','favicon_resize_enabled','favicon_resize_width','favicon_resize_height'
-        ];
-        $assetKeys = ['logo' => 'site_logo', 'favicon' => 'favicon', 'seo_image' => 'default_og_image'];
-        $currentAssets = DB::table('site_settings')
-            ->whereIn('setting_key', array_values($assetKeys))
-            ->pluck('setting_value', 'setting_key');
-        $storedAssets = [];
-        $oldAssets = [];
-        $assetRemovals = [];
-        foreach (['logo' => 'site_logo', 'favicon' => 'favicon'] as $input => $settingKey) {
-            if (!$request->boolean('remove_'.$input)) continue;
-            $assetRemovals[$input] = $settingKey;
-            $oldAssets[$input] = $currentAssets->get($settingKey);
+        $fileCleanupPaths = [];
+        if ($resetRequested) {
+            $fileCleanupPaths = $currentSettings->only(array_values($assetKeys))->filter()->values()->all();
         }
-        foreach ($assetKeys as $input => $settingKey) {
-            if (!$request->hasFile($input)) continue;
-            try {
-                $resizeOptions = $this->brandResizeOptions($request, $input);
-                $storedAssets[$input] = $this->storeBrandAsset($request->file($input), $input, $resizeOptions);
-                $oldAssets[$input] = $currentAssets->get($settingKey);
-            } catch (\Throwable $exception) {
-                foreach ($storedAssets as $storedPath) $this->removeBrandAsset($storedPath);
-                report($exception);
-                return Redirect::to('/site-customization#identity')->withInput()->withErrors([
-                    $input => 'The file passed validation, but the server could not save it. Please try again.',
-                ]);
+        $booleanKeys = ['logo_resize_enabled', 'favicon_resize_enabled', 'development_mode_enabled', 'development_mode_show_admin_login', 'startech_source_import_enabled'];
+        $storedAssets = [];
+        $assetRemovals = [];
+
+        if (!$resetRequested) {
+            foreach ($assetKeys as $input => $settingKey) {
+                if ($request->boolean('remove_'.$input)) {
+                    $assetRemovals[$input] = $settingKey;
+                    $fileCleanupPaths[] = $currentSettings->get($settingKey);
+                }
+            }
+
+            foreach ($assetKeys as $input => $settingKey) {
+                if (!$request->hasFile($input)) {
+                    continue;
+                }
+
+                try {
+                    $resizeOptions = $this->brandResizeOptions($request, $input);
+                    $storedAssets[$input] = $this->storeBrandAsset($request->file($input), $input, $resizeOptions);
+                    $fileCleanupPaths[] = $currentSettings->get($settingKey);
+                } catch (\Throwable $exception) {
+                    foreach ($storedAssets as $storedPath) {
+                        $this->removeBrandAsset($storedPath);
+                    }
+                    report($exception);
+                    return Redirect::to('/site-customization#identity')->withInput()->withErrors([
+                        $input => 'The file passed validation, but the server could not save it. Please try again.',
+                    ]);
+                }
             }
         }
+
         try {
-            DB::transaction(function () use ($allowed, $request, $assetKeys, $storedAssets, $assetRemovals) {
-                foreach ($allowed as $key) {
+            DB::transaction(function () use ($request, $resetRequested, $settingKeys, $assetKeys, $storedAssets, $assetRemovals, $booleanKeys) {
+                if (app()->environment('testing') && $request->boolean('simulate_db_failure')) {
+                    throw new \RuntimeException('Simulated site settings database failure.');
+                }
+
+                if ($resetRequested) {
+                    DB::table('site_settings')->whereIn('setting_key', array_merge($settingKeys, array_values($assetKeys)))->delete();
+                    return;
+                }
+
+                foreach ($settingKeys as $key) {
                     $value = null;
-                    if ($request->filled($key)) {
-                        $value = (string)$request->input($key);
+                    if (in_array($key, $booleanKeys, true)) {
+                        $value = $request->has($key) ? ($request->boolean($key) ? '1' : '0') : null;
+                    } elseif ($request->filled($key)) {
+                        $value = (string) $request->input($key);
                         $value = preg_replace('/<(script|iframe|object|embed|style)\b[^>]*>.*?<\/\1>/is', '', $value);
                         $value = trim(strip_tags($value));
                     }
+
+                    if ($value === null || $value === '') {
+                        DB::table('site_settings')->where('setting_key', $key)->delete();
+                        continue;
+                    }
+
                     DB::table('site_settings')->updateOrInsert(['setting_key' => $key], [
                         'setting_value' => $value,
-                        'updated_at' => now(), 'created_at' => now()
+                        'updated_at' => now(),
+                        'created_at' => now(),
                     ]);
                 }
+
                 foreach ($storedAssets as $input => $storedPath) {
                     DB::table('site_settings')->updateOrInsert(['setting_key' => $assetKeys[$input]], [
-                        'setting_value' => $storedPath, 'updated_at' => now(), 'created_at' => now()
+                        'setting_value' => $storedPath,
+                        'updated_at' => now(),
+                        'created_at' => now(),
                     ]);
                 }
+
                 foreach ($assetRemovals as $settingKey) {
                     DB::table('site_settings')->where('setting_key', $settingKey)->delete();
                 }
@@ -828,16 +1296,25 @@ class SuperAdminController extends Controller {
                 'settings' => 'Website settings could not be saved. No changes were applied. Please try again.',
             ]);
         }
-        foreach (array_unique(array_filter($oldAssets)) as $oldPath) {
+        foreach (array_unique(array_filter($fileCleanupPaths)) as $oldPath) {
             $this->removeBrandAssetIfUnused($oldPath);
         }
         Cache::forget('site-settings');
+        Cache::forget('site-top-bar');
         $freshSettings=DB::table('site_settings')->pluck('setting_value','setting_key');
-        $freshBrandName=$freshSettings->get('site_name') ?: config('app.name','Ecommerce');
+        $freshBrandName=$freshSettings->get('site_name') ?: config('app.default_name', 'Ecommerce');
         $freshNameFontSize=(int)($freshSettings->get('site_name_font_size') ?: 23);
         $freshNameFontSize=max(14,min(32,$freshNameFontSize));
         $freshTaglineFontSize=(int)($freshSettings->get('site_tagline_font_size') ?: 12);
         $freshTaglineFontSize=max(8,min(24,$freshTaglineFontSize));
+        $freshLogoResizeWidth = (int)($freshSettings->get('logo_resize_width') ?: 600);
+        $freshLogoResizeWidth = max(120, min(2400, $freshLogoResizeWidth));
+        $freshLogoResizeHeight = (int)($freshSettings->get('logo_resize_height') ?: 200);
+        $freshLogoResizeHeight = max(40, min(1200, $freshLogoResizeHeight));
+        $freshLogoDisplayWidth = max(120, min(240, (int) round($freshLogoResizeWidth * 220 / 600)));
+        $freshLogoDisplayHeight = max(40, min(82, (int) round($freshLogoResizeHeight * 73 / 200)));
+        $freshLogoMobileWidth = max(90, min(150, (int) round($freshLogoResizeWidth * 150 / 600)));
+        $freshLogoMobileHeight = max(30, min(54, (int) round($freshLogoResizeHeight * 50 / 200)));
         \View::share('siteSettings',$freshSettings);
         \View::share('brandName',$freshBrandName);
         \View::share('brandLogo',$freshSettings->get('site_logo') ?: null);
@@ -846,9 +1323,30 @@ class SuperAdminController extends Controller {
         \View::share('hasCustomBrandFavicon',(bool)$freshSettings->get('favicon'));
         \View::share('brandNameFontSize',$freshNameFontSize);
         \View::share('brandTaglineFontSize',$freshTaglineFontSize);
+        \View::share('brandLogoDisplayWidth',$freshLogoDisplayWidth);
+        \View::share('brandLogoDisplayHeight',$freshLogoDisplayHeight);
+        \View::share('brandLogoMobileWidth',$freshLogoMobileWidth);
+        \View::share('brandLogoMobileHeight',$freshLogoMobileHeight);
         config(['app.name'=>$freshBrandName]);
         $newDevelopmentMode = (string)$request->input('development_mode_enabled') === '1';
         $previouslyEnabled = in_array($previousDevelopmentMode, [true, 1, '1', 'true', 'on'], true);
+        if ($resetRequested && \Schema::hasTable('admin_activity_logs')) {
+            DB::table('admin_activity_logs')->insert([
+                'admin_id' => session('admin_id'),
+                'admin_name' => session('admin_name'),
+                'action' => 'WEBSITE_SETTINGS_RESET',
+                'method' => 'POST',
+                'path' => '/site-settings',
+                'ip_hash' => hash_hmac('sha256', (string) $request->ip(), config('app.key')),
+                'details' => json_encode([
+                    'reset_to_default' => true,
+                    'removed_files' => array_values(array_map(function ($path) {
+                        return basename($path);
+                    }, array_unique(array_filter($fileCleanupPaths)))),
+                ]),
+                'created_at' => now(),
+            ]);
+        }
         if ($newDevelopmentMode !== $previouslyEnabled && \Schema::hasTable('admin_activity_logs')) {
             DB::table('admin_activity_logs')->insert([
                 'admin_id' => session('admin_id'),
@@ -861,7 +1359,9 @@ class SuperAdminController extends Controller {
                 'created_at' => now(),
             ]);
         }
-        if ($newDevelopmentMode && !$previouslyEnabled) {
+        if ($resetRequested) {
+            $message = 'Website settings were reset successfully.';
+        } elseif ($newDevelopmentMode && !$previouslyEnabled) {
             $message = 'Development Mode has been enabled. Public visitors will now see the configured Development Mode message.';
         } elseif (!$newDevelopmentMode && $previouslyEnabled) {
             $message = 'Development Mode has been disabled. The public website is now available.';
@@ -869,6 +1369,7 @@ class SuperAdminController extends Controller {
             $removed = [];
             if (isset($assetRemovals['logo'])) $removed[] = 'logo';
             if (isset($assetRemovals['favicon'])) $removed[] = 'browser icon';
+            if (isset($assetRemovals['seo_image'])) $removed[] = 'social sharing image';
             $message = ucfirst(implode(' and ', $removed)).' removed from the site and upload storage.';
         } else {
             $message = 'Site settings updated.';
@@ -945,12 +1446,11 @@ class SuperAdminController extends Controller {
     public function deleteBanner($id)
     {
         $this->authCheck();
-        $banner = Banner::findOrFail($id);
-        $desktop = $banner->image_path;
-        $mobile = $banner->mobile_image;
-        $banner->delete();
-        $this->removeBannerFileIfUnused($desktop, $id);
-        $this->removeBannerFileIfUnused($mobile, $id);
+        if (! Banner::find($id)) {
+            return Redirect::to('/banner-management')->with('exception', 'Banner not found.');
+        }
+
+        app(RecycleBinService::class)->softDelete('banner', (int) $id, session('admin_id'), 'Banner moved to Recycle Bin.');
         return Redirect::to('/banner-management')->with('message', 'Banner deleted.');
     }
 
@@ -1029,6 +1529,79 @@ class SuperAdminController extends Controller {
             'image' => $product->image_url,
             'url' => route('store.product.show', $product->id),
             'status' => $product->publication_status ? 'Published' : 'Hidden',
+        ];
+    }
+
+    private function siteCustomizationDefaults()
+    {
+        return [
+            'site_name' => config('app.default_name', 'Ecommerce'),
+            'site_name_font_size' => 23,
+            'site_tagline' => '',
+            'site_tagline_font_size' => 12,
+            'logo_resize_enabled' => 1,
+            'logo_resize_width' => 600,
+            'logo_resize_height' => 200,
+            'favicon_resize_enabled' => 1,
+            'favicon_resize_width' => 512,
+            'favicon_resize_height' => 512,
+            'robots_directive' => 'index,follow',
+            'development_mode_enabled' => 0,
+            'development_mode_message_type' => 'maintenance',
+            'development_mode_title' => 'Website Under Development',
+            'development_mode_message' => 'We are currently improving our website. Please check back again soon.',
+            'development_mode_additional_message' => '',
+            'development_mode_availability_text' => '',
+            'development_mode_show_admin_login' => 1,
+            'development_mode_login_button_text' => 'Admin Login',
+            'startech_source_import_enabled' => 1,
+            'copyright_text' => '',
+        ];
+    }
+
+    private function siteCustomizationSettingKeys()
+    {
+        return [
+            'site_name', 'site_name_font_size', 'site_tagline', 'site_tagline_font_size',
+            'notice_text', 'phone', 'support_phone', 'whatsapp_number', 'support_email',
+            'shop_address', 'business_hours', 'facebook_url', 'instagram_url', 'youtube_url',
+            'linkedin_url', 'twitter_url', 'google_analytics_id', 'google_site_verification',
+            'default_meta_title', 'default_meta_description', 'meta_keywords', 'robots_directive',
+            'footer_description', 'copyright_text', 'hero_side_title', 'hero_side_text',
+            'development_mode_enabled', 'development_mode_message_type', 'development_mode_title',
+            'development_mode_message', 'development_mode_additional_message',
+            'development_mode_availability_text', 'development_mode_show_admin_login',
+            'development_mode_login_button_text', 'logo_resize_enabled', 'logo_resize_width',
+            'logo_resize_height', 'favicon_resize_enabled', 'favicon_resize_width',
+            'favicon_resize_height', 'startech_source_import_enabled',
+        ];
+    }
+
+    private function siteCustomizationAssetKeys()
+    {
+        return ['logo' => 'site_logo', 'favicon' => 'favicon', 'seo_image' => 'default_og_image'];
+    }
+
+    private function siteCustomizationSetup($settings)
+    {
+        $settings = collect($settings);
+        $defaults = $this->siteCustomizationDefaults();
+        $siteName = trim((string) $settings->get('site_name', ''));
+        $siteTagline = trim((string) $settings->get('site_tagline', ''));
+        $siteNameFontSize = (int) ($settings->get('site_name_font_size') ?: $defaults['site_name_font_size']);
+        $siteTaglineFontSize = (int) ($settings->get('site_tagline_font_size') ?: $defaults['site_tagline_font_size']);
+        $checks = [
+            ['Business identity', ($siteName !== '' && strcasecmp($siteName, (string) $defaults['site_name']) !== 0) || $siteTagline !== '' || $siteNameFontSize !== (int) $defaults['site_name_font_size'] || $siteTaglineFontSize !== (int) $defaults['site_tagline_font_size'], 'identity'],
+            ['Customer contact', trim((string) $settings->get('phone', '')) !== '' || trim((string) $settings->get('support_phone', '')) !== '' || trim((string) $settings->get('whatsapp_number', '')) !== '' || trim((string) $settings->get('support_email', '')) !== '', 'contact'],
+            ['Store address', trim((string) $settings->get('shop_address', '')) !== '' || trim((string) $settings->get('business_hours', '')) !== '', 'contact'],
+            ['Search description', trim((string) $settings->get('default_meta_title', '')) !== '' || trim((string) $settings->get('default_meta_description', '')) !== '' || trim((string) $settings->get('meta_keywords', '')) !== '' || trim((string) $settings->get('default_og_image', '')) !== '', 'seo'],
+            ['Header branding', trim((string) $settings->get('site_logo', '')) !== '' || trim((string) $settings->get('favicon', '')) !== '', 'identity'],
+        ];
+        $complete = collect($checks)->where(1, true)->count();
+
+        return [
+            'checks' => $checks,
+            'percent' => count($checks) ? (int) round(($complete / count($checks)) * 100) : 0,
         ];
     }
 
@@ -1180,33 +1753,19 @@ class SuperAdminController extends Controller {
 
     private function removeBrandAsset($path)
     {
-        $fullPath = $this->managedBrandAssetPath($path);
-        if (!$fullPath || (!is_file($fullPath) && !is_link($fullPath))) return false;
-        if (@unlink($fullPath)) return true;
-        report(new \RuntimeException('A retired branding upload could not be deleted: '.$path));
-        return false;
+        return app(SafeMediaDeletionService::class)->deleteManagedBrandAsset($path);
     }
 
     private function removeBrandAssetIfUnused($path)
     {
-        if (!$path || DB::table('site_settings')->where('setting_value', $path)->exists()) return false;
-        return $this->removeBrandAsset($path);
+        return app(SafeMediaDeletionService::class)->deleteManagedBrandAssetIfUnused($path, function ($candidatePath) {
+            return DB::table('site_settings')->where('setting_value', $candidatePath)->exists();
+        });
     }
 
     private function managedBrandAssetPath($path)
     {
-        if (!is_string($path)) return null;
-        $path = str_replace('\\', '/', trim($path));
-        $prefix = 'asset/front-end/img/branding/';
-        if (strpos($path, $prefix) !== 0) return null;
-        $filename = substr($path, strlen($prefix));
-        if (!$filename || basename($filename) !== $filename) return null;
-        if (!preg_match('/^(logo|favicon|seo_image)-[A-Za-z0-9][A-Za-z0-9._-]*\.(ico|png|jpe?g|webp)$/i', $filename)) {
-            return null;
-        }
-        $directory = realpath(public_path($prefix));
-        if (!$directory) return null;
-        return $directory.DIRECTORY_SEPARATOR.$filename;
+        return app(SafeMediaDeletionService::class)->managedBrandAssetPath($path);
     }
 
     private function storeBannerImage($file, $prefix)
@@ -1222,16 +1781,12 @@ class SuperAdminController extends Controller {
 
     private function removeBannerFileIfUnused($path, $excludingId)
     {
-        if (!$path || strpos($path, 'asset/front-end/img/banners/') !== 0) return;
-        $used = Banner::where('id', '<>', $excludingId)->where(function ($query) use ($path) { $query->where('image_path', $path)->orWhere('mobile_image', $path); })->exists();
-        if (!$used) $this->removeBannerFile($path);
+        app(MediaLifecycleService::class)->deleteIfUnreferenced($path, ['banner' => [(int) $excludingId]], 'Banner image replaced or removed.');
     }
 
     private function removeBannerFile($path)
     {
-        if (!$path || strpos($path, 'asset/front-end/img/banners/') !== 0) return;
-        $fullPath = public_path($path);
-        if (is_file($fullPath)) unlink($fullPath);
+        app(MediaLifecycleService::class)->deletePath($path, 'Banner image removed.');
     }
 
     public function customerInbox()
@@ -1311,13 +1866,13 @@ class SuperAdminController extends Controller {
     public function inventory(Request $request)
     {
         $this->authCheck();
-        $query=DB::table('product')->orderBy('product_name');
+        $query=DB::table('product')->whereNull('deleted_at')->orderBy('product_name');
         if ($request->filter==='low') $query->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5]);
         if ($request->filter==='out') $query->where('stock_tracking',1)->where('stock_quantity',0);
         if ($request->filter==='untracked') $query->where('stock_tracking',0);
         if ($request->filled('search')) $query->where(function($q)use($request){$q->where('product_name','like','%'.$request->search.'%')->orWhere('sku','like','%'.$request->search.'%');});
         $products=$query->paginate(25)->appends($request->query());
-        $counts=['tracked'=>DB::table('product')->where('stock_tracking',1)->count(),'low'=>DB::table('product')->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5])->count(),'out'=>DB::table('product')->where('stock_tracking',1)->where('stock_quantity',0)->count()];
+        $counts=['tracked'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->count(),'low'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5])->count(),'out'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->where('stock_quantity',0)->count()];
         return view('admin.admin-pages.inventory',compact('products','counts'));
     }
 
@@ -1325,7 +1880,10 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         $this->validate($request,['stock_quantity'=>'required|integer|min:0|max:100000']);
-        $before=DB::table('product')->where('id',$id)->first();
+        $before=Product::find($id);
+        if (! $before) {
+            return Redirect::back()->with('exception','Product not found.');
+        }
         $quantity=(int)$request->stock_quantity;
         DB::table('product')->where('id',$id)->update(['stock_quantity'=>$quantity,'stock_tracking'=>$request->has('stock_tracking')?1:0,'product_condition'=>$request->has('stock_tracking')?($quantity>0?'In Stock':'Out Of Stock'):$request->product_condition,'updated_at'=>now()]);
         if(\Schema::hasTable('inventory_locations')){$location=DB::table('inventory_locations')->where('is_default',1)->first();if($location){DB::table('product_location_stock')->updateOrInsert(['location_id'=>$location->id,'product_id'=>$id],['quantity'=>$quantity,'updated_at'=>now(),'created_at'=>now()]);$total=DB::table('product_location_stock')->where('product_id',$id)->sum('quantity');DB::table('product')->where('id',$id)->update(['stock_quantity'=>$total,'product_condition'=>$total>0?'In Stock':'Out Of Stock']);}}
@@ -1338,8 +1896,8 @@ class SuperAdminController extends Controller {
     public function catalogAttributes(Request $request)
     {
         $this->authCheck();
-        $categories=DB::table('category')->where('publication_status',1)->orderBy('category_name')->get();
-        $query=DB::table('catalog_attributes')->join('category','catalog_attributes.category_id','=','category.category_id')
+        $categories=DB::table('category')->whereNull('deleted_at')->where('publication_status',1)->orderBy('category_name')->get();
+        $query=DB::table('catalog_attributes')->join('category',function($join){$join->on('catalog_attributes.category_id','=','category.category_id')->whereNull('category.deleted_at');})
             ->select('catalog_attributes.*','category.category_name',DB::raw('(SELECT COUNT(*) FROM product_attribute_values pav WHERE pav.attribute_id = catalog_attributes.id) as usage_count'))
             ->orderBy('category.category_name')->orderBy('catalog_attributes.display_order')->orderBy('catalog_attributes.name');
         if($request->filled('category_id')) $query->where('catalog_attributes.category_id',$request->category_id);
@@ -1353,7 +1911,7 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         if($request->has('attributes')){
-            $this->validate($request,['category_id'=>'required|integer|exists:category,category_id','attributes'=>'required|array|min:1|max:30','attributes.*.name'=>'required|string|max:100','attributes.*.input_type'=>'required|in:select,multiselect,text','attributes.*.display_order'=>'nullable|integer|min:0']);
+            $this->validate($request,['category_id'=>['required','integer',Rule::exists('category','category_id')->whereNull('deleted_at')],'attributes'=>'required|array|min:1|max:30','attributes.*.name'=>'required|string|max:100','attributes.*.input_type'=>'required|in:select,multiselect,text','attributes.*.display_order'=>'nullable|integer|min:0']);
             $rows=[];$slugs=[];
             foreach($request->attributes as $index=>$attribute){
                 $slug=str_slug($attribute['name']);
@@ -1365,7 +1923,7 @@ class SuperAdminController extends Controller {
             DB::transaction(function()use($rows){DB::table('catalog_attributes')->insert($rows);});
             return Redirect::to('/catalog-attributes?category_id='.$request->category_id)->with('message',count($rows).' attributes created.');
         }
-        $this->validate($request,['category_id'=>'required|integer','name'=>'required|max:100','input_type'=>'required|in:select,multiselect,text','display_order'=>'nullable|integer|min:0']);
+        $this->validate($request,['category_id'=>['required','integer',Rule::exists('category','category_id')->whereNull('deleted_at')],'name'=>'required|max:100','input_type'=>'required|in:select,multiselect,text','display_order'=>'nullable|integer|min:0']);
         $slug=str_slug($request->name);
         $exists=DB::table('catalog_attributes')->where('category_id',$request->category_id)->where('slug',$slug)->exists();
         if($exists) return Redirect::back()->withInput()->with('exception','That attribute already exists for this category.');
@@ -1380,7 +1938,7 @@ class SuperAdminController extends Controller {
         $this->authCheck();
         $attribute=DB::table('catalog_attributes')->where('id',$id)->first();
         if(!$attribute)return Redirect::to('/catalog-attributes')->with('exception','Attribute not found.');
-        $this->validate($request,['category_id'=>'required|integer|exists:category,category_id','name'=>'required|string|max:120','input_type'=>'required|in:select,multiselect,text','display_order'=>'nullable|integer|min:0']);
+        $this->validate($request,['category_id'=>['required','integer',Rule::exists('category','category_id')->whereNull('deleted_at')],'name'=>'required|string|max:120','input_type'=>'required|in:select,multiselect,text','display_order'=>'nullable|integer|min:0']);
         $slug=str_slug($request->name);
         if(DB::table('catalog_attributes')->where('category_id',$request->category_id)->where('slug',$slug)->where('id','<>',$id)->exists())return Redirect::back()->with('exception','That attribute already exists in this category.');
         $options=in_array($request->input_type,['select','multiselect'],true)?$this->parseList($request->options):[];
@@ -1594,16 +2152,16 @@ class SuperAdminController extends Controller {
     public function deleteMarketingCampaign($id){$campaign=DB::table('marketing_campaigns')->where('id',$id)->first();if($campaign&&$campaign->status==='sent')return Redirect::back()->with('exception','Sent campaigns are retained for delivery history.');DB::table('campaign_recipients')->where('campaign_id',$id)->delete();DB::table('marketing_campaigns')->where('id',$id)->delete();return Redirect::back()->with('message','Campaign deleted.');}
 
     public function adminUsers(){ $roles=DB::table('admin_roles')->orderBy('name')->get();$admins=DB::table('tbl_admin as a')->leftJoin('admin_roles as r','r.id','=','a.role_id')->select('a.*','r.name as role_name')->orderBy('a.admin_name')->get();return view('admin.admin-pages.admin-users',compact('roles','admins'));}
-    public function saveAdminRole(Request $request){$permissions=['dashboard','catalog','inventory','orders','customers','marketing','reports','settings','staff'];$this->validate($request,['name'=>'required|max:100']);$selected=array_values(array_intersect($permissions,(array)$request->permissions));if(!in_array('dashboard',$selected,true))$selected[]='dashboard';if(DB::table('admin_roles')->where('name',$request->name)->exists())return Redirect::back()->with('exception','A role with that name already exists.');DB::table('admin_roles')->insert(['name'=>$request->name,'permissions'=>json_encode($selected),'is_system'=>0,'created_at'=>now(),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator role created.');}
+    public function saveAdminRole(Request $request){$permissions=['dashboard','catalog','inventory','orders','customers','marketing','reports','settings','staff','view_product_code_configuration','change_product_code_configuration','view_product_code_sequence','change_product_code_sequence','reset_product_code_sequence','override_product_code','regenerate_product_code','view_product_code_history','view_recycle_bin','restore_deleted_items','permanently_delete_items','empty_recycle_bin','view_orphan_media','cleanup_orphan_media'];$this->validate($request,['name'=>'required|max:100']);$selected=array_values(array_intersect($permissions,(array)$request->permissions));if(!in_array('dashboard',$selected,true))$selected[]='dashboard';if(DB::table('admin_roles')->where('name',$request->name)->exists())return Redirect::back()->with('exception','A role with that name already exists.');DB::table('admin_roles')->insert(['name'=>$request->name,'permissions'=>json_encode($selected),'is_system'=>0,'created_at'=>now(),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator role created.');}
     public function updateAdminRole(Request $request,$id){
-        $allowed=['dashboard','catalog','inventory','orders','customers','marketing','reports','settings','staff'];
+        $allowed=['dashboard','catalog','inventory','orders','customers','marketing','reports','settings','staff','view_product_code_configuration','change_product_code_configuration','view_product_code_sequence','change_product_code_sequence','reset_product_code_sequence','override_product_code','regenerate_product_code','view_product_code_history','view_recycle_bin','restore_deleted_items','permanently_delete_items','empty_recycle_bin','view_orphan_media','cleanup_orphan_media'];
         $this->validate($request,['name'=>'required|max:100']);
         $role=DB::table('admin_roles')->where('id',$id)->first();
         abort_unless($role,404);
         if(DB::table('admin_roles')->where('name',$request->name)->where('id','<>',$id)->exists())return Redirect::back()->with('exception','A role with that name already exists.');
         $selected=array_values(array_intersect($allowed,(array)$request->permissions));
         if(!in_array('dashboard',$selected,true))$selected[]='dashboard';
-        if($role->name==='Super Admin')$selected=$allowed;
+        if($role->is_system && $role->name !== 'Super Admin')$selected=$allowed;
         DB::table('admin_roles')->where('id',$id)->update(['name'=>$request->name,'permissions'=>json_encode($selected),'updated_at'=>now()]);
         return Redirect::back()->with('message','Administrator role updated.');
     }
@@ -1640,10 +2198,10 @@ class SuperAdminController extends Controller {
     public function toggleWebhookEndpoint($id){$hook=DB::table('webhook_endpoints')->where('id',$id)->first();if($hook)DB::table('webhook_endpoints')->where('id',$id)->update(['is_active'=>$hook->is_active?0:1,'updated_at'=>now()]);return Redirect::back()->with('message','Webhook status updated.');}
     public function deleteWebhookEndpoint($id){DB::table('webhook_deliveries')->where('webhook_endpoint_id',$id)->delete();DB::table('webhook_endpoints')->where('id',$id)->delete();return Redirect::back()->with('message','Webhook deleted.');}
 
-    public function purchasing(){ $suppliers=DB::table('suppliers')->orderBy('name')->get();$products=DB::table('product')->select('id','product_name','sku','purchase_price')->orderBy('product_name')->get();$purchaseOrders=DB::table('purchase_orders as p')->join('suppliers as s','s.id','=','p.supplier_id')->select('p.*','s.name as supplier_name')->latest('p.id')->paginate(25);return view('admin.admin-pages.purchasing',compact('suppliers','products','purchaseOrders'));}
+    public function purchasing(){ $suppliers=DB::table('suppliers')->orderBy('name')->get();$products=DB::table('product')->whereNull('deleted_at')->select('id','product_name','sku','purchase_price')->orderBy('product_name')->get();$purchaseOrders=DB::table('purchase_orders as p')->join('suppliers as s','s.id','=','p.supplier_id')->select('p.*','s.name as supplier_name')->latest('p.id')->paginate(25);return view('admin.admin-pages.purchasing',compact('suppliers','products','purchaseOrders'));}
     public function saveSupplier(Request $request){$this->validate($request,['name'=>'required|max:150','email'=>'nullable|email|max:150','phone'=>'nullable|max:40']);DB::table('suppliers')->insert(['name'=>$request->name,'contact_person'=>$request->contact_person,'phone'=>$request->phone,'email'=>$request->email,'address'=>$request->address,'tax_id'=>$request->tax_id,'is_active'=>1,'created_at'=>now(),'updated_at'=>now()]);return Redirect::back()->with('message','Supplier created.');}
     public function toggleSupplier($id){$supplier=DB::table('suppliers')->where('id',$id)->first();if($supplier)DB::table('suppliers')->where('id',$id)->update(['is_active'=>$supplier->is_active?0:1,'updated_at'=>now()]);return Redirect::back()->with('message','Supplier status updated.');}
-    public function savePurchaseOrder(Request $request){$this->validate($request,['supplier_id'=>'required|integer|exists:suppliers,id','expected_at'=>'nullable|date','other_cost'=>'nullable|numeric|min:0','product_id'=>'required|array|min:1','product_id.*'=>'required|integer|distinct|exists:product,id','quantity.*'=>'required|integer|min:1|max:100000','unit_cost.*'=>'required|numeric|min:0']);$products=DB::table('product')->whereIn('id',$request->product_id)->get()->keyBy('id');$subtotal=0;$lines=[];foreach($request->product_id as $index=>$productId){$product=$products[$productId];$quantity=(int)$request->quantity[$index];$cost=(float)$request->unit_cost[$index];$line=$quantity*$cost;$subtotal+=$line;$lines[]=['product_id'=>$product->id,'product_name'=>$product->product_name,'sku'=>$product->sku,'ordered_quantity'=>$quantity,'received_quantity'=>0,'unit_cost'=>$cost,'subtotal'=>$line,'created_at'=>now(),'updated_at'=>now()];}$id=DB::transaction(function()use($request,$subtotal,$lines){$id=DB::table('purchase_orders')->insertGetId(['po_number'=>'PO-'.date('ymd').'-'.strtoupper(str_random(5)),'supplier_id'=>$request->supplier_id,'status'=>'draft','expected_at'=>$request->expected_at,'subtotal'=>$subtotal,'other_cost'=>$request->other_cost?:0,'total'=>$subtotal+(float)$request->other_cost,'notes'=>$request->notes,'created_by'=>session('admin_name'),'created_at'=>now(),'updated_at'=>now()]);foreach($lines as $line){$line['purchase_order_id']=$id;DB::table('purchase_order_items')->insert($line);}return $id;});return Redirect::to('/purchase-orders/'.$id)->with('message','Purchase order created as a draft.');}
+    public function savePurchaseOrder(Request $request){$this->validate($request,['supplier_id'=>'required|integer|exists:suppliers,id','expected_at'=>'nullable|date','other_cost'=>'nullable|numeric|min:0','product_id'=>'required|array|min:1','product_id.*'=>['required','integer','distinct',Rule::exists('product','id')->whereNull('deleted_at')],'quantity.*'=>'required|integer|min:1|max:100000','unit_cost.*'=>'required|numeric|min:0']);$products=DB::table('product')->whereNull('deleted_at')->whereIn('id',$request->product_id)->get()->keyBy('id');$subtotal=0;$lines=[];foreach($request->product_id as $index=>$productId){$product=$products[$productId];$quantity=(int)$request->quantity[$index];$cost=(float)$request->unit_cost[$index];$line=$quantity*$cost;$subtotal+=$line;$lines[]=['product_id'=>$product->id,'product_name'=>$product->product_name,'sku'=>$product->sku,'ordered_quantity'=>$quantity,'received_quantity'=>0,'unit_cost'=>$cost,'subtotal'=>$line,'created_at'=>now(),'updated_at'=>now()];}$id=DB::transaction(function()use($request,$subtotal,$lines){$id=DB::table('purchase_orders')->insertGetId(['po_number'=>'PO-'.date('ymd').'-'.strtoupper(str_random(5)),'supplier_id'=>$request->supplier_id,'status'=>'draft','expected_at'=>$request->expected_at,'subtotal'=>$subtotal,'other_cost'=>$request->other_cost?:0,'total'=>$subtotal+(float)$request->other_cost,'notes'=>$request->notes,'created_by'=>session('admin_name'),'created_at'=>now(),'updated_at'=>now()]);foreach($lines as $line){$line['purchase_order_id']=$id;DB::table('purchase_order_items')->insert($line);}return $id;});return Redirect::to('/purchase-orders/'.$id)->with('message','Purchase order created as a draft.');}
     public function viewPurchaseOrder($id){$order=DB::table('purchase_orders as p')->join('suppliers as s','s.id','=','p.supplier_id')->where('p.id',$id)->select('p.*','s.name as supplier_name','s.contact_person','s.phone as supplier_phone','s.email as supplier_email')->first();abort_unless($order,404);$items=DB::table('purchase_order_items')->where('purchase_order_id',$id)->get();$receipts=DB::table('stock_receipts')->where('purchase_order_id',$id)->latest('received_at')->get();return view('admin.admin-pages.purchase-order',compact('order','items','receipts'));}
     public function updatePurchaseOrderStatus(Request $request,$id){$this->validate($request,['status'=>'required|in:ordered,cancelled']);$order=DB::table('purchase_orders')->where('id',$id)->first();abort_unless($order,404);if($order->status!=='draft')return Redirect::back()->with('exception','Only draft purchase orders can be ordered or cancelled.');DB::table('purchase_orders')->where('id',$id)->update(['status'=>$request->status,'updated_at'=>now()]);return Redirect::back()->with('message','Purchase order status updated.');}
     public function receivePurchaseOrder(Request $request,$id)
@@ -1663,7 +2221,7 @@ class SuperAdminController extends Controller {
                     $remaining=$item->ordered_quantity-$item->received_quantity;
                     if($quantity>$remaining) throw new \RuntimeException('Received quantity exceeds the remaining quantity for '.$item->product_name.'.');
                     if(!$quantity) continue;
-                    $product=DB::table('product')->where('id',$item->product_id)->lockForUpdate()->first();
+                    $product=DB::table('product')->whereNull('deleted_at')->where('id',$item->product_id)->lockForUpdate()->first();
                     $oldQuantity=max(0,(int)$product->stock_quantity);$newQuantity=$oldQuantity+$quantity;
                     $newCost=(float)$product->purchase_price>0&&$oldQuantity>0?(($oldQuantity*(float)$product->purchase_price)+($quantity*(float)$item->unit_cost))/$newQuantity:(float)$item->unit_cost;
                     $balance=DB::table('product_location_stock')->where('location_id',$location->id)->where('product_id',$product->id)->lockForUpdate()->first();
@@ -1682,7 +2240,7 @@ class SuperAdminController extends Controller {
         return Redirect::back()->with('message',$received.' inventory unit(s) received into '.$location->name.'.');
     }
 
-    public function stockLocations(Request $request){$locations=DB::table('inventory_locations')->orderByDesc('is_default')->orderBy('name')->get();$editLocation=$request->filled('edit')?DB::table('inventory_locations')->where('id',$request->edit)->first():null;$products=DB::table('product')->select('id','product_name','sku','stock_quantity')->orderBy('product_name')->get();$balances=DB::table('product_location_stock as s')->join('inventory_locations as l','l.id','=','s.location_id')->select('s.*','l.name as location_name')->get()->groupBy('product_id');$transfers=DB::table('stock_transfers as t')->join('inventory_locations as f','f.id','=','t.from_location_id')->join('inventory_locations as d','d.id','=','t.to_location_id')->select('t.*','f.name as from_name','d.name as to_name')->latest('t.id')->limit(30)->get();return view('admin.admin-pages.stock-locations',compact('locations','editLocation','products','balances','transfers'));}
+    public function stockLocations(Request $request){$locations=DB::table('inventory_locations')->orderByDesc('is_default')->orderBy('name')->get();$editLocation=$request->filled('edit')?DB::table('inventory_locations')->where('id',$request->edit)->first():null;$products=DB::table('product')->whereNull('deleted_at')->select('id','product_name','sku','stock_quantity')->orderBy('product_name')->get();$balances=DB::table('product_location_stock as s')->join('inventory_locations as l','l.id','=','s.location_id')->select('s.*','l.name as location_name')->get()->groupBy('product_id');$transfers=DB::table('stock_transfers as t')->join('inventory_locations as f','f.id','=','t.from_location_id')->join('inventory_locations as d','d.id','=','t.to_location_id')->select('t.*','f.name as from_name','d.name as to_name')->latest('t.id')->limit(30)->get();return view('admin.admin-pages.stock-locations',compact('locations','editLocation','products','balances','transfers'));}
     public function saveStockLocation(Request $request)
     {
         $this->validateStockLocation($request);
@@ -1701,7 +2259,7 @@ class SuperAdminController extends Controller {
         return Redirect::to('/stock-locations')->with('message','Inventory location updated.');
     }
     public function toggleStockLocation($id){$location=DB::table('inventory_locations')->where('id',$id)->first();if(!$location)return Redirect::back();if($location->is_default)return Redirect::back()->with('exception','The default warehouse cannot be disabled.');DB::table('inventory_locations')->where('id',$id)->update(['is_active'=>$location->is_active?0:1,'updated_at'=>now()]);return Redirect::back()->with('message','Location status updated.');}
-    public function saveStockTransfer(Request $request){$this->validate($request,['from_location_id'=>'required|integer|exists:inventory_locations,id','to_location_id'=>'required|integer|different:from_location_id|exists:inventory_locations,id','product_id'=>'required|array|min:1','product_id.*'=>'required|integer|distinct|exists:product,id','quantity.*'=>'required|integer|min:1|max:100000']);$products=DB::table('product')->whereIn('id',$request->product_id)->get()->keyBy('id');try{$id=DB::transaction(function()use($request,$products){$id=DB::table('stock_transfers')->insertGetId(['transfer_number'=>'TR-'.date('ymd').'-'.strtoupper(str_random(5)),'from_location_id'=>$request->from_location_id,'to_location_id'=>$request->to_location_id,'status'=>'completed','notes'=>$request->notes,'created_by'=>session('admin_name'),'completed_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);foreach($request->product_id as $index=>$productId){$quantity=(int)$request->quantity[$index];$source=DB::table('product_location_stock')->where('location_id',$request->from_location_id)->where('product_id',$productId)->lockForUpdate()->first();if(!$source||$source->quantity<$quantity)throw new \RuntimeException($products[$productId]->product_name.' has insufficient stock at the source location.');DB::table('product_location_stock')->where('id',$source->id)->decrement('quantity',$quantity);$destination=DB::table('product_location_stock')->where('location_id',$request->to_location_id)->where('product_id',$productId)->lockForUpdate()->first();if($destination)DB::table('product_location_stock')->where('id',$destination->id)->increment('quantity',$quantity);else DB::table('product_location_stock')->insert(['location_id'=>$request->to_location_id,'product_id'=>$productId,'quantity'=>$quantity,'created_at'=>now(),'updated_at'=>now()]);DB::table('stock_transfer_items')->insert(['stock_transfer_id'=>$id,'product_id'=>$productId,'product_name'=>$products[$productId]->product_name,'sku'=>$products[$productId]->sku,'quantity'=>$quantity,'created_at'=>now(),'updated_at'=>now()]);}return $id;});}catch(\RuntimeException $e){return Redirect::back()->withInput()->with('exception',$e->getMessage());}return Redirect::back()->with('message','Stock transfer completed. Reference '.$id.'.');}
+    public function saveStockTransfer(Request $request){$this->validate($request,['from_location_id'=>'required|integer|exists:inventory_locations,id','to_location_id'=>'required|integer|different:from_location_id|exists:inventory_locations,id','product_id'=>'required|array|min:1','product_id.*'=>['required','integer','distinct',Rule::exists('product','id')->whereNull('deleted_at')],'quantity.*'=>'required|integer|min:1|max:100000']);$products=DB::table('product')->whereNull('deleted_at')->whereIn('id',$request->product_id)->get()->keyBy('id');try{$id=DB::transaction(function()use($request,$products){$id=DB::table('stock_transfers')->insertGetId(['transfer_number'=>'TR-'.date('ymd').'-'.strtoupper(str_random(5)),'from_location_id'=>$request->from_location_id,'to_location_id'=>$request->to_location_id,'status'=>'completed','notes'=>$request->notes,'created_by'=>session('admin_name'),'completed_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);foreach($request->product_id as $index=>$productId){$quantity=(int)$request->quantity[$index];$source=DB::table('product_location_stock')->where('location_id',$request->from_location_id)->where('product_id',$productId)->lockForUpdate()->first();if(!$source||$source->quantity<$quantity)throw new \RuntimeException($products[$productId]->product_name.' has insufficient stock at the source location.');DB::table('product_location_stock')->where('id',$source->id)->decrement('quantity',$quantity);$destination=DB::table('product_location_stock')->where('location_id',$request->to_location_id)->where('product_id',$productId)->lockForUpdate()->first();if($destination)DB::table('product_location_stock')->where('id',$destination->id)->increment('quantity',$quantity);else DB::table('product_location_stock')->insert(['location_id'=>$request->to_location_id,'product_id'=>$productId,'quantity'=>$quantity,'created_at'=>now(),'updated_at'=>now()]);DB::table('stock_transfer_items')->insert(['stock_transfer_id'=>$id,'product_id'=>$productId,'product_name'=>$products[$productId]->product_name,'sku'=>$products[$productId]->sku,'quantity'=>$quantity,'created_at'=>now(),'updated_at'=>now()]);}return $id;});}catch(\RuntimeException $e){return Redirect::back()->withInput()->with('exception',$e->getMessage());}return Redirect::back()->with('message','Stock transfer completed. Reference '.$id.'.');}
 
 
 
@@ -1760,8 +2318,35 @@ class SuperAdminController extends Controller {
 
     private function deleteOwnedProductImage($path)
     {
-        $path=ltrim((string)$path,'/');
-        if(strpos($path,'asset/front-end/img/Product_image/')===0&&is_file(public_path($path)))unlink(public_path($path));
+        app(MediaLifecycleService::class)->deleteIfUnreferenced($path, [], 'Product image replaced or removed.');
+    }
+
+    private function productCodeExists(string $code, ?int $ignoreId = null): bool
+    {
+        $code = normalize_product_code($code, 100);
+        if ($code === null || $code === '') {
+            return false;
+        }
+
+        $query = DB::table('product')->where(function ($builder) use ($code) {
+            $builder->where('product_code', $code)->orWhere('sku', $code);
+        });
+
+        if ($ignoreId !== null) {
+            $query->where('id', '<>', $ignoreId);
+        }
+
+        if ($query->exists()) {
+            return true;
+        }
+
+        if (! DB::getSchemaBuilder()->hasTable('product_code_histories')) {
+            return false;
+        }
+
+        return DB::table('product_code_histories')->where(function ($builder) use ($code) {
+            $builder->where('old_code', $code)->orWhere('new_code', $code);
+        })->exists();
     }
 
     private function validateStockLocation(Request $request, $ignoreId = null)
@@ -1826,23 +2411,36 @@ class SuperAdminController extends Controller {
     private function validateVariantUniqueness(Request $request, $productId = null)
     {
         foreach(['sku','barcode'] as $field) {
-            $values=collect((array)$request->input('variants',[]))->pluck($field)->map(function($value){return trim((string)$value);})->filter()->values();
+            $values=collect((array)$request->input('variants',[]))->pluck($field)->map(function($value) use ($field){return $field === 'sku' ? normalize_product_code($value, 100) : trim((string)$value);})->filter()->values();
             if(!$values->count())continue;
             $query=DB::table('product_variants')->whereIn($field,$values);
             if($productId)$query->where('product_id','<>',$productId);
             if($query->exists())throw \Illuminate\Validation\ValidationException::withMessages(['variants'=>'A variant '.$field.' is already used by another product.']);
-            if(DB::table('product')->whereIn($field,$values)->when($productId,function($query)use($productId){$query->where('id','<>',$productId);})->exists())throw \Illuminate\Validation\ValidationException::withMessages(['variants'=>'A variant '.$field.' conflicts with a product '.$field.'.']);
+            if(DB::table('product')->where(function($query) use ($field, $values) {$query->whereIn($field,$values); if($field === 'sku') {$query->orWhereIn('product_code',$values);}})->when($productId,function($query)use($productId){$query->where('id','<>',$productId);})->exists() || ($field === 'sku' && $values->contains(function ($value) use ($productId) { return $this->productCodeExists((string) $value, $productId); })))throw \Illuminate\Validation\ValidationException::withMessages(['variants'=>'A variant '.$field.' conflicts with a product '.$field.'.']);
         }
     }
 
     private function syncProductVariantsAndLots($productId, Request $request)
     {
         DB::transaction(function()use($productId,$request){
+            $productCode = trim((string) (DB::table('product')->where('id', $productId)->value('product_code') ?: DB::table('product')->where('id', $productId)->value('sku') ?: DB::table('product')->where('id', $productId)->value('product_id') ?: ''));
+            $fallbackProductCode = $productCode !== '' ? $productCode : ('VARIANT-'.$productId);
+            $variantGenerator = app(ProductCodeGenerator::class);
+            $usedSkus = [];
             DB::table('product_variants')->where('product_id',$productId)->delete();
             foreach((array)$request->input('variants',[]) as $variant) {
                 $name=trim((string)($variant['name']??''));
                 if($name==='')continue;
-                DB::table('product_variants')->insert(['product_id'=>$productId,'name'=>$name,'sku'=>trim((string)($variant['sku']??''))?:null,'barcode'=>trim((string)($variant['barcode']??''))?:null,'price_adjustment'=>(float)($variant['price_adjustment']??0),'stock_quantity'=>max(0,(int)($variant['stock_quantity']??0)),'is_active'=>isset($variant['is_active'])?1:0,'created_at'=>now(),'updated_at'=>now()]);
+                $variantSku = normalize_product_code($variant['sku'] ?? null, 100);
+                if ($variantSku === null || $variantSku === '') {
+                    $variantSku = $variantGenerator->generateVariantSku($fallbackProductCode, $variant, $usedSkus);
+                } elseif ($variantSku !== null && in_array($variantSku, $usedSkus, true)) {
+                    $variantSku = $variantGenerator->generateVariantSku($fallbackProductCode, $variant, $usedSkus);
+                } else {
+                    $usedSkus[] = $variantSku;
+                }
+
+                DB::table('product_variants')->insert(['product_id'=>$productId,'name'=>$name,'sku'=>$variantSku?:null,'barcode'=>trim((string)($variant['barcode']??''))?:null,'price_adjustment'=>(float)($variant['price_adjustment']??0),'stock_quantity'=>max(0,(int)($variant['stock_quantity']??0)),'is_active'=>isset($variant['is_active'])?1:0,'created_at'=>now(),'updated_at'=>now()]);
             }
             DB::table('product_lots')->where('product_id',$productId)->delete();
             foreach((array)$request->input('lots',[]) as $lot) {

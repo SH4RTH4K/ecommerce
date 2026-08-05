@@ -14,7 +14,30 @@
     @if(session('message'))<div class="alert alert-success">{{ session('message') }}</div>@endif
     @if(session('exception'))<div class="alert alert-error">{{ session('exception') }}</div>@endif
     @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
+    @php
+        $catalogSourceAddress = catalog_import_source_address($siteSettings->get('catalog_import_source_address'));
+        $catalogSourceLabel = catalog_import_source_label($catalogSourceAddress);
+        $seriesImportOptions = isset($manufacturerOptions) ? $manufacturerOptions->pluck('manufacturer_name', 'manufacturer_id')->all() : [];
+    @endphp
     <div style="margin-bottom:16px"><a class="btn btn-primary" href="{{ url('/add-manufacturer') }}"><i class="halflings-icon white plus"></i> Add Manufacturer</a></div>
+    @include('admin.components.startech-import', [
+        'title' => $catalogSourceLabel.' source import for series',
+        'description' => 'Fetch the live source hierarchy first, then pick the brand that should receive imported product series.',
+        'sourceAddress' => $catalogSourceAddress,
+        'stepLabels' => [
+            'series' => 'Series',
+        ],
+        'selectedSteps' => ['series'],
+        'submitLabel' => 'Import source series',
+        'helpText' => 'Use Fetch only to preview the selected source first, then import the series names that belong to one brand.',
+        'noteTitle' => 'Series import scope',
+        'noteBody' => 'Pick one brand to limit the import, or leave All brands selected to import series for every supported manufacturer.',
+        'scopeSelectLabel' => 'Brand',
+        'scopeSelectName' => 'manufacturer_id',
+        'scopeSelectOptions' => $seriesImportOptions,
+        'scopeSelectPlaceholder' => 'All brands',
+        'scopeSelectHelp' => 'Choose a brand to import only its source series.',
+    ])
     @include('admin.components.data-transfer',['resource'=>'manufacturers'])
 
     <div class="row-fluid sortable">		
@@ -35,7 +58,9 @@
                         <tr>
                             <th style="width:32px"><input type="checkbox" id="select-all-manufacturers" aria-label="Select all manufacturers"></th>
                             <th>ID</th>
-                            <th>Company Name</th>
+                            <th>Parent Company</th>
+                            <th>Brand Name</th>
+                            <th>Brand Code</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -50,7 +75,9 @@
                         <tr>
                             <td><input type="checkbox" class="bulk-row-checkbox" name="manufacturer_ids[]" value="{{ $vmanufacturer->manufacturer_id }}" aria-label="Select {{ $vmanufacturer->manufacturer_name }}"></td>
                             <td>{{$vmanufacturer->manufacturer_id}}</td>
+                            <td class="center">{{ $vmanufacturer->company_name ?: '-' }}</td>
                             <td class="center">{{$vmanufacturer->manufacturer_name}}</td>
+                            <td class="center">{{ $vmanufacturer->brand_code ?: '-' }}</td>
                             <td class="center">
                                 <?php
                                 if($vmanufacturer->publication_status==1)

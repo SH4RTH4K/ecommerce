@@ -21,7 +21,7 @@
     <script type="application/ld+json">{!! json_encode($organization, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) !!}</script>
     @if($brandFavicon)<link rel="icon" href="{{ asset($brandFavicon) }}">@endif
     <link rel="stylesheet" href="{{ asset('asset/front-end/css/font-awesome.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}?v={{ filemtime(public_path('css/ecommerce-home.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/brand-tagline.css') }}?v={{ filemtime(public_path('css/brand-tagline.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
     @include('partials.google-analytics')
@@ -79,7 +79,7 @@
             </div>
         </section>
 
-        <section id="products" class="lt-section lt-products-section">
+        <section id="offers" class="lt-section lt-products-section">
             <div class="lt-container">
                 <div class="lt-section-heading"><div><span>Chosen for you</span><h2>Featured Products</h2></div><div class="lt-tabs" role="tablist"><button class="is-active" data-tab-button="featured" role="tab" aria-selected="true">Featured</button><button data-tab-button="latest" role="tab" aria-selected="false">Latest</button></div></div>
                 <div class="lt-product-grid" data-tab-panel="featured">
@@ -93,7 +93,7 @@
 
         <section class="lt-usp"><div class="lt-container lt-usp-grid"><div><i class="fa fa-truck"></i><span><strong>Nationwide Delivery</strong>Fast and carefully handled</span></div><div><i class="fa fa-shield"></i><span><strong>Genuine Products</strong>Official warranty support</span></div><div><i class="fa fa-headphones"></i><span><strong>Expert Support</strong>Before and after purchase</span></div><div><i class="fa fa-credit-card"></i><span><strong>Secure Payment</strong>Safe and convenient</span></div></div></section>
 
-        <section id="new-arrivals" class="lt-section lt-container">
+        <section id="latest-offers" class="lt-section lt-container">
             <div class="lt-section-heading"><div><span>Just landed</span><h2>New Arrivals</h2></div></div>
             <div class="lt-product-grid">
                 @forelse($newArrivals as $product) @include('partials.product-card', ['product' => $product]) @empty <div class="lt-empty">No products are marked as new arrivals yet. Admin/data flagging is required.</div> @endforelse

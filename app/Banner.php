@@ -4,10 +4,13 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 
 class Banner extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'banners';
     protected $guarded = [];
     protected $casts = [
@@ -24,6 +27,7 @@ class Banner extends Model
         parent::boot();
         static::saved(function () { Cache::forget('homepage-banners'); });
         static::deleted(function () { Cache::forget('homepage-banners'); });
+        static::restored(function () { Cache::forget('homepage-banners'); });
     }
 
     public function product()

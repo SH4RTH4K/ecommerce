@@ -11,6 +11,15 @@ use Tests\TestCase;
 
 class BannerManagementTest extends TestCase
 {
+    private function uploadFromPublic(string $relativePath, string $originalName): UploadedFile
+    {
+        $source = public_path($relativePath);
+        $tempPath = tempnam(sys_get_temp_dir(), 'banner_upload_');
+        copy($source, $tempPath);
+
+        return new UploadedFile($tempPath, $originalName, null, null, true);
+    }
+
     public function testBannerVisibilityHonorsStatusAndSchedule()
     {
         DB::beginTransaction();
@@ -74,7 +83,7 @@ class BannerManagementTest extends TestCase
         $storedPath = null;
         try {
             $response = $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])->post('/save-banner', [
-                'banner_type'=>'product','product_id'=>$product->id,'desktop_image'=>UploadedFile::fake()->image('promotion.jpg',1200,500),
+                'banner_type'=>'product','product_id'=>$product->id,'desktop_image'=>$this->uploadFromPublic('asset/front-end/img/home/pic 1.jpg', 'promotion.jpg'),
                 'image_position'=>'center','display_order'=>7,'show_overlay'=>1,'use_product_image'=>1,'is_active'=>1,
             ]);
             $response->assertRedirect('/banner-management')->assertSessionHas('message');
@@ -96,7 +105,7 @@ class BannerManagementTest extends TestCase
         $admin = DB::table('tbl_admin')->where('is_active', 1)->first();
         if (!$admin) return $this->assertTrue(true);
         $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])->from('/banner-management')->post('/save-banner', [
-            'banner_type'=>'custom','link_url'=>'javascript:alert(1)','desktop_image'=>UploadedFile::fake()->image('promotion.jpg',1200,500),
+            'banner_type'=>'custom','link_url'=>'javascript:alert(1)','desktop_image'=>$this->uploadFromPublic('asset/front-end/img/home/pic 1.jpg', 'promotion.jpg'),
             'image_position'=>'center','display_order'=>0,'show_overlay'=>1,'is_active'=>1,
         ])->assertRedirect('/banner-management')->assertSessionHasErrors('link_url');
     }
@@ -153,9 +162,11 @@ class BannerManagementTest extends TestCase
             Banner::create(['banner_type'=>'information','title'=>'Shared image owner','image_path'=>$sharedPath,'image_position'=>'center','display_order'=>0,'is_active'=>0]);
             $deleted = Banner::create(['banner_type'=>'information','title'=>'Delete lifecycle banner','image_path'=>$sharedPath,'mobile_image'=>$mobilePath,'image_position'=>'center','display_order'=>1,'is_active'=>1]);
             $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])->post('/delete-banner/'.$deleted->id)->assertRedirect('/banner-management')->assertSessionHas('message');
-            $this->assertNull(Banner::find($deleted->id));
+            $trashed = Banner::withTrashed()->find($deleted->id);
+            $this->assertNotNull($trashed);
+            $this->assertTrue($trashed->trashed());
             $this->assertFileExists(public_path($sharedPath));
-            $this->assertFileDoesNotExist(public_path($mobilePath));
+            $this->assertFileExists(public_path($mobilePath));
         } finally {
             DB::rollBack();
             if (is_file(public_path($sharedPath))) unlink(public_path($sharedPath));

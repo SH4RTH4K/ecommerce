@@ -105,7 +105,7 @@ class WelcomeController extends Controller
         $perPage = in_array((int) $request->per_page, [12, 24, 48]) ? (int) $request->per_page : 12;
         $products = $query->paginate($perPage)->appends($request->query());
         $attributeFilters = DB::table('catalog_attributes')->where('category_id',$category_id)->where('is_filterable',1)->orderBy('display_order')->get()->map(function($attribute) use($category_id){
-            $storedValues=DB::table('product_attribute_values')->join('product','product_attribute_values.product_id','=','product.id')->where('product_attribute_values.attribute_id',$attribute->id)->where('product.category_id',$category_id)->where('product.publication_status',1)->pluck('product_attribute_values.value');
+            $storedValues=DB::table('product_attribute_values')->join('product','product_attribute_values.product_id','=','product.id')->whereNull('product.deleted_at')->where('product_attribute_values.attribute_id',$attribute->id)->where('product.category_id',$category_id)->where('product.publication_status',1)->pluck('product_attribute_values.value');
             if($attribute->input_type==='multiselect'){$attribute->values=$storedValues->flatMap(function($value){$decoded=json_decode($value,true);return is_array($decoded)?$decoded:[$value];})->filter()->unique()->sort()->values();}
             else $attribute->values=$storedValues->unique()->sort()->values();
             return $attribute;
@@ -122,6 +122,7 @@ class WelcomeController extends Controller
             ->first();
         abort_unless($search_by_sub_category_name,404);
         $all_sub_product_by_category=DB::table('product')
+                ->whereNull('deleted_at')
                 ->where('sub_category',$sub_category)
                 ->where('publication_status',1)
                 ->latest()
@@ -131,38 +132,29 @@ class WelcomeController extends Controller
     
     public function allManufacturerById($manufacturer_id)
     {
-//        $search_by_sub_category_name = DB::table('product')
-//            ->join('sub_category', 'product.sub_category', '=', 'sub_category.sub_category_id')
-//            ->select('product.*', 'sub_category.sub_category_name')
-//            ->where('product.sub_category',$sub_category)
-//            ->first();
+        $manufacturer = Manufacturer::where('publication_status', 1)->findOrFail($manufacturer_id);
         $all_manufacturer_by_id=DB::table('product')
+                ->whereNull('deleted_at')
                 ->where('manufacturer_id',$manufacturer_id)
                 ->where('publication_status',1)
                 ->latest()
                 ->get();
-        $manufacturer_home= view('front-end.pages.manufacturer-by-id')
-                ->with('all_manufacturer_by_id', $all_manufacturer_by_id);
-//                ->with('search_by_sub_category_name',$search_by_sub_category_name);
-        return view('front-end.master')
-                    ->with('main_content', $manufacturer_home);
+        return view('front-end.pages.manufacturer-by-id', compact('all_manufacturer_by_id', 'manufacturer'));
     }
     
     public function searchProduct(Request $request)
     {
-        $search=$request->search_text;
+        $search_term = trim((string) $request->search_text);
         $search_product=DB::table('product')
+                ->whereNull('deleted_at')
                 ->where('publication_status',1)
-                ->where(function ($query) use ($search) {
-                    $query->where('product_name','like','%'.$search.'%')
-                        ->orWhere('product_model','like','%'.$search.'%')
-                        ->orWhere('sku','like','%'.$search.'%')
-                        ->orWhereExists(function($attributeQuery) use($search){$attributeQuery->select(DB::raw(1))->from('product_attribute_values')->whereRaw('product_attribute_values.product_id = product.id')->where('value','like','%'.$search.'%');});
+                ->where(function ($query) use ($search_term) {
+                    $query->where('product_name','like','%'.$search_term.'%')
+                        ->orWhere('product_model','like','%'.$search_term.'%')
+                        ->orWhere('sku','like','%'.$search_term.'%')
+                        ->orWhereExists(function($attributeQuery) use($search_term){$attributeQuery->select(DB::raw(1))->from('product_attribute_values')->whereRaw('product_attribute_values.product_id = product.id')->where('value','like','%'.$search_term.'%');});
                 })->get();
-        $search_home= view('front-end.pages.search-product')
-                ->with('search_product', $search_product);
-        return view('front-end.master')
-                    ->with('main_content', $search_home);
+        return view('front-end.pages.search-product', compact('search_product', 'search_term'));
     }
     
     

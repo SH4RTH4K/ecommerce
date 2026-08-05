@@ -44,6 +44,10 @@
                         </div>
                     </div>
                     <div class="control-group">
+                        <label class="control-label" for="sub_category_code">Subcategory Code</label>
+                        <div class="controls"><input type="text" name="sub_category_code" id="sub_category_code" value="{{ old('sub_category_code') }}" class="span3" maxlength="30" placeholder="Example: GAM"><p class="help-block">Optional. Leave blank to auto-generate from the subcategory name.</p></div>
+                    </div>
+                    <div class="control-group">
                         <label class="control-label" for="selectError3">Parent Category</label>
                         <div class="controls">
                             <select id="selectError3" name="category_id">

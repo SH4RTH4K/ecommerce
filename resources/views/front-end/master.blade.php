@@ -18,7 +18,7 @@
     <meta name="twitter:card" content="summary_large_image">
     @if($brandFavicon)<link rel="icon" href="{{ asset($brandFavicon) }}">@endif
     <link rel="stylesheet" href="{{ asset('asset/front-end/css/font-awesome.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}?v={{ filemtime(public_path('css/ecommerce-home.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/brand-tagline.css') }}?v={{ filemtime(public_path('css/brand-tagline.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
     @include('partials.google-analytics')

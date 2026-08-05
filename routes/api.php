@@ -21,3 +21,5 @@ Route::get('/v1/products','Api\StoreApiController@products')->middleware('api.cl
 Route::get('/v1/orders','Api\StoreApiController@orders')->middleware('api.client:orders.read');
 Route::get('/v1/orders/{id}','Api\StoreApiController@order')->middleware('api.client:orders.read');
 Route::put('/v1/products/{id}/inventory','Api\StoreApiController@updateInventory')->middleware('api.client:inventory.write');
+Route::get('/product-code/configuration', 'ProductCodeConfigurationController@configuration')->middleware('api.client:catalog.read');
+Route::post('/product-code/preview', 'ProductCodeConfigurationController@preview')->middleware('api.client:catalog.read');

@@ -44,6 +44,22 @@
                         </div>
                     </div>
                     <div class="control-group">
+                        <label class="control-label" for="company_id">Parent Company</label>
+                        <div class="controls">
+                            <select id="company_id" name="company_id" class="span6">
+                                <option value="">No company / legacy brand</option>
+                                @foreach($companies as $company)
+                                <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}{{ $company->company_code ? ' - '.$company->company_code : '' }}</option>
+                                @endforeach
+                            </select>
+                            <p class="help-block">Optional. Pick a company to group this brand under the newer hierarchy.</p>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="brand_code">Brand Code</label>
+                        <div class="controls"><input type="text" name="brand_code" id="brand_code" value="{{ old('brand_code') }}" class="span3" maxlength="30" placeholder="Example: SAM"><p class="help-block">Optional. Leave blank to auto-generate from the brand name.</p></div>
+                    </div>
+                    <div class="control-group">
                         <label class="control-label" for="selectError3">Publication Status</label>
                         <div class="controls">
                             <select id="selectError3" name="publication_status">

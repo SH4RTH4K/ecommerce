@@ -16,7 +16,7 @@
         <link href="{{asset('asset/front-end/css/main.css')}}" rel="stylesheet">
         <link href="{{asset('asset/front-end/css/responsive.css')}}" rel="stylesheet">
         <link href="{{asset('asset/front-end/css/custom.css')}}" rel="stylesheet">
-        <link href="{{asset('css/ecommerce-home.css')}}" rel="stylesheet">
+        <link href="{{asset('css/ecommerce-home.css')}}?v={{ filemtime(public_path('css/ecommerce-home.css')) }}" rel="stylesheet">
         <!--[if lt IE 9]>
         <script src="js/html5shiv.js"></script>
         <script src="js/respond.min.js"></script>

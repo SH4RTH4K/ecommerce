@@ -47,7 +47,9 @@ class AdminUserManagementTest extends TestCase
             $this->withSession($session)->get('/admin-users')
                 ->assertStatus(200)
                 ->assertSee('Account information')
-                ->assertSee('Confirm new password');
+                ->assertSee('Confirm new password')
+            ->assertSee('Allowed permissions (23 total)')
+                ->assertSee('System role - permissions editable');
 
             $this->withSession($session)->post('/admin-roles/'.$roleId.'/update',[
                 'name'=>'Support Editor '.str_random(6),
@@ -84,5 +86,71 @@ class AdminUserManagementTest extends TestCase
                 'password'=>'NewPassword123',
                 'password_confirmation'=>'DifferentPassword123',
             ])->assertRedirect('/admin-users')->assertSessionHasErrors('password');
+    }
+
+    public function testSuperAdminRoleIncludesTheProductCodePermissions()
+    {
+        $permissions = json_decode(DB::table('admin_roles')->where('name', 'Super Admin')->value('permissions'), true);
+        $this->assertIsArray($permissions);
+        $this->assertCount(23, $permissions);
+        $this->assertContains('view_product_code_configuration', $permissions);
+        $this->assertContains('change_product_code_configuration', $permissions);
+        $this->assertContains('view_product_code_history', $permissions);
+    }
+
+    public function testSuperAdminPermissionsCanBeUpdated()
+    {
+        $role = DB::table('admin_roles')->where('name', 'Super Admin')->first();
+        $this->assertNotNull($role);
+
+        DB::beginTransaction();
+        try {
+            $editorRoleId = DB::table('admin_roles')->insertGetId([
+                'name' => 'Role Editor '.str_random(8),
+                'permissions' => json_encode(['dashboard', 'staff']),
+                'is_system' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $editorAdminId = DB::table('tbl_admin')->insertGetId([
+                'admin_name' => $editorName = 'editor_'.str_random(8),
+                'full_name' => 'Role Editor',
+                'admin_email' => null,
+                'role_id' => $editorRoleId,
+                'is_active' => 1,
+                'admin_password' => Hash::make('EditorPassword123'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $session = ['admin_id' => $editorAdminId, 'admin_name' => $editorName];
+
+            $this->withSession($session)->get('/admin-users')->assertStatus(200);
+
+            $this->withSession($session)->from('/admin-users')->post('/admin-roles/'.$role->id.'/update', [
+                'name' => 'Super Admin',
+                'permissions' => ['dashboard', 'catalog', 'inventory'],
+            ])->assertRedirect('/admin-users');
+
+            $permissions = json_decode(DB::table('admin_roles')->where('id', $role->id)->value('permissions'), true);
+            $this->assertSame(['dashboard', 'catalog', 'inventory'], $permissions);
+
+            $this->withSession($session)->from('/admin-users')->post('/admin-roles/'.$role->id.'/update', [
+                'name' => 'Super Admin',
+                'permissions' => [
+                    'dashboard',
+                    'catalog',
+                    'inventory',
+                    'view_product_code_configuration',
+                    'change_product_code_configuration',
+                ],
+            ])->assertRedirect('/admin-users');
+
+            $permissions = json_decode(DB::table('admin_roles')->where('id', $role->id)->value('permissions'), true);
+            $this->assertContains('view_product_code_configuration', $permissions);
+            $this->assertContains('change_product_code_configuration', $permissions);
+            $this->assertNotContains('view_product_code_history', $permissions);
+        } finally {
+            DB::rollBack();
+        }
     }
 }

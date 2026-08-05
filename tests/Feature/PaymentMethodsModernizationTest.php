@@ -208,7 +208,9 @@ class PaymentMethodsModernizationTest extends TestCase
             $this->assertTrue($copy->fresh()->is_active);
             $this->withSession($session)->delete('/payment-methods/'.$copy->id)
                 ->assertRedirect()->assertSessionHas('message');
-            $this->assertNull(PaymentMethod::find($copy->id));
+            $trashed = PaymentMethod::withTrashed()->find($copy->id);
+            $this->assertNotNull($trashed);
+            $this->assertTrue($trashed->trashed());
         } finally {
             DB::rollBack();
         }

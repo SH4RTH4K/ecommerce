@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Product;
+use App\Services\ProductCodeGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +14,9 @@ class AdminDataTransferController extends Controller
     private $resources = [
         'products' => [
             'label' => 'Products', 'table' => 'product',
-            'headers' => ['product_id','sku','barcode','product_name','product_model','category_id','sub_category','manufacturer_id','product_series_id','regular_price','offer_price','purchase_price','product_condition','stock_quantity','stock_tracking','warranty','publication_status','top_product','is_new_arrival','short_description'],
-            'sample' => ['PRD-1001','SKU-1001','','Example Router','XR1000','1','1','1','','2500','2250','1800','In Stock','10','1','1 year','1','0','1','Example catalog product'],
+            'headers' => ['product_id','product_code','sku','barcode','company_id','branch_id','product_name','product_model','category_id','sub_category','manufacturer_id','product_series_id','regular_price','offer_price','purchase_price','product_condition','stock_quantity','stock_tracking','warranty','publication_status','top_product','is_new_arrival','short_description'],
+            'optional_headers' => ['product_code','company_id','branch_id'],
+            'sample' => ['PRD-1001','PRD-1001','PRD-1001','','','','Example Router','XR1000','1','1','1','','2500','2250','1800','In Stock','10','1','1 year','1','0','1','Example catalog product'],
         ],
         'categories' => [
             'label' => 'Categories', 'table' => 'category',
@@ -82,7 +84,8 @@ class AdminDataTransferController extends Controller
         $headers=fgetcsv($handle);
         if(!$headers){fclose($handle);return back()->with('exception','The CSV file is empty.');}
         $headers=array_map(function($header){return trim(preg_replace('/^\xEF\xBB\xBF/','',(string)$header));},$headers);
-        $missing=array_values(array_diff($config['headers'],$headers));
+        $requiredHeaders=array_values(array_diff($config['headers'],(array)($config['optional_headers']??[])));
+        $missing=array_values(array_diff($requiredHeaders,$headers));
         if($missing){fclose($handle);return back()->with('exception','Missing CSV columns: '.implode(', ',$missing));}
 
         $created=0;$updated=0;$skipped=0;$errors=[];$line=1;
@@ -159,11 +162,27 @@ class AdminDataTransferController extends Controller
 
     private function upsertProduct($r,$mode)
     {
-        $this->check($r,['product_id'=>'required|max:255','sku'=>'nullable|max:255','barcode'=>'nullable|max:64','product_name'=>'required|max:255','product_model'=>'required|max:255','category_id'=>'required|integer|exists:category,category_id','sub_category'=>'required|integer|exists:sub_category,sub_category_id','manufacturer_id'=>'required|integer|exists:manufacturer,manufacturer_id','product_series_id'=>'nullable|integer|exists:product_series,id','regular_price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','purchase_price'=>'required|numeric|min:0','product_condition'=>'required|in:In Stock,Out Of Stock','stock_quantity'=>'required|integer|min:0','stock_tracking'=>'required|boolean','publication_status'=>'required|boolean','top_product'=>'required|boolean','is_new_arrival'=>'required|boolean']);
-        if($r['product_series_id']!==''&&!DB::table('product_series')->where('id',(int)$r['product_series_id'])->where('manufacturer_id',(int)$r['manufacturer_id'])->exists())throw new \InvalidArgumentException('The selected product series does not belong to the selected brand.');
-        $existing=$r['sku']!==''?DB::table('product')->where('sku',$r['sku'])->first():DB::table('product')->where('product_id',$r['product_id'])->first();
-        $regular=(float)$r['regular_price'];$offer=$r['offer_price']!==''?(float)$r['offer_price']:null;if($offer!==null&&$offer>=$regular)$offer=null;
-        $data=['product_id'=>$r['product_id'],'sku'=>$r['sku']?:null,'barcode'=>$r['barcode']?:null,'product_name'=>$r['product_name'],'product_model'=>$r['product_model'],'category_id'=>(int)$r['category_id'],'sub_category'=>(int)$r['sub_category'],'manufacturer_id'=>(int)$r['manufacturer_id'],'product_series_id'=>$r['product_series_id']!==''?(int)$r['product_series_id']:null,'regular_price'=>$regular,'offer_price'=>$offer,'purchase_price'=>(float)$r['purchase_price'],'product_condition'=>$r['product_condition'],'stock_quantity'=>(int)$r['stock_quantity'],'stock_tracking'=>(int)$r['stock_tracking'],'warranty'=>$r['warranty']?:null,'publication_status'=>(int)$r['publication_status'],'top_product'=>(int)$r['top_product'],'is_new_arrival'=>(int)$r['is_new_arrival'],'short_description'=>$r['short_description']?:null,'updated_at'=>now()];
+        $r=$this->nullableCsvFields($r,['product_code','sku','barcode','company_id','branch_id','product_series_id','offer_price','warranty','short_description']);
+        $this->check($r,['product_id'=>'required|max:255','product_code'=>'nullable|max:100','sku'=>'nullable|max:100','barcode'=>'nullable|max:64','company_id'=>'nullable|integer|exists:companies,id','branch_id'=>'nullable|integer|exists:inventory_locations,id','product_name'=>'required|max:255','product_model'=>'required|max:255','category_id'=>'required|integer|exists:category,category_id','sub_category'=>'required|integer|exists:sub_category,sub_category_id','manufacturer_id'=>'required|integer|exists:manufacturer,manufacturer_id','product_series_id'=>'nullable|integer|exists:product_series,id','regular_price'=>'required|numeric|min:0','offer_price'=>'nullable|numeric|min:0','purchase_price'=>'required|numeric|min:0','product_condition'=>'required|in:In Stock,Out Of Stock','stock_quantity'=>'required|integer|min:0','stock_tracking'=>'required|boolean','publication_status'=>'required|boolean','top_product'=>'required|boolean','is_new_arrival'=>'required|boolean']);
+        if($this->csvHasValue($r,'product_series_id')&&!DB::table('product_series')->where('id',(int)$r['product_series_id'])->where('manufacturer_id',(int)$r['manufacturer_id'])->exists())throw new \InvalidArgumentException('The selected product series does not belong to the selected brand.');
+        $companyId=$this->csvHasValue($r,'company_id')?(int)$r['company_id']:null;
+        if($companyId===null&&!empty($r['manufacturer_id']))$companyId=(int)DB::table('manufacturer')->where('manufacturer_id',(int)$r['manufacturer_id'])->value('company_id');
+        if($this->csvHasValue($r,'company_id')&&$companyId!==null&&(int)$r['company_id']!==$companyId)throw new \InvalidArgumentException('The selected brand belongs to a different company.');
+        $branchId=$this->csvHasValue($r,'branch_id')?(int)$r['branch_id']:null;
+        $lookupCode=normalize_product_code($r['product_code'] ?? ($r['sku'] ?? null), 100);
+        $existing=$lookupCode!==null&&$lookupCode!=='' ? DB::table('product')->whereNull('deleted_at')->where(function($query)use($lookupCode){$query->where('product_code',$lookupCode)->orWhere('sku',$lookupCode); })->first() : DB::table('product')->whereNull('deleted_at')->where('product_id',$r['product_id'])->first();
+        $regular=(float)$r['regular_price'];$offer=$this->csvHasValue($r,'offer_price')?(float)$r['offer_price']:null;if($offer!==null&&$offer>=$regular)$offer=null;
+        if($existing){
+            $finalCode=$lookupCode!==null&&$lookupCode!==''?$lookupCode:trim((string)($existing->product_code?:$existing->sku?:$existing->product_id?:''));
+            if($finalCode===''){$finalCode=app(ProductCodeGenerator::class)->allocate(['company_id'=>$companyId,'branch_id'=>$branchId,'category_id'=>(int)$r['category_id'],'subcategory_id'=>(int)$r['sub_category'],'manufacturer_id'=>(int)$r['manufacturer_id'],'series_id'=>$this->csvHasValue($r,'product_series_id')?(int)$r['product_series_id']:null,'industry_profile'=>$r['industry_profile']??null]);$finalCode=$finalCode['product_code'];}
+        } else {
+            $finalCode=$lookupCode!==null&&$lookupCode!==''?$lookupCode:null;
+            if($finalCode===null){$allocation=app(ProductCodeGenerator::class)->allocate(['company_id'=>$companyId,'branch_id'=>$branchId,'category_id'=>(int)$r['category_id'],'subcategory_id'=>(int)$r['sub_category'],'manufacturer_id'=>(int)$r['manufacturer_id'],'series_id'=>$this->csvHasValue($r,'product_series_id')?(int)$r['product_series_id']:null,'industry_profile'=>$r['industry_profile']??null]);$finalCode=$allocation['product_code'];}
+        }
+
+        if(DB::table('product')->where(function($query)use($finalCode){$query->where('product_code',$finalCode)->orWhere('sku',$finalCode);})->when($existing,function($query)use($existing){$query->where('id','<>',$existing->id);})->exists())throw new \InvalidArgumentException('The product code '.$finalCode.' already exists.');
+
+        $data=['product_id'=>trim((string)$r['product_id'])!==''?trim((string)$r['product_id']):$finalCode,'product_code'=>$finalCode,'sku'=>$finalCode,'barcode'=>$r['barcode']?:null,'company_id'=>$companyId,'branch_id'=>$branchId,'product_name'=>$r['product_name'],'product_model'=>$r['product_model'],'category_id'=>(int)$r['category_id'],'sub_category'=>(int)$r['sub_category'],'manufacturer_id'=>(int)$r['manufacturer_id'],'product_series_id'=>$this->csvHasValue($r,'product_series_id')?(int)$r['product_series_id']:null,'regular_price'=>$regular,'offer_price'=>$offer,'purchase_price'=>(float)$r['purchase_price'],'product_condition'=>$r['product_condition'],'stock_quantity'=>(int)$r['stock_quantity'],'stock_tracking'=>(int)$r['stock_tracking'],'warranty'=>$r['warranty']?:null,'publication_status'=>(int)$r['publication_status'],'top_product'=>(int)$r['top_product'],'is_new_arrival'=>(int)$r['is_new_arrival'],'short_description'=>$r['short_description']?:null,'updated_at'=>now()];
         if(!$existing){$data+=['Product_description'=>'','product_image'=>'asset/front-end/img/home/pic 1.jpg','key_features'=>'[]','specifications'=>'{}','gallery_images'=>'[]'];}
         return $this->save('product','id',$existing,$data,$mode);
     }
@@ -200,6 +219,22 @@ class AdminDataTransferController extends Controller
     private function check(array $row,array $rules)
     {
         $validator=Validator::make($row,$rules);if($validator->fails())throw new \InvalidArgumentException($validator->errors()->first());
+    }
+
+    private function nullableCsvFields(array $row,array $fields): array
+    {
+        foreach($fields as $field){
+            if(array_key_exists($field,$row)){
+                $value=is_string($row[$field])?trim($row[$field]):$row[$field];
+                $row[$field]=$value===''?null:$value;
+            }
+        }
+        return $row;
+    }
+
+    private function csvHasValue(array $row,string $field): bool
+    {
+        return array_key_exists($field,$row)&&$row[$field]!==null&&$row[$field]!=='';
     }
 
     private function resource($resource)

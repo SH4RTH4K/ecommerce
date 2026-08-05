@@ -1,5 +1,18 @@
 @extends('admin.admin-master')
 @section('admin_main_content')
+@php
+    $productDescriptionValue = old('product_description', $product_info->product_description ?? $product_info->Product_description ?? '');
+    $adminPermissions = (array) session('admin_permissions', []);
+    $activeProductCodeConfig = $productCodeSnapshot ?? [];
+    $productCodeAutoGenerate = (bool) ($activeProductCodeConfig['auto_generate'] ?? true);
+    $canOverrideProductCode = in_array('override_product_code', $adminPermissions, true);
+    $canRegenerateProductCode = in_array('regenerate_product_code', $adminPermissions, true);
+    $existingProductCode = trim((string) ($product_info->product_code ?? $product_info->sku ?? ''));
+    $productCodeManualAllowed = $existingProductCode !== ''
+        ? $canRegenerateProductCode
+        : ($canOverrideProductCode && ((bool) ($activeProductCodeConfig['allow_manual_override'] ?? false) || ! $productCodeAutoGenerate));
+    $selectedProductCode = old('product_code', old('sku', $existingProductCode));
+@endphp
 
 <div id="content" class="span10">
     <ul class="breadcrumb">
@@ -46,8 +59,43 @@
                         </div>
                     </div>
                     <div class="control-group">
-                        <label class="control-label" for="sku">SKU / Product Code</label>
-                        <div class="controls"><input type="text" name="sku" id="sku" value="{{ $product_info->sku }}" class="span6"></div>
+                        <label class="control-label" for="company_id">Company</label>
+                        <div class="controls">
+                            <select id="company_id" name="company_id" class="span6">
+                                <option value="">Auto-detect from brand</option>
+                                @foreach($companies as $company)
+                                <option value="{{ $company->id }}" {{ old('company_id', $product_info->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}{{ $company->company_code ? ' · '.$company->company_code : '' }}</option>
+                                @endforeach
+                            </select>
+                            <p class="help-block">Optional. If left blank, the brand's company will be used when available.</p>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="branch_id">Branch</label>
+                        <div class="controls">
+                            <select id="branch_id" name="branch_id" class="span6">
+                                <option value="">Global / not branch-specific</option>
+                                @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}" {{ old('branch_id', $product_info->branch_id) == $branch->id ? 'selected' : '' }}>{{ $branch->name }}{{ $branch->code ? ' · '.$branch->code : '' }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="product_code">Product Code</label>
+                        <div class="controls">
+                            <input type="text" name="product_code" id="product_code" value="{{ $selectedProductCode }}" class="span6" placeholder="Auto-generated when blank" {{ $productCodeManualAllowed ? '' : 'readonly' }}>
+                            <p class="help-block">{{ $productCodeManualAllowed ? 'Manual override is allowed for your role.' : 'This code is generated automatically by the active configuration.' }}</p>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Product Code Preview</label>
+                        <div class="controls">
+                            <div class="alert alert-info" style="margin-bottom:0">
+                                <strong id="product-code-preview">Select company, category, brand, and series to see the generated code.</strong>
+                                <div id="product-code-preview-meta" style="margin-top:4px">Active configuration: {{ $activeProductCodeConfig['name'] ?? config('product_code.default_name', 'Default Product Code') }}</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="control-group {{ $errors->has('barcode') ? 'error' : '' }}">
                         <label class="control-label" for="barcode">Barcode</label>
@@ -128,7 +176,7 @@
                     <div class="control-group hidden-phone">
                         <label class="control-label" for="textarea2" >Product Description</label>
                         <div class="controls">
-                            <textarea name="product_description" class="cleditor" rows="3">{{$product_info->product_description}}</textarea>
+                            <textarea name="product_description" class="cleditor" rows="3">{{ $productDescriptionValue }}</textarea>
                         </div>
                     </div>
                     <div class="control-group">
@@ -211,5 +259,104 @@
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),templates=@json($specificationTemplates),field=document.getElementById('specifications'),button=document.getElementById('load-spec-template'),status=document.getElementById('spec-template-status');function refreshTemplate(){var template=templates[category.value];button.disabled=!template;status.textContent=template?template.name+' available':'No template configured';}category.addEventListener('change',refreshTemplate);button.addEventListener('click',function(){var template=templates[category.value];if(!template)return;if(field.value.trim()&&!confirm('Replace the current specifications with the category template?'))return;field.value=template.content;});refreshTemplate();});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.forms['update_data'];
+    if (!form) {
+        return;
+    }
+
+    var preview = document.getElementById('product-code-preview');
+    var previewMeta = document.getElementById('product-code-preview-meta');
+    var company = document.getElementById('company_id');
+    var branch = document.getElementById('branch_id');
+    var category = document.getElementById('catId');
+    var subCategory = document.getElementById('selectSubCategory');
+    var brand = document.getElementById('brand_id');
+    var series = document.getElementById('product_series_id');
+    var previewUrl = @json(url('/product-code-configuration/preview'));
+    var csrfToken = @json(csrf_token());
+    var brandCompanyMap = @json($manufacturer->pluck('company_id', 'manufacturer_id')->all());
+    var timer = null;
+
+    function setPreview(message) {
+        if (preview) {
+            preview.textContent = message;
+        }
+    }
+
+    function syncCompanyFromBrand() {
+        if (!company || !brand) {
+            return;
+        }
+
+        var brandCompanyId = brandCompanyMap[brand.value] || null;
+        if (!company.value && brandCompanyId) {
+            company.value = brandCompanyId;
+        }
+    }
+
+    function requestPreview() {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            var payload = new FormData();
+            ['company_id', 'branch_id', 'category_id', 'subcategory_id', 'manufacturer_id', 'series_id', 'variant_code', 'custom_prefix', 'custom_suffix', 'product_type_code'].forEach(function (field) {
+                var element = form.querySelector('[name="' + field + '"]');
+                if (element) {
+                    payload.append(field, element.value || '');
+                }
+            });
+
+            fetch(previewUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: payload
+            })
+            .then(function (response) {
+                return response.json().then(function (json) {
+                    return { ok: response.ok, json: json };
+                });
+            })
+            .then(function (result) {
+                if (result.ok && result.json && result.json.preview) {
+                    setPreview(result.json.preview);
+                    if (previewMeta && result.json.configuration && result.json.configuration.name) {
+                        previewMeta.textContent = 'Active configuration: ' + result.json.configuration.name;
+                    }
+                    return;
+                }
+
+                var message = result.json && (result.json.message || result.json.error);
+                if (!message && result.json && result.json.errors && result.json.errors.product_code && result.json.errors.product_code.length) {
+                    message = result.json.errors.product_code[0];
+                }
+                setPreview(message || 'Select the required fields to generate a preview.');
+            })
+            .catch(function () {
+                setPreview('Unable to load product code preview right now.');
+            });
+        }, 180);
+    }
+
+    if (brand) {
+        brand.addEventListener('change', function () {
+            syncCompanyFromBrand();
+            requestPreview();
+        });
+    }
+
+    [company, branch, category, subCategory, series].forEach(function (element) {
+        if (!element) {
+            return;
+        }
+        element.addEventListener('change', requestPreview);
+    });
+
+    requestPreview();
+});
+</script>
 <!-- end: Content -->
 @endsection

@@ -19,7 +19,7 @@
         <nav class="admin-menu">
             <a class="admin-menu-link admin-menu-dashboard {{ $active('dashboard') }}" href="{{ route('admin.dashboard') }}" title="Dashboard"><i class="icon-dashboard"></i><span>Dashboard</span></a>
 
-            <section class="admin-menu-group {{ $groupOpen(['add-product','manage-product','edit-product/*','manage-category','add-category','edit-category/*','manage-subCategory','add-subCategory','edit-subCategory/*','manage-manufacturer','add-manufacturer','edit-manufacturer/*','catalog-hierarchy*','catalog-attributes*']) }}" data-menu-group="catalog">
+            <section class="admin-menu-group {{ $groupOpen(['add-product','manage-product','edit-product/*','manage-category','add-category','edit-category/*','manage-subCategory','add-subCategory','edit-subCategory/*','manage-manufacturer','add-manufacturer','edit-manufacturer/*','catalog-hierarchy*','catalog-imports*','catalog-attributes*']) }}" data-menu-group="catalog">
                 <button type="button" class="admin-menu-group-toggle" data-menu-toggle aria-expanded="false"><i class="icon-shopping-cart"></i><span>Catalog</span><i class="icon-chevron-down admin-menu-chevron"></i></button>
                 <div class="admin-menu-items">
                     <a class="admin-menu-link {{ $active(['manage-category','add-category','edit-category/*']) }}" href="{{ url('/manage-category') }}"><i class="icon-folder-open"></i><span>Step 1 · Categories</span></a>
@@ -27,6 +27,7 @@
                     <a class="admin-menu-link {{ $active(['manage-subCategory','add-subCategory','edit-subCategory/*']) }}" href="{{ url('/manage-subCategory') }}"><i class="icon-sitemap"></i><span>Step 2 · Subcategories</span></a>
                     <a class="admin-menu-link admin-menu-sub {{ $active('add-subCategory') }}" href="{{ url('/add-subCategory') }}"><i class="icon-plus"></i><span>Add Subcategory</span></a>
                     <a class="admin-menu-link {{ $active(['catalog-hierarchy*','manage-manufacturer','add-manufacturer','edit-manufacturer/*']) }}" href="{{ url('/catalog-hierarchy') }}"><i class="icon-certificate"></i><span>Step 3 · Companies, Brands &amp; Product Lines (optional)</span></a>
+                    <a class="admin-menu-link {{ $active('catalog-imports*') }}" href="{{ url('/catalog-imports') }}"><i class="icon-download-alt"></i><span>Catalog Import Center</span></a>
                     <a class="admin-menu-link {{ $active('catalog-attributes*') }}" href="{{ url('/catalog-attributes') }}"><i class="icon-list-alt"></i><span>Step 4 · Product Attributes</span></a>
                     <a class="admin-menu-link {{ $active(['add-product','manage-product','edit-product/*']) }}" href="{{ url('/manage-product') }}"><i class="icon-shopping-cart"></i><span>Step 5 · Products</span></a>
                     <a class="admin-menu-link admin-menu-sub {{ $active('add-product') }}" href="{{ url('/add-product') }}"><i class="icon-plus"></i><span>Add Product</span></a>
@@ -88,10 +89,13 @@
             </section>
             @endif
 
-            <section class="admin-menu-group {{ $groupOpen(['admin-notifications*','system-health*','system-monitor*','integrations*']) }}" data-menu-group="system">
+            <section class="admin-menu-group {{ $groupOpen(['admin-notifications*','product-code-configuration*','system-health*','system-monitor*','integrations*','recycle-bin*','orphan-media*']) }}" data-menu-group="system">
                 <button type="button" class="admin-menu-group-toggle" data-menu-toggle aria-expanded="false"><i class="icon-cogs"></i><span>System</span><i class="icon-chevron-down admin-menu-chevron"></i></button>
                 <div class="admin-menu-items">
                     <a class="admin-menu-link {{ $active('admin-notifications*') }}" href="{{ url('/admin-notifications') }}"><i class="icon-bell"></i><span>Notifications</span>@if($adminHeaderCounts['notifications'])<b>{{ $adminHeaderCounts['notifications'] }}</b>@endif</a>
+                    @if(in_array('view_recycle_bin',(array)session('admin_permissions',[])))<a class="admin-menu-link {{ $active('recycle-bin*') }}" href="{{ url('/recycle-bin') }}"><i class="icon-trash"></i><span>Recycle Bin</span></a>@endif
+                    @if(in_array('view_orphan_media',(array)session('admin_permissions',[])))<a class="admin-menu-link {{ $active('orphan-media*') }}" href="{{ url('/orphan-media') }}"><i class="icon-hdd"></i><span>Orphan Media</span></a>@endif
+                    @if(in_array('settings',(array)session('admin_permissions',[])))<a class="admin-menu-link {{ $active('product-code-configuration*') }}" href="{{ url('/product-code-configuration') }}"><i class="icon-barcode"></i><span>Product Code Configuration</span></a>@endif
                     @if(in_array('settings',(array)session('admin_permissions',[])))<a class="admin-menu-link {{ $active('system-health*') }}" href="{{ url('/system-health') }}"><i class="icon-stethoscope"></i><span>System Health &amp; Backups</span></a>@endif
                     @if(in_array('settings',(array)session('admin_permissions',[])))<a class="admin-menu-link {{ $active('system-monitor*') }}" href="{{ url('/system-monitor') }}"><i class="icon-warning-sign"></i><span>Errors &amp; Security</span></a>@endif
                     @if(in_array('settings',(array)session('admin_permissions',[])))<a class="admin-menu-link {{ $active('integrations*') }}" href="{{ url('/integrations') }}"><i class="icon-exchange"></i><span>API &amp; Integrations</span></a>@endif

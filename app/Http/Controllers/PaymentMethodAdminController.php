@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\PaymentMethod;
+use App\Services\RecycleBinService;
 use App\Services\PaymentMethodAvailabilityService;
 use App\Support\PublicUpload;
 use Illuminate\Http\Request;
@@ -204,13 +205,9 @@ class PaymentMethodAdminController extends Controller
             return back()->with('message', 'Method has transaction history and was archived instead of deleted.');
         }
 
-        $logoPath = $method->logo_path;
-        $qrPath = $method->qr_image_path;
-        $method->delete();
-        $this->removePaymentImageIfUnused($logoPath, $id);
-        $this->removePaymentImageIfUnused($qrPath, $id);
+        app(RecycleBinService::class)->softDelete('payment_method', (int) $id, session('admin_id'), 'Payment method moved to Recycle Bin.');
 
-        return back()->with('message', 'Payment method deleted.');
+        return back()->with('message', 'Payment method moved to Recycle Bin.');
     }
 
     public function reorder(Request $request)
@@ -307,7 +304,7 @@ class PaymentMethodAdminController extends Controller
         $path = ltrim(str_replace('\\', '/', (string)$path), '/');
         if (!$path || strpos($path, 'asset/front-end/img/payments/') !== 0) return false;
 
-        $used = PaymentMethod::query()
+        $used = PaymentMethod::withTrashed()
             ->when($excludingId, function ($query) use ($excludingId) {
                 $query->where('id', '<>', $excludingId);
             })
