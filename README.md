@@ -73,7 +73,6 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 - PHP 8.3+ with Laravel and `pdo_mysql` extensions
 - Composer 2
 - MySQL or MariaDB
-- Node.js and npm only when rebuilding frontend assets
 
 ### Installation
 
@@ -126,14 +125,7 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The administrator login is 
 
 ### Frontend assets
 
-The repository includes public assets. Rebuild them only when frontend source files change:
-
-```bash
-npm install
-npm run dev
-```
-
-Use `npm run production` for an optimized build.
+The repository already includes the committed frontend CSS and JavaScript assets under `public/css/` and `public/js/`, so no npm build step is required for normal use.
 
 ## Create the first administrator
 
