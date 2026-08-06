@@ -3,11 +3,25 @@
 namespace Tests\Feature;
 
 use App\ProductCodeConfiguration;
+use App\ProductCodeComponent;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProductCodeConfigurationTest extends TestCase
 {
+    private function configurationForType(string $codeType): ProductCodeConfiguration
+    {
+        $configuration = ProductCodeConfiguration::with('components')
+            ->where('code_type', $codeType)
+            ->where('is_active', 1)
+            ->orderByDesc('id')
+            ->first();
+
+        $this->assertNotNull($configuration, 'A '.$codeType.' code configuration is required.');
+
+        return $configuration;
+    }
+
     private function adminSession(array $permissions): array
     {
         $admin = DB::table('tbl_admin')
@@ -121,8 +135,7 @@ class ProductCodeConfigurationTest extends TestCase
         try {
             $session = $this->adminSession(['view_product_code_configuration']);
             $previewData = $this->createProductCodePreviewData(str_random(6));
-            $configuration = ProductCodeConfiguration::with('components')->where('is_active', 1)->first();
-            $this->assertNotNull($configuration, 'A default product code configuration is required.');
+            $configuration = $this->configurationForType('product');
 
             $sequenceCountBefore = DB::table('product_code_sequences')->count();
 
@@ -135,6 +148,7 @@ class ProductCodeConfigurationTest extends TestCase
 
             $response = $this->withSession($session)->post('/product-code-configuration/preview', [
                 'configuration_id' => $configuration->id,
+                'code_type' => 'product',
                 'company_id' => $previewData['companyId'],
                 'branch_id' => $previewData['branchId'],
                 'category_id' => $previewData['categoryId'],
@@ -155,13 +169,82 @@ class ProductCodeConfigurationTest extends TestCase
         }
     }
 
+    public function testCategoryConfigurationPreviewUsesTheCategoryCodeType(): void
+    {
+        DB::beginTransaction();
+        try {
+            $session = $this->adminSession(['view_product_code_configuration']);
+            $previewData = $this->createProductCodePreviewData(str_random(6));
+            $configuration = $this->configurationForType('category');
+
+            $response = $this->withSession($session)->post('/product-code-configuration/preview', [
+                'configuration_id' => $configuration->id,
+                'code_type' => 'category',
+                'category_id' => $previewData['categoryId'],
+            ]);
+
+            $response->assertOk()->assertJsonStructure(['preview', 'values', 'configuration']);
+            $this->assertNotEmpty($response->json('preview'));
+            $this->assertStringStartsWith('CAT-', (string) $response->json('preview'));
+        } finally {
+            DB::rollBack();
+        }
+    }
+
+    public function testPreviewExplainsWhenRequiredCatalogDataIsMissing(): void
+    {
+        DB::beginTransaction();
+        try {
+            $session = $this->adminSession(['view_product_code_configuration']);
+            $configuration = ProductCodeConfiguration::create([
+                'name' => 'Series Preview Only',
+                'code_type' => 'series',
+                'company_id' => null,
+                'branch_id' => null,
+                'auto_generate' => 1,
+                'template' => '{SERIES}-{SEQUENCE}',
+                'separator' => '-',
+                'sequence_scope' => 'global',
+                'sequence_length' => 6,
+                'sequence_start' => 1,
+                'reset_rule' => 'never',
+                'strict_mode' => 1,
+                'skip_empty_components' => 0,
+                'allow_manual_override' => 0,
+                'allow_regeneration' => 1,
+                'is_active' => 0,
+            ]);
+            ProductCodeComponent::create([
+                'configuration_id' => $configuration->id,
+                'component_type' => 'series',
+                'position' => 1,
+                'static_value' => null,
+                'format_options' => null,
+                'is_required' => 1,
+            ]);
+
+            $response = $this->withSession($session)->post('/product-code-configuration/preview', [
+                'configuration_id' => $configuration->id,
+            ]);
+
+            $response->assertStatus(422);
+            $response->assertJson([
+                'preview' => null,
+            ]);
+
+            $message = (string) $response->json('message');
+            $this->assertStringContainsString('No series exist yet', $message);
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function testConfigurationCanStoreACustomSeparator(): void
     {
         DB::beginTransaction();
         try {
             $session = $this->adminSession(['view_product_code_configuration', 'change_product_code_configuration']);
-            $configuration = ProductCodeConfiguration::with('components')->where('is_active', 1)->first();
-            $this->assertNotNull($configuration, 'A default product code configuration is required.');
+            $configuration = $this->configurationForType('product');
 
             $components = [];
             foreach ($configuration->components as $component) {
@@ -180,6 +263,7 @@ class ProductCodeConfigurationTest extends TestCase
                 ->from('/product-code-configuration')
                 ->post('/product-code-configuration', [
                     'configuration_id' => $configuration->id,
+                    'code_type' => 'product',
                     'name' => $configuration->name,
                     'company_id' => $configuration->company_id,
                     'branch_id' => $configuration->branch_id,
@@ -196,7 +280,7 @@ class ProductCodeConfigurationTest extends TestCase
                     'is_active' => 1,
                     'components' => $components,
                 ])
-                ->assertRedirect('/product-code-configuration?configuration='.$configuration->id)
+                ->assertRedirect('/product-code-configuration?code_type=product&configuration='.$configuration->id)
                 ->assertSessionHas('message');
 
             $this->assertSame('|', DB::table('product_code_configurations')->where('id', $configuration->id)->value('separator'));
@@ -214,8 +298,7 @@ class ProductCodeConfigurationTest extends TestCase
         DB::beginTransaction();
         try {
             $session = $this->adminSession(['view_product_code_configuration', 'change_product_code_sequence']);
-            $configuration = ProductCodeConfiguration::with('components')->where('is_active', 1)->first();
-            $this->assertNotNull($configuration, 'A default product code configuration is required.');
+            $configuration = $this->configurationForType('product');
 
             $sequenceId = DB::table('product_code_sequences')->insertGetId([
                 'configuration_id' => $configuration->id,

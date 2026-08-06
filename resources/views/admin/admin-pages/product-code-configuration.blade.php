@@ -3,6 +3,10 @@
 @section('admin_main_content')
 @php
     $selectedConfigurationId = old('configuration_id', optional($selectedConfiguration)->id);
+    $selectedCodeType = $selectedCodeType ?? 'product';
+    $codeTypes = $codeTypes ?? [];
+    $selectedCodeTypeLabel = $codeTypes[$selectedCodeType] ?? \Illuminate\Support\Str::headline($selectedCodeType);
+    $typeCounts = $typeCounts ?? [];
     $selectedSnapshot = is_array($snapshot ?? null) ? $snapshot : [];
     $activeSnapshot = $activeConfiguration ? app(\App\Services\ProductCodeGenerator::class)->snapshot($activeConfiguration) : [];
 
@@ -68,13 +72,14 @@
     $brandLookup = $brands->pluck('manufacturer_name', 'manufacturer_id')->all();
     $seriesLookup = $series->pluck('name', 'id')->all();
 
+    $previewContextDefaults = $previewContextDefaults ?? [];
     $previewDefaults = [
-        'company_id' => old('company_id', $selectedSnapshot['company_id'] ?? ''),
-        'branch_id' => old('branch_id', $selectedSnapshot['branch_id'] ?? ''),
-        'category_id' => old('category_id', ''),
-        'subcategory_id' => old('subcategory_id', ''),
-        'manufacturer_id' => old('manufacturer_id', ''),
-        'series_id' => old('series_id', ''),
+        'company_id' => old('company_id', $selectedSnapshot['company_id'] ?? ($previewContextDefaults['company_id'] ?? '')),
+        'branch_id' => old('branch_id', $selectedSnapshot['branch_id'] ?? ($previewContextDefaults['branch_id'] ?? '')),
+        'category_id' => old('category_id', $previewContextDefaults['category_id'] ?? ''),
+        'subcategory_id' => old('subcategory_id', $previewContextDefaults['subcategory_id'] ?? ''),
+        'manufacturer_id' => old('manufacturer_id', $previewContextDefaults['manufacturer_id'] ?? ''),
+        'series_id' => old('series_id', $previewContextDefaults['series_id'] ?? ''),
         'variant_code' => old('variant_code', ''),
         'custom_prefix' => old('custom_prefix', ''),
         'custom_suffix' => old('custom_suffix', ''),
@@ -93,6 +98,12 @@
 .pcc-banner{margin:0 0 18px;padding:14px 16px;border:1px solid #dbe7ee;border-radius:12px;background:#f7fbfd;display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .pcc-banner strong{display:block;margin-bottom:5px;color:#123f61}
 .pcc-banner small{display:block;color:#607684;line-height:1.45}
+.pcc-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pcc-tab{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #dce7ed;border-radius:999px;background:#fff;color:#315468;font-weight:700;text-decoration:none;box-shadow:0 3px 10px rgba(14,56,76,.04)}
+.pcc-tab:hover{text-decoration:none;background:#f6fbfe}
+.pcc-tab.active{background:#0f6b8f;color:#fff;border-color:#0f6b8f}
+.pcc-tab .count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:rgba(255,255,255,.2);font-size:12px}
+.pcc-tab:not(.active) .count{background:#eef5f9;color:#0f6b8f}
 .pcc-selector{margin-bottom:18px;background:#fff;border:1px solid #dce7ed;border-radius:12px;padding:15px 16px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;box-shadow:0 4px 16px rgba(18,63,97,.05)}
 .pcc-selector label{font-weight:600;margin:0}
 .pcc-selector select,.pcc-selector input{margin:6px 0 0!important;height:38px;min-width:260px}
@@ -143,11 +154,12 @@
     <header class="pcc-hero">
         <div>
             <h1>Product Code Configuration</h1>
-            <p>Build a reusable product code template from company, branch, category, brand, series, date, and sequence tokens without changing source code later.</p>
+            <p>Configure the automatic generators for categories, subcategories, brands, series, and products without changing source code later.</p>
         </div>
         <div class="summary">
-            <span class="pcc-pill">Active: {{ $activeSnapshot['name'] ?? config('product_code.default_name', 'Default Product Code') }}</span>
-            <span class="pcc-pill">Template: {{ $selectedSnapshot['template'] ?? config('product_code.default_template', '{CATEGORY}-{BRAND}-{SEQUENCE}') }}</span>
+            <span class="pcc-pill">Type: {{ $selectedCodeTypeLabel }}</span>
+            <span class="pcc-pill">Active: {{ $activeSnapshot['name'] ?? ($selectedCodeTypeLabel ?? config('product_code.default_name', 'Default Product Code')) }}</span>
+            <span class="pcc-pill">Template: {{ $selectedSnapshot['template'] ?? config('product_code.code_type_defaults.'.$selectedCodeType.'.template', config('product_code.default_template', '{PREFIX}-{CATEGORY_CODE}-{SUBCATEGORY_CODE}-{BRAND_CODE}-{SERIES_CODE}-{SEQUENCE}')) }}</span>
             <span class="pcc-pill">Sequence: {{ $selectedSnapshot['sequence_scope'] ?? config('product_code.default_sequence_scope', 'global') }}</span>
         </div>
     </header>
@@ -155,8 +167,30 @@
     @if(session('message'))<div class="pcc-banner"><div><strong>Success</strong><small>{{ session('message') }}</small></div></div>@endif
     @if(session('exception'))<div class="pcc-banner"><div><strong>Attention</strong><small>{{ session('exception') }}</small></div></div>@endif
     @if($errors->any())<div class="pcc-banner"><div><strong>Please review the form</strong><small>{{ $errors->first() }}</small></div></div>@endif
+    @if(! empty($previewWarnings))
+        <div class="pcc-banner" style="background:#fff7e8;border-color:#f0c36d">
+            <div>
+                <strong>Preview needs catalog data</strong>
+                <small>
+                    @foreach($previewWarnings as $warning)
+                        {{ $warning }}@if(! $loop->last)<br>@endif
+                    @endforeach
+                </small>
+            </div>
+        </div>
+    @endif
+
+    <div class="pcc-tabs">
+        @foreach($codeTypes as $codeType => $label)
+            <a class="pcc-tab {{ $selectedCodeType === $codeType ? 'active' : '' }}" href="{{ url('/product-code-configuration?code_type='.$codeType) }}">
+                <span>{{ $label }}</span>
+                <span class="count">{{ (int) ($typeCounts[$codeType] ?? 0) }}</span>
+            </a>
+        @endforeach
+    </div>
 
     <form class="pcc-selector" method="get" action="{{ url('/product-code-configuration') }}">
+        <input type="hidden" name="code_type" value="{{ $selectedCodeType }}">
         <label for="configuration-switch">Load configuration</label>
         <select id="configuration-switch" name="configuration">
             @foreach($configurationOptions as $configurationId => $configurationLabel)
@@ -171,12 +205,13 @@
         <section class="pcc-card">
             <div class="pcc-head">
                 <h2>Configuration Builder</h2>
-                <p>Set the template, sequence behavior, and component order.</p>
+                <p>Set the template, sequence behavior, and component order for the selected code type.</p>
             </div>
             <div class="pcc-body">
                 <form id="product-code-configuration-form" method="post" action="{{ url('/product-code-configuration') }}">
                     @csrf
                     <input type="hidden" name="configuration_id" value="{{ $selectedConfigurationId }}">
+                    <input type="hidden" name="code_type" value="{{ $selectedCodeType }}">
                     <input type="hidden" name="separator" id="separator" value="{{ $separatorValue }}">
 
                     <div class="pcc-grid-form">
@@ -340,7 +375,7 @@
             <div class="pcc-body">
                 <div class="pcc-preview">
                     <strong>Generated preview</strong>
-                    <code id="pcc-preview-code">{{ $selectedSnapshot['template'] ?? 'Generate a preview to see the code here.' }}</code>
+                    <code id="pcc-preview-code">Generate a preview to see the code here.</code>
                     <small id="pcc-preview-status">Current template loaded from {{ $selectedSnapshot['name'] ?? config('product_code.default_name', 'Default Product Code') }}.</small>
                 </div>
 
@@ -430,8 +465,8 @@
     </div>
 
     <section class="pcc-section">
-        <h3>Sequence Management</h3>
-        <div class="pcc-small">View the live counters, correct the next generated number, or reset a scope with an audit reason.</div>
+        <h3>Sequence Management - {{ $selectedCodeTypeLabel }}</h3>
+        <div class="pcc-small">View the live counters for this code type, correct the next generated number, or reset a scope with an audit reason.</div>
         <div class="pcc-table-wrap" style="margin-top:12px">
             <table class="table table-striped table-bordered pcc-table">
                 <thead>
@@ -489,8 +524,8 @@
     <div class="pcc-history-grid pcc-section">
         <section class="pcc-card">
             <div class="pcc-head">
-                <h2>Product Code History</h2>
-                <p>Track product code changes over time.</p>
+                <h2>Generated Code History</h2>
+                <p>Track generated code changes for the selected type over time.</p>
             </div>
             <div class="pcc-body">
                 <div class="pcc-table-wrap">
@@ -524,8 +559,8 @@
 
         <section class="pcc-card">
             <div class="pcc-head">
-                <h2>Configuration History</h2>
-                <p>See how the template and settings changed.</p>
+                <h2>{{ $selectedCodeTypeLabel }} Configuration History</h2>
+                <p>See how the template and settings changed for this code type.</p>
             </div>
             <div class="pcc-body">
                 <div class="pcc-table-wrap">
@@ -724,11 +759,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(function (error) {
+                var message = error && (error.message || error.error);
+                if (! message && error && error.errors && error.errors.product_code && error.errors.product_code.length) {
+                    message = error.errors.product_code[0];
+                }
+                var previewMessage = message || 'Select the required fields to generate a preview.';
                 if (previewCode) {
-                    previewCode.textContent = 'Preview failed. Check the form fields and try again.';
+                    previewCode.textContent = previewMessage;
                 }
                 if (previewStatus) {
-                    previewStatus.textContent = error && error.message ? error.message : 'Preview request failed.';
+                    previewStatus.textContent = message ? 'Preview failed. Fix the preview context and try again.' : 'Preview request failed.';
                 }
             });
         });

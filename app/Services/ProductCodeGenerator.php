@@ -23,10 +23,20 @@ class ProductCodeGenerator
 {
     public function resolveConfiguration(array $context, bool $allowInactive = false): ?ProductCodeConfiguration
     {
+        $codeType = $this->normalizeCodeType($context['code_type'] ?? null);
         $companyId = $this->normalizeNullableId($context['company_id'] ?? null);
         $branchId = $this->normalizeNullableId($context['branch_id'] ?? null);
 
         $query = ProductCodeConfiguration::query()
+            ->when($codeType !== null, static function ($query) use ($codeType) {
+                $query->where(function ($builder) use ($codeType) {
+                    $builder->where('code_type', $codeType);
+
+                    if ($codeType === 'product') {
+                        $builder->orWhereNull('code_type');
+                    }
+                });
+            })
             ->when(! $allowInactive, static function ($query) {
                 $query->where('is_active', 1);
             })
@@ -69,7 +79,7 @@ class ProductCodeGenerator
         $configuration = $configuration ? $configuration->loadMissing(['components', 'company', 'branch']) : $this->resolveConfiguration($context);
         if (! $configuration) {
             throw ValidationException::withMessages([
-                'configuration' => 'No active product code configuration is available.',
+                'configuration' => $this->configurationUnavailableMessage($context['code_type'] ?? null),
             ]);
         }
 
@@ -81,7 +91,7 @@ class ProductCodeGenerator
         $configuration = $configuration ? $configuration->loadMissing(['components', 'company', 'branch']) : $this->resolveConfiguration($context);
         if (! $configuration) {
             throw ValidationException::withMessages([
-                'configuration' => 'No active product code configuration is available.',
+                'configuration' => $this->configurationUnavailableMessage($context['code_type'] ?? null),
             ]);
         }
 
@@ -93,11 +103,13 @@ class ProductCodeGenerator
                         $allocation = $this->lockAndIncrementSequence($configuration, $context);
                         $rendered = $this->render($configuration, $context, $allocation['sequence_number']);
 
-                        if (! $this->productCodeIsTaken($rendered['preview'])) {
+                        if (! $this->codeIsTakenForConfiguration($configuration, $rendered['preview'])) {
                             return [
                                 'configuration' => $configuration,
+                                'code_type' => $this->normalizeCodeType($configuration->code_type ?? $context['code_type'] ?? null),
                                 'sequence_number' => $allocation['sequence_number'],
                                 'sequence_id' => $allocation['sequence_id'],
+                                'code' => $rendered['preview'],
                                 'product_code' => $rendered['preview'],
                                 'details' => $rendered,
                             ];
@@ -159,6 +171,8 @@ class ProductCodeGenerator
     {
         return [
             'id' => $configuration->id,
+            'code_type' => $this->normalizeCodeType($configuration->code_type ?? null),
+            'code_type_label' => $this->codeTypeLabel($configuration->code_type ?? null),
             'name' => $configuration->name,
             'company_id' => $configuration->company_id,
             'branch_id' => $configuration->branch_id,
@@ -176,6 +190,7 @@ class ProductCodeGenerator
             'effective_from' => optional($configuration->effective_from)->toDateTimeString(),
             'effective_to' => optional($configuration->effective_to)->toDateTimeString(),
             'is_active' => (bool) $configuration->is_active,
+            'prefix' => $this->configurationPrefix($configuration),
             'components' => $configuration->components->map(function (ProductCodeComponent $component) {
                 return [
                     'id' => $component->id,
@@ -289,7 +304,9 @@ class ProductCodeGenerator
 
         foreach ($configuration->components as $component) {
             $type = strtolower(trim((string) $component->component_type));
-            $value = $resolved[$type] ?? '';
+            $value = $type === 'static_text'
+                ? trim((string) $component->static_value)
+                : ($resolved[$type] ?? '');
 
             if ($value === '' || $value === null) {
                 if ((bool) $configuration->strict_mode && (bool) $component->is_required) {
@@ -320,6 +337,7 @@ class ProductCodeGenerator
 
     private function resolveTokens(ProductCodeConfiguration $configuration, array $context, int $sequenceNumber): array
     {
+        $codeType = $this->normalizeCodeType($configuration->code_type ?? ($context['code_type'] ?? 'product'));
         $company = $this->resolveCompany($context);
         $branch = $this->resolveBranch($context);
         $category = $this->resolveCategory($context);
@@ -330,15 +348,35 @@ class ProductCodeGenerator
         $sequenceLength = max(1, (int) ($configuration->sequence_length ?: config('product_code.default_sequence_length', 6)));
         $sequence = $sequenceNumber > 0 ? str_pad((string) $sequenceNumber, $sequenceLength, '0', STR_PAD_LEFT) : str_repeat('0', $sequenceLength);
         $date = now();
-        $separator = (string) ($configuration->separator ?? config('product_code.default_separator', '-'));
         $customPrefix = trim((string) ($context['custom_prefix'] ?? ''));
         $customSuffix = trim((string) ($context['custom_suffix'] ?? ''));
+        $customText = trim((string) ($context['custom_text'] ?? $context['custom_prefix'] ?? $context['custom_suffix'] ?? ''));
         $variant = trim((string) ($context['variant_code'] ?? ($context['variant'] ?? '')));
         if ($variant === '' && is_array($context['variant'] ?? null)) {
             $variant = trim((string) Arr::get($context['variant'], 'sku', Arr::get($context['variant'], 'name', '')));
         }
 
+        $prefix = $this->configurationPrefix($configuration);
+        $nameCode = $this->resolveNameCode($this->resolveEntityName($codeType, $context), $this->componentLength($configuration, 'name_code', 3));
+        $categoryNameCode = $this->resolveNameCode($this->resolveCategoryName($context), $this->componentLength($configuration, 'category_name_code', 3));
+        $subcategoryNameCode = $this->resolveNameCode($this->resolveSubCategoryName($context), $this->componentLength($configuration, 'subcategory_name_code', 3));
+        $brandNameCode = $this->resolveNameCode($this->resolveBrandName($context), $this->componentLength($configuration, 'brand_name_code', 3));
+        $seriesNameCode = $this->resolveNameCode($this->resolveSeriesName($context), $this->componentLength($configuration, 'series_name_code', 3));
+
         return [
+            'code_type' => $codeType,
+            'prefix' => $prefix,
+            'name_code' => $nameCode,
+            'category_name_code' => $categoryNameCode,
+            'subcategory_name_code' => $subcategoryNameCode,
+            'brand_name_code' => $brandNameCode,
+            'series_name_code' => $seriesNameCode,
+            'category_code' => $category->category_code ?? '',
+            'subcategory_code' => $subCategory->subcategory_code ?? '',
+            'brand_code' => $brand->brand_code ?? '',
+            'series_code' => $series->series_code ?? '',
+            'company_code' => $company->company_code ?? '',
+            'branch_code' => $branch->branch_code ?? '',
             'company' => $company->company_code ?? '',
             'branch' => $branch->branch_code ?? '',
             'category' => $category->category_code ?? '',
@@ -346,6 +384,7 @@ class ProductCodeGenerator
             'brand' => $brand->brand_code ?? '',
             'series' => $series->series_code ?? '',
             'product_type' => $productType,
+            'custom_text' => $this->sanitizeToken($customText),
             'year' => $date->format('Y'),
             'year_short' => $date->format('y'),
             'month' => $date->format('m'),
@@ -355,7 +394,172 @@ class ProductCodeGenerator
             'variant' => $this->sanitizeToken($variant),
             'custom_prefix' => $this->sanitizeToken($customPrefix),
             'custom_suffix' => $this->sanitizeToken($customSuffix),
+            'category_prefix' => $this->prefixFromCode($category->category_code ?? ''),
+            'subcategory_prefix' => $this->prefixFromCode($subCategory->subcategory_code ?? ''),
+            'brand_prefix' => $this->prefixFromCode($brand->brand_code ?? ''),
+            'series_prefix' => $this->prefixFromCode($series->series_code ?? ''),
         ];
+    }
+
+    private function configurationUnavailableMessage($codeType): string
+    {
+        return 'No active '.$this->codeTypeLabel($codeType).' configuration is available.';
+    }
+
+    private function normalizeCodeType($codeType): string
+    {
+        $codeType = strtolower(trim((string) $codeType));
+        $types = array_keys((array) config('product_code.code_types', []));
+
+        if ($codeType === '') {
+            return 'product';
+        }
+
+        return in_array($codeType, $types, true) ? $codeType : 'product';
+    }
+
+    private function codeTypeLabel($codeType): string
+    {
+        $codeType = $this->normalizeCodeType($codeType);
+        $labels = (array) config('product_code.code_types', []);
+
+        return $labels[$codeType] ?? Str::headline(str_replace(['_', '-'], ' ', $codeType));
+    }
+
+    private function configurationPrefix(ProductCodeConfiguration $configuration): string
+    {
+        foreach ($configuration->components as $component) {
+            $type = strtolower(trim((string) $component->component_type));
+            if (! in_array($type, ['prefix', 'static_text'], true)) {
+                continue;
+            }
+
+            $value = trim((string) ($component->static_value ?? ''));
+            if ($value !== '') {
+                return $this->sanitizeToken($value);
+            }
+        }
+
+        return '';
+    }
+
+    private function componentLength(ProductCodeConfiguration $configuration, string $componentType, int $default = 3): int
+    {
+        foreach ($configuration->components as $component) {
+            if (strtolower(trim((string) $component->component_type)) !== strtolower($componentType)) {
+                continue;
+            }
+
+            $options = (array) ($component->format_options ?? []);
+            $length = (int) ($options['length'] ?? $options['max_length'] ?? 0);
+            if ($length > 0) {
+                return $length;
+            }
+        }
+
+        return max(1, $default);
+    }
+
+    private function resolveNameCode(string $value, int $length = 3): string
+    {
+        return suggest_business_code($value, max(1, $length));
+    }
+
+    private function resolveEntityName(string $codeType, array $context): string
+    {
+        return match ($this->normalizeCodeType($codeType)) {
+            'category' => $this->resolveCategoryName($context),
+            'subcategory' => $this->resolveSubCategoryName($context),
+            'brand' => $this->resolveBrandName($context),
+            'series' => $this->resolveSeriesName($context),
+            default => trim((string) (
+                Arr::get($context, 'name')
+                ?? Arr::get($context, 'entity_name')
+                ?? Arr::get($context, 'product_name')
+                ?? Arr::get($context, 'product_model')
+                ?? Arr::get($context, 'category_name')
+                ?? Arr::get($context, 'manufacturer_name')
+                ?? Arr::get($context, 'series_name')
+                ?? ''
+            )),
+        };
+    }
+
+    private function resolveCategoryName(array $context): string
+    {
+        $category = $this->resolveCategory($context);
+        if ($category && trim((string) $category->category_name) !== '') {
+            return (string) $category->category_name;
+        }
+
+        return trim((string) (Arr::get($context, 'category_name') ?? Arr::get($context, 'name') ?? ''));
+    }
+
+    private function resolveSubCategoryName(array $context): string
+    {
+        $subCategory = $this->resolveSubCategory($context);
+        if ($subCategory && trim((string) $subCategory->sub_category_name) !== '') {
+            return (string) $subCategory->sub_category_name;
+        }
+
+        return trim((string) (Arr::get($context, 'subcategory_name') ?? Arr::get($context, 'sub_category_name') ?? Arr::get($context, 'name') ?? ''));
+    }
+
+    private function resolveBrandName(array $context): string
+    {
+        $brand = $this->resolveBrand($context);
+        if ($brand && trim((string) $brand->manufacturer_name) !== '') {
+            return (string) $brand->manufacturer_name;
+        }
+
+        return trim((string) (Arr::get($context, 'brand_name') ?? Arr::get($context, 'manufacturer_name') ?? Arr::get($context, 'name') ?? ''));
+    }
+
+    private function resolveSeriesName(array $context): string
+    {
+        $series = $this->resolveSeries($context);
+        if ($series && trim((string) $series->name) !== '') {
+            return (string) $series->name;
+        }
+
+        return trim((string) (Arr::get($context, 'series_name') ?? Arr::get($context, 'name') ?? ''));
+    }
+
+    private function prefixFromCode(?string $code): string
+    {
+        $code = trim((string) $code);
+        if ($code === '') {
+            return '';
+        }
+
+        $segments = preg_split('/[^A-Z0-9]+/i', $code, -1, PREG_SPLIT_NO_EMPTY);
+        if (! is_array($segments) || $segments === []) {
+            return $this->sanitizeToken($code);
+        }
+
+        return $this->sanitizeToken((string) $segments[0]);
+    }
+
+    private function codeIsTakenForConfiguration(ProductCodeConfiguration $configuration, string $code): bool
+    {
+        return $this->codeIsTakenForType($this->normalizeCodeType($configuration->code_type ?? null), $code);
+    }
+
+    private function codeIsTakenForType(string $codeType, string $code): bool
+    {
+        $code = $this->normalizeFinalCode($code);
+        if ($code === '') {
+            return false;
+        }
+
+        return match ($this->normalizeCodeType($codeType)) {
+            'category' => DB::table('category')->where('category_code', $code)->exists(),
+            'subcategory' => DB::table('sub_category')->where('subcategory_code', $code)->exists(),
+            'brand' => DB::table('manufacturer')->where('brand_code', $code)->exists(),
+            'series' => DB::table('product_series')->where('series_code', $code)->exists(),
+            'product' => $this->productCodeIsTaken($code),
+            default => $this->productCodeIsTaken($code),
+        };
     }
 
     private function resolveCompany(array $context): ?Company
@@ -421,10 +625,16 @@ class ProductCodeGenerator
 
     private function configurationMatchesContext(ProductCodeConfiguration $configuration, array $context): bool
     {
+        $requestedType = $this->normalizeCodeType($context['code_type'] ?? 'product');
+        $configurationType = $this->normalizeCodeType($configuration->code_type ?? 'product');
         $companyId = $this->normalizeNullableId($context['company_id'] ?? null);
         $branchId = $this->normalizeNullableId($context['branch_id'] ?? null);
 
         if (! $this->isConfigurationActiveForDate($configuration)) {
+            return false;
+        }
+
+        if ($requestedType !== $configurationType) {
             return false;
         }
 

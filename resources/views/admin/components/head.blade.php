@@ -19,7 +19,8 @@
         <link href="{{asset('asset/expert-admin/css/bootstrap-responsive.min.css')}}" rel="stylesheet">
         <link id="base-style" href="{{asset('asset/expert-admin/css/style.css')}}" rel="stylesheet">
         <link id="base-style-responsive" href="{{asset('asset/expert-admin/css/style-responsive.css')}}" rel="stylesheet">
-        <link href="{{ asset('asset/expert-admin/css/ecommerce-admin-responsive.css') }}?v={{ filemtime(public_path('asset/expert-admin/css/ecommerce-admin-responsive.css')) }}" rel="stylesheet">
+        @php($responsiveCssPath = public_path('asset/expert-admin/css/ecommerce-admin-responsive.css'))
+        <link href="{{ asset('asset/expert-admin/css/ecommerce-admin-responsive.css') }}@if(file_exists($responsiveCssPath))?v={{ filemtime($responsiveCssPath) }}@endif" rel="stylesheet">
         <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&subset=latin,cyrillic-ext,latin-ext' rel='stylesheet' type='text/css'>
         <!-- end: CSS -->
 

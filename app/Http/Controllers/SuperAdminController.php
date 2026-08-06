@@ -74,7 +74,7 @@ class SuperAdminController extends Controller {
     public function logout() {
         Session::put('admin_name', '');
         Session::put('admin_id', '');
-        return Redirect::to('/xyz');
+        return Redirect::route('admin.login');
     }
 
     public function addCategory() {
@@ -247,7 +247,7 @@ class SuperAdminController extends Controller {
         $requestedCode = trim((string) $request->input('sub_category_code', ''));
         $subCategoryCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
-            : $this->nextUniqueBusinessCode('sub_category', 'subcategory_code', $subCategoryName, 30, 'SUB', null, 'sub_category_id');
+            : $this->nextUniqueBusinessCode('sub_category', 'subcategory_code', $subCategoryName, 30, 'SUB', null, 'sub_category_id', ['category_id' => $categoryId]);
 
         if ($subCategoryCode === null) {
             return Redirect::back()->withInput()->withErrors(['sub_category_code' => 'Please enter a valid subcategory code.']);
@@ -380,7 +380,7 @@ class SuperAdminController extends Controller {
         } elseif (trim((string) ($existing->subcategory_code ?? '')) !== '') {
             $subCategoryCode = (string) $existing->subcategory_code;
         } else {
-            $subCategoryCode = $this->nextUniqueBusinessCode('sub_category', 'subcategory_code', $subCategoryName, 30, 'SUB', $subCategoryId, 'sub_category_id');
+            $subCategoryCode = $this->nextUniqueBusinessCode('sub_category', 'subcategory_code', $subCategoryName, 30, 'SUB', $subCategoryId, 'sub_category_id', ['category_id' => $categoryId]);
         }
 
         $data = array();
@@ -411,7 +411,7 @@ class SuperAdminController extends Controller {
         $requestedCode = trim((string) $request->input('brand_code', ''));
         $brandCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
-            : $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $manufacturerName, 30, 'BR', null, 'manufacturer_id');
+            : $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $manufacturerName, 30, 'BR', null, 'manufacturer_id', ['company_id' => $companyId]);
 
         if ($brandCode === null) {
             return Redirect::back()->withInput()->withErrors(['brand_code' => 'Please enter a valid brand code.']);
@@ -534,7 +534,7 @@ class SuperAdminController extends Controller {
         } elseif (trim((string) ($existing->brand_code ?? '')) !== '') {
             $brandCode = (string) $existing->brand_code;
         } else {
-            $brandCode = $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $manufacturerName, 30, 'BR', $manufacturerId, 'manufacturer_id');
+            $brandCode = $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $manufacturerName, 30, 'BR', $manufacturerId, 'manufacturer_id', ['company_id' => $companyId]);
         }
 
         $data = array();

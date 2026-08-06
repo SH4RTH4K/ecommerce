@@ -83,8 +83,6 @@ Route::get('/admin/index.html', function () {
     return session()->has('admin_id') ? redirect()->route('admin.dashboard') : redirect()->route('admin.login');
 })->name('admin.legacy-index');
 Route::post('/admin/login', 'AdminController@login')->middleware('throttle:10,1')->name('admin.login.submit');
-Route::get('/admin-login', function () { return redirect('/login?account=admin'); });
-Route::get('/xyz', function(){ return redirect()->route('admin.login'); });
 
 
 //for Super Admin

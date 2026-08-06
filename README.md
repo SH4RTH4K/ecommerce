@@ -30,7 +30,7 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 | Framework | Laravel 13 |
 | PHP | 8.3 or newer |
 | Database | MySQL or MariaDB |
-| Frontend | Blade, Bootstrap, jQuery, Vue 2, and Laravel Mix |
+| Frontend | Blade, Bootstrap, jQuery, and committed public assets |
 | Focus | Storefront, inventory, sales, payments, and admin tools |
 
 > [!IMPORTANT]
@@ -63,7 +63,7 @@ The name **Ecommerce** is only the default installation identity. Store name, lo
 - PHP 8.3 or newer
 - Laravel 13
 - MySQL or MariaDB
-- Blade, Bootstrap, jQuery, Vue 2, and Laravel Mix
+- Blade, Bootstrap, jQuery, and committed public assets
 - PHPUnit 12
 
 ## Quick start

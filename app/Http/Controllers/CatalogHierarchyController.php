@@ -309,7 +309,7 @@ class CatalogHierarchyController extends Controller
         $requestedCode = trim((string) ($data['brand_code'] ?? ''));
         $brandCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
-            : $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $brandName, 30, 'BR', null, 'manufacturer_id');
+            : $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $brandName, 30, 'BR', null, 'manufacturer_id', ['company_id' => (int) $data['company_id']]);
 
         if ($brandCode === null) {
             return back()->withInput()->withErrors(['brand_code' => 'Please enter a valid brand code.']);
@@ -352,7 +352,7 @@ class CatalogHierarchyController extends Controller
         } elseif (trim((string) ($brand->brand_code ?? '')) !== '') {
             $brandCode = (string) $brand->brand_code;
         } else {
-            $brandCode = $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $brandName, 30, 'BR', $brand->manufacturer_id, 'manufacturer_id');
+            $brandCode = $this->nextUniqueBusinessCode('manufacturer', 'brand_code', $brandName, 30, 'BR', $brand->manufacturer_id, 'manufacturer_id', ['company_id' => (int) $data['company_id']]);
         }
 
         $brand->update([
@@ -386,7 +386,7 @@ class CatalogHierarchyController extends Controller
         $requestedCode = trim((string) ($data['series_code'] ?? ''));
         $seriesCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
-            : $this->nextUniqueBusinessCode('product_series', 'series_code', $seriesName, 30, 'SR', null, 'id');
+            : $this->nextUniqueBusinessCode('product_series', 'series_code', $seriesName, 30, 'SR', null, 'id', ['manufacturer_id' => (int) $data['manufacturer_id']]);
 
         if ($seriesCode === null) {
             return back()->withInput()->withErrors(['series_code' => 'Please enter a valid series code.']);
@@ -429,7 +429,7 @@ class CatalogHierarchyController extends Controller
         } elseif (trim((string) ($series->series_code ?? '')) !== '') {
             $seriesCode = (string) $series->series_code;
         } else {
-            $seriesCode = $this->nextUniqueBusinessCode('product_series', 'series_code', $seriesName, 30, 'SR', $series->id, 'id');
+            $seriesCode = $this->nextUniqueBusinessCode('product_series', 'series_code', $seriesName, 30, 'SR', $series->id, 'id', ['manufacturer_id' => (int) $data['manufacturer_id']]);
         }
 
         $series->update([

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ProductCodeGenerator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -71,6 +72,29 @@ class Controller extends BaseController
         string $keyColumn = 'id',
         array $scope = []
     ): string {
+        $codeType = $this->businessCodeTypeForTable($table, $column);
+        if ($codeType !== null) {
+            try {
+                $context = array_merge($scope, [
+                    'code_type' => $codeType,
+                    'name' => $seed,
+                    'entity_name' => $seed,
+                    'ignore_id' => $ignoreId,
+                    'table' => $table,
+                    'column' => $column,
+                    'key_column' => $keyColumn,
+                ]);
+                $allocation = app(ProductCodeGenerator::class)->allocate($context);
+                $generated = trim((string) ($allocation['code'] ?? $allocation['product_code'] ?? ''));
+                if ($generated !== '') {
+                    return $generated;
+                }
+            } catch (\Throwable $exception) {
+                // Fall back to the legacy generator when the configured engine
+                // cannot yet produce the requested code.
+            }
+        }
+
         $base = normalize_business_code($seed, $maxLength) ?: normalize_business_code($fallbackPrefix, $maxLength) ?: $fallbackPrefix;
         $candidate = $base;
         $counter = 2;
@@ -136,5 +160,18 @@ class Controller extends BaseController
         }
 
         return $query->exists();
+    }
+
+    private function businessCodeTypeForTable(string $table, string $column): ?string
+    {
+        $map = [
+            'category' => ['category_code' => 'category'],
+            'sub_category' => ['subcategory_code' => 'subcategory'],
+            'manufacturer' => ['brand_code' => 'brand'],
+            'product_series' => ['series_code' => 'series'],
+            'product' => ['product_code' => 'product'],
+        ];
+
+        return $map[$table][$column] ?? null;
     }
 }

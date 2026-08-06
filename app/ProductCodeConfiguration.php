@@ -21,6 +21,11 @@ class ProductCodeConfiguration extends Model
         'effective_to' => 'datetime',
     ];
 
+    public function scopeForType($query, string $codeType)
+    {
+        return $query->where('code_type', $codeType);
+    }
+
     public function components()
     {
         return $this->hasMany(ProductCodeComponent::class, 'configuration_id')->orderBy('position');

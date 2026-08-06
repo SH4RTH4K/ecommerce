@@ -12,6 +12,7 @@ use App\Services\ProductCodeGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProductCodeConfigurationController extends Controller
@@ -20,23 +21,40 @@ class ProductCodeConfigurationController extends Controller
     {
         $this->requireAdminPermission('view_product_code_configuration');
 
+        $codeTypes = (array) config('product_code.code_types', []);
+        $availableCodeTypes = array_keys($codeTypes);
+        $selectedCodeType = $this->normalizeCodeType($request->input('code_type', $request->input('type', 'product')), $availableCodeTypes);
         $configurationId = $request->integer('configuration');
-        $configurations = ProductCodeConfiguration::with(['components', 'company', 'branch'])
+        $allConfigurations = ProductCodeConfiguration::with(['components', 'company', 'branch'])
             ->orderByDesc('is_active')
             ->orderByDesc('id')
             ->get();
-        $categories = DB::table('category')->orderBy('category_name')->get();
-        $subcategories = DB::table('sub_category')->orderBy('sub_category_name')->get();
-        $brands = DB::table('manufacturer')->orderBy('manufacturer_name')->get();
-        $series = DB::table('product_series')->orderBy('name')->get();
+        $selectedConfiguration = null;
 
-        $selectedConfiguration = $configurationId
-            ? $configurations->firstWhere('id', $configurationId)
-            : $configurations->firstWhere('is_active', true);
+        if ($configurationId) {
+            $selectedConfiguration = $allConfigurations->firstWhere('id', $configurationId);
+            if ($selectedConfiguration) {
+                $selectedCodeType = $this->normalizeCodeType($selectedConfiguration->code_type ?? 'product', $availableCodeTypes);
+            }
+        }
 
+        $configurations = $allConfigurations
+            ->filter(function ($configuration) use ($selectedCodeType) {
+                return $this->normalizeCodeType($configuration->code_type ?? 'product') === $selectedCodeType;
+            })
+            ->values();
+
+        if (! $selectedConfiguration) {
+            $selectedConfiguration = $configurations->firstWhere('is_active', true);
+        }
         if (! $selectedConfiguration && $configurations->isNotEmpty()) {
             $selectedConfiguration = $configurations->first();
         }
+
+        $categories = DB::table('category')->whereNull('deleted_at')->orderBy('category_name')->get();
+        $subcategories = DB::table('sub_category')->whereNull('deleted_at')->orderBy('sub_category_name')->get();
+        $brands = DB::table('manufacturer')->whereNull('deleted_at')->orderBy('manufacturer_name')->get();
+        $series = DB::table('product_series')->whereNull('deleted_at')->orderBy('name')->get();
 
         $selectedConfiguration = $selectedConfiguration
             ? $selectedConfiguration->loadMissing(['components', 'company', 'branch'])
@@ -49,36 +67,58 @@ class ProductCodeConfigurationController extends Controller
 
         $snapshot = $selectedConfiguration
             ? $generator->snapshot($selectedConfiguration)
-            : $this->defaultSnapshot();
+            : $this->defaultSnapshot($selectedCodeType);
+
+        $typeCounts = $allConfigurations
+            ->groupBy(function ($configuration) use ($availableCodeTypes) {
+                return $this->normalizeCodeType($configuration->code_type ?? 'product', $availableCodeTypes);
+            })
+            ->map
+            ->count()
+            ->all();
 
         $sequences = ProductCodeSequence::with('configuration')
+            ->whereHas('configuration', function ($query) use ($selectedCodeType) {
+                $query->forType($selectedCodeType);
+            })
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->limit(50)
             ->get();
 
         $productCodeHistories = ProductCodeHistory::with(['configuration', 'product'])
+            ->whereHas('configuration', function ($query) use ($selectedCodeType) {
+                $query->forType($selectedCodeType);
+            })
             ->orderByDesc('changed_at')
             ->limit(50)
             ->get();
 
         $configurationHistories = ProductCodeConfigurationHistory::with('configuration')
+            ->whereHas('configuration', function ($query) use ($selectedCodeType) {
+                $query->forType($selectedCodeType);
+            })
             ->orderByDesc('changed_at')
             ->limit(30)
             ->get();
 
-        $companies = DB::table('companies')->orderBy('name')->get();
+        $companies = DB::table('companies')->whereNull('deleted_at')->orderBy('name')->get();
         $branches = DB::table('inventory_locations')->where('type', 'branch')->orderBy('name')->get();
         $availableComponents = config('product_code.component_types', []);
         $separators = config('product_code.separators', []);
         $sequenceScopes = config('product_code.sequence_scopes', []);
         $resetRules = config('product_code.reset_rules', []);
+        $previewContextDefaults = $this->previewContextDefaults($companies, $branches, $categories, $subcategories, $brands, $series);
+        $previewWarnings = $this->previewWarnings($snapshot, $companies, $branches, $categories, $subcategories, $brands, $series);
 
         return view('admin.admin-master')->with('admin_main_content', view('admin.admin-pages.product-code-configuration', compact(
             'configurations',
             'selectedConfiguration',
             'activeConfiguration',
             'snapshot',
+            'selectedCodeType',
+            'codeTypes',
+            'typeCounts',
             'sequences',
             'productCodeHistories',
             'configurationHistories',
@@ -91,7 +131,9 @@ class ProductCodeConfigurationController extends Controller
             'availableComponents',
             'separators',
             'sequenceScopes',
-            'resetRules'
+            'resetRules',
+            'previewContextDefaults',
+            'previewWarnings'
         )));
     }
 
@@ -101,6 +143,7 @@ class ProductCodeConfigurationController extends Controller
 
         $validated = $request->validate([
             'configuration_id' => 'nullable|integer|exists:product_code_configurations,id',
+            'code_type' => ['required', 'string', Rule::in(array_keys(config('product_code.code_types', [])))],
             'name' => 'required|string|max:160',
             'company_id' => 'nullable|integer|exists:companies,id',
             'branch_id' => 'nullable|integer|exists:inventory_locations,id',
@@ -140,8 +183,9 @@ class ProductCodeConfigurationController extends Controller
 
         $now = now();
         $configurationId = $validated['configuration_id'] ?? null;
+        $savedConfigurationId = $configurationId;
 
-        DB::transaction(function () use ($validated, $components, $template, $configurationId, $now) {
+        DB::transaction(function () use ($validated, $components, $template, $configurationId, $now, &$savedConfigurationId) {
             $configuration = $configurationId
                 ? ProductCodeConfiguration::lockForUpdate()->findOrFail($configurationId)
                 : new ProductCodeConfiguration();
@@ -150,6 +194,7 @@ class ProductCodeConfigurationController extends Controller
 
             $configuration->fill([
                 'name' => trim($validated['name']),
+                'code_type' => $this->normalizeCodeType($validated['code_type']),
                 'company_id' => $validated['company_id'] ?? null,
                 'branch_id' => $validated['branch_id'] ?? null,
                 'auto_generate' => (int) ($validated['auto_generate'] ?? 0),
@@ -178,7 +223,8 @@ class ProductCodeConfigurationController extends Controller
             $configuration->save();
 
             if ((int) $configuration->is_active === 1) {
-                ProductCodeConfiguration::where('id', '<>', $configuration->id)
+                ProductCodeConfiguration::where('code_type', $configuration->code_type)
+                    ->where('id', '<>', $configuration->id)
                     ->where(function ($query) use ($configuration) {
                         $query->whereNull('company_id')->orWhere('company_id', $configuration->company_id);
                     })
@@ -215,10 +261,12 @@ class ProductCodeConfigurationController extends Controller
                 'changed_by' => session('admin_id'),
                 'changed_at' => $now,
             ]);
+
+            $savedConfigurationId = $configuration->id;
         });
 
         return redirect()
-            ->to('/product-code-configuration?configuration='.($configurationId ?: ProductCodeConfiguration::latest('id')->value('id')))
+            ->to('/product-code-configuration?code_type='.$validated['code_type'].'&configuration='.$savedConfigurationId)
             ->with('message', 'Product code configuration saved successfully.');
     }
 
@@ -226,6 +274,7 @@ class ProductCodeConfigurationController extends Controller
     {
         $request->validate([
             'configuration_id' => 'nullable|integer|exists:product_code_configurations,id',
+            'code_type' => 'nullable|in:'.implode(',', array_keys((array) config('product_code.code_types', []))),
             'name' => 'nullable|string|max:160',
             'company_id' => 'nullable|integer|exists:companies,id',
             'branch_id' => 'nullable|integer|exists:inventory_locations,id',
@@ -256,8 +305,12 @@ class ProductCodeConfigurationController extends Controller
         ]);
 
         $configuration = null;
+        $codeType = $this->normalizeCodeType($request->input('code_type', 'product'));
         if ($request->filled('configuration_id')) {
             $configuration = ProductCodeConfiguration::with('components')->find($request->integer('configuration_id'));
+            if ($configuration) {
+                $codeType = $this->normalizeCodeType($configuration->code_type ?? 'product');
+            }
         }
         $hasDraftChanges = $request->filled('components') || $request->filled('name') || $request->filled('sequence_length') || $request->filled('sequence_scope') || $request->filled('reset_rule');
         if ($hasDraftChanges) {
@@ -265,22 +318,42 @@ class ProductCodeConfigurationController extends Controller
         }
         if (! $configuration) {
             $configuration = ProductCodeConfiguration::with('components')
+                ->forType($codeType)
                 ->where('is_active', 1)
                 ->orderByDesc('id')
                 ->first();
         }
 
         if (! $configuration) {
-            return response()->json(['preview' => null, 'message' => 'No active product code configuration is available.'], 422);
+            return response()->json(['preview' => null, 'message' => $this->configurationUnavailableMessage($codeType)], 422);
+        }
+
+        $snapshot = $this->configurationSnapshot($configuration->loadMissing(['components', 'company', 'branch']));
+        $companies = DB::table('companies')->orderBy('name')->get();
+        $branches = DB::table('inventory_locations')->where('type', 'branch')->orderBy('name')->get();
+        $categories = DB::table('category')->whereNull('deleted_at')->orderBy('category_name')->get();
+        $subcategories = DB::table('sub_category')->whereNull('deleted_at')->orderBy('sub_category_name')->get();
+        $brands = DB::table('manufacturer')->whereNull('deleted_at')->orderBy('manufacturer_name')->get();
+        $series = DB::table('product_series')->whereNull('deleted_at')->orderBy('name')->get();
+        $previewContextDefaults = $this->previewContextDefaults($companies, $branches, $categories, $subcategories, $brands, $series);
+        $previewWarnings = $this->previewWarnings($snapshot, $companies, $branches, $categories, $subcategories, $brands, $series);
+
+        if ($previewWarnings !== []) {
+            return response()->json([
+                'preview' => null,
+                'message' => implode(' ', $previewWarnings),
+                'warnings' => $previewWarnings,
+            ], 422);
         }
 
         $context = [
-            'company_id' => $request->integer('company_id'),
-            'branch_id' => $request->integer('branch_id'),
-            'category_id' => $request->integer('category_id'),
-            'subcategory_id' => $request->integer('subcategory_id'),
-            'manufacturer_id' => $request->integer('manufacturer_id'),
-            'series_id' => $request->integer('series_id'),
+            'code_type' => $codeType,
+            'company_id' => $request->filled('company_id') ? $request->integer('company_id') : ($previewContextDefaults['company_id'] ?? null),
+            'branch_id' => $request->filled('branch_id') ? $request->integer('branch_id') : ($previewContextDefaults['branch_id'] ?? null),
+            'category_id' => $request->filled('category_id') ? $request->integer('category_id') : ($previewContextDefaults['category_id'] ?? null),
+            'subcategory_id' => $request->filled('subcategory_id') ? $request->integer('subcategory_id') : ($previewContextDefaults['subcategory_id'] ?? null),
+            'manufacturer_id' => $request->filled('manufacturer_id') ? $request->integer('manufacturer_id') : ($previewContextDefaults['manufacturer_id'] ?? null),
+            'series_id' => $request->filled('series_id') ? $request->integer('series_id') : ($previewContextDefaults['series_id'] ?? null),
             'variant_code' => $request->input('variant_code'),
             'custom_prefix' => $request->input('custom_prefix'),
             'custom_suffix' => $request->input('custom_suffix'),
@@ -296,19 +369,35 @@ class ProductCodeConfigurationController extends Controller
         return response()->json([
             'preview' => $details['preview'],
             'values' => $details['values'],
-            'configuration' => $this->configurationSnapshot($configuration->loadMissing(['components', 'company', 'branch'])),
+            'configuration' => $snapshot,
         ]);
     }
 
     public function configuration(ProductCodeGenerator $generator)
     {
-        $configuration = ProductCodeConfiguration::with(['components', 'company', 'branch'])
-            ->where('is_active', 1)
-            ->orderByDesc('id')
-            ->first();
+        $request = request();
+        $codeType = $this->normalizeCodeType($request->input('code_type', 'product'));
+        $configuration = null;
+
+        if ($request->filled('configuration_id')) {
+            $configuration = ProductCodeConfiguration::with(['components', 'company', 'branch'])
+                ->find($request->integer('configuration_id'));
+
+            if ($configuration) {
+                $codeType = $this->normalizeCodeType($configuration->code_type ?? 'product');
+            }
+        }
 
         if (! $configuration) {
-            return response()->json(['configuration' => null]);
+            $configuration = ProductCodeConfiguration::with(['components', 'company', 'branch'])
+                ->forType($codeType)
+                ->where('is_active', 1)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $configuration) {
+            return response()->json(['configuration' => $this->defaultSnapshot($codeType)]);
         }
 
         return response()->json(['configuration' => $generator->snapshot($configuration)]);
@@ -426,13 +515,16 @@ class ProductCodeConfigurationController extends Controller
     private function configurationSnapshot(?ProductCodeConfiguration $configuration): array
     {
         if (! $configuration) {
-            return $this->defaultSnapshot();
+            return $this->defaultSnapshot('product');
         }
 
         $configuration->loadMissing(['components', 'company', 'branch']);
+        $codeType = $this->normalizeCodeType($configuration->code_type ?? 'product');
 
         return [
             'id' => $configuration->id,
+            'code_type' => $codeType,
+            'code_type_label' => $this->codeTypeLabel($codeType),
             'name' => $configuration->name,
             'company_id' => $configuration->company_id,
             'branch_id' => $configuration->branch_id,
@@ -452,6 +544,7 @@ class ProductCodeConfigurationController extends Controller
             'effective_from' => optional($configuration->effective_from)->toDateTimeString(),
             'effective_to' => optional($configuration->effective_to)->toDateTimeString(),
             'is_active' => (bool) $configuration->is_active,
+            'prefix' => $this->configurationPrefix($configuration),
             'components' => $configuration->components->map(function (ProductCodeComponent $component) {
                 return [
                     'id' => $component->id,
@@ -465,57 +558,310 @@ class ProductCodeConfigurationController extends Controller
         ];
     }
 
-    private function defaultSnapshot(): array
+    private function configurationPrefix(ProductCodeConfiguration $configuration): string
     {
+        foreach ($configuration->components as $component) {
+            $type = strtolower(trim((string) $component->component_type));
+            if (! in_array($type, ['prefix', 'static_text'], true)) {
+                continue;
+            }
+
+            $value = trim((string) ($component->static_value ?? ''));
+            if ($value !== '') {
+                return normalize_business_code($value, 30) ?: '';
+            }
+        }
+
+        return '';
+    }
+
+    private function defaultSnapshot(string $codeType = 'product'): array
+    {
+        $codeType = $this->normalizeCodeType($codeType);
+        $definition = (array) data_get(config('product_code.code_type_defaults', []), $codeType, []);
+        $components = collect((array) ($definition['components'] ?? []))->map(function (array $component, int $index) {
+            $staticValue = $component['static_value'] ?? null;
+            if (is_string($staticValue)) {
+                $staticValue = trim($staticValue);
+                $staticValue = $staticValue !== '' ? $staticValue : null;
+            }
+
+            return [
+                'id' => null,
+                'component_type' => (string) ($component['component_type'] ?? 'sequence'),
+                'position' => (int) ($component['position'] ?? ($index + 1)),
+                'static_value' => $staticValue,
+                'format_options' => $component['format_options'] ?? null,
+                'is_required' => (bool) ($component['is_required'] ?? true),
+            ];
+        })->values()->all();
+
         return [
             'id' => null,
-            'name' => config('product_code.default_name', 'Default Product Code'),
+            'code_type' => $codeType,
+            'code_type_label' => $this->codeTypeLabel($codeType),
+            'name' => (string) ($definition['name'] ?? $this->codeTypeLabel($codeType)),
             'company_id' => null,
             'branch_id' => null,
             'company_name' => null,
             'branch_name' => null,
-            'auto_generate' => (bool) config('product_code.default_auto_generate', true),
-            'template' => config('product_code.default_template', '{CATEGORY}-{BRAND}-{SEQUENCE}'),
-            'separator' => config('product_code.default_separator', '-'),
-            'sequence_scope' => config('product_code.default_sequence_scope', 'global'),
-            'sequence_length' => (int) config('product_code.default_sequence_length', 6),
-            'sequence_start' => (int) config('product_code.default_sequence_start', 1),
-            'reset_rule' => config('product_code.default_reset_rule', 'never'),
-            'strict_mode' => (bool) config('product_code.default_strict_mode', true),
-            'skip_empty_components' => (bool) config('product_code.default_skip_empty_components', false),
-            'allow_manual_override' => (bool) config('product_code.default_allow_manual_override', false),
-            'allow_regeneration' => (bool) config('product_code.default_allow_regeneration', true),
+            'auto_generate' => (bool) ($definition['auto_generate'] ?? config('product_code.default_auto_generate', true)),
+            'template' => (string) ($definition['template'] ?? config('product_code.default_template', '{PREFIX}-{CATEGORY_CODE}-{SUBCATEGORY_CODE}-{BRAND_CODE}-{SERIES_CODE}-{SEQUENCE}')),
+            'separator' => (string) ($definition['separator'] ?? config('product_code.default_separator', '-')),
+            'sequence_scope' => (string) ($definition['sequence_scope'] ?? config('product_code.default_sequence_scope', 'global')),
+            'sequence_length' => (int) ($definition['sequence_length'] ?? config('product_code.default_sequence_length', 6)),
+            'sequence_start' => (int) ($definition['sequence_start'] ?? config('product_code.default_sequence_start', 1)),
+            'reset_rule' => (string) ($definition['reset_rule'] ?? config('product_code.default_reset_rule', 'never')),
+            'strict_mode' => (bool) ($definition['strict_mode'] ?? config('product_code.default_strict_mode', true)),
+            'skip_empty_components' => (bool) ($definition['skip_empty_components'] ?? config('product_code.default_skip_empty_components', false)),
+            'allow_manual_override' => (bool) ($definition['allow_manual_override'] ?? config('product_code.default_allow_manual_override', false)),
+            'allow_regeneration' => (bool) ($definition['allow_regeneration'] ?? config('product_code.default_allow_regeneration', true)),
             'effective_from' => null,
             'effective_to' => null,
             'is_active' => true,
-            'components' => [],
+            'prefix' => $this->configurationPrefixFromDefinition($definition),
+            'components' => $components,
         ];
+    }
+
+    private function normalizeCodeType($codeType, ?array $allowed = null): string
+    {
+        $allowed = $allowed ?: array_keys((array) config('product_code.code_types', []));
+        $codeType = strtolower(trim((string) $codeType));
+
+        if ($codeType === '') {
+            return 'product';
+        }
+
+        return in_array($codeType, $allowed, true) ? $codeType : 'product';
+    }
+
+    private function codeTypeLabel($codeType): string
+    {
+        $codeType = $this->normalizeCodeType($codeType);
+        $labels = (array) config('product_code.code_types', []);
+
+        return $labels[$codeType] ?? Str::headline(str_replace(['_', '-'], ' ', $codeType));
+    }
+
+    private function configurationPrefixFromDefinition(array $definition): string
+    {
+        foreach ((array) ($definition['components'] ?? []) as $component) {
+            $type = strtolower(trim((string) ($component['component_type'] ?? '')));
+            if (! in_array($type, ['prefix', 'static_text'], true)) {
+                continue;
+            }
+
+            $value = trim((string) ($component['static_value'] ?? ''));
+            if ($value !== '') {
+                return normalize_business_code($value, 30) ?: '';
+            }
+        }
+
+        return '';
+    }
+
+    private function previewContextDefaults($companies, $branches, $categories, $subcategories, $brands, $series): array
+    {
+        return [
+            'company_id' => $this->firstCodedRecordId($companies, 'company_code', 'id'),
+            'branch_id' => $this->firstCodedRecordId($branches, 'code', 'id'),
+            'category_id' => $this->firstCodedRecordId($categories, 'category_code', 'category_id'),
+            'subcategory_id' => $this->firstCodedRecordId($subcategories, 'subcategory_code', 'sub_category_id'),
+            'manufacturer_id' => $this->firstCodedRecordId($brands, 'brand_code', 'manufacturer_id'),
+            'series_id' => $this->firstCodedRecordId($series, 'series_code', 'id'),
+        ];
+    }
+
+    private function previewWarnings(array $snapshot, $companies, $branches, $categories, $subcategories, $brands, $series): array
+    {
+        $requiredTypes = collect($snapshot['components'] ?? [])
+            ->pluck('component_type')
+            ->map(static function ($type) {
+                return strtolower(trim((string) $type));
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $codeType = $this->normalizeCodeType($snapshot['code_type'] ?? 'product');
+        $entityMap = [
+            'company' => [
+                'records' => $companies,
+                'label' => 'companies',
+                'singular' => 'company',
+                'code_label' => 'Company Code',
+                'field' => 'company_code',
+                'requires_code' => true,
+            ],
+            'branch' => [
+                'records' => $branches,
+                'label' => 'branches',
+                'singular' => 'branch',
+                'code_label' => 'Branch Code',
+                'field' => 'code',
+                'requires_code' => true,
+            ],
+            'category' => [
+                'records' => $categories,
+                'label' => 'categories',
+                'singular' => 'category',
+                'code_label' => 'Category Code',
+                'field' => 'category_code',
+                'requires_code' => true,
+            ],
+            'subcategory' => [
+                'records' => $subcategories,
+                'label' => 'subcategories',
+                'singular' => 'subcategory',
+                'code_label' => 'Subcategory Code',
+                'field' => 'subcategory_code',
+                'requires_code' => true,
+            ],
+            'brand' => [
+                'records' => $brands,
+                'label' => 'brands',
+                'singular' => 'brand',
+                'code_label' => 'Brand Code',
+                'field' => 'brand_code',
+                'requires_code' => true,
+            ],
+            'series' => [
+                'records' => $series,
+                'label' => 'series',
+                'singular' => 'series',
+                'code_label' => 'Series Code',
+                'field' => 'series_code',
+                'requires_code' => true,
+            ],
+        ];
+
+        $componentDependencies = [
+            'company' => ['company'],
+            'company_code' => ['company'],
+            'branch' => ['branch'],
+            'branch_code' => ['branch'],
+            'category' => ['category'],
+            'category_code' => ['category'],
+            'category_name_code' => ['category'],
+            'category_prefix' => ['category'],
+            'subcategory' => ['subcategory'],
+            'subcategory_code' => ['subcategory'],
+            'subcategory_name_code' => ['subcategory'],
+            'subcategory_prefix' => ['subcategory'],
+            'brand' => ['brand'],
+            'brand_code' => ['brand'],
+            'brand_name_code' => ['brand'],
+            'brand_prefix' => ['brand'],
+            'series' => ['series'],
+            'series_code' => ['series'],
+            'series_name_code' => ['series'],
+            'series_prefix' => ['series'],
+            'name_code' => $codeType === 'product' ? [] : [$codeType],
+            'prefix' => [],
+            'static_text' => [],
+            'sequence' => [],
+            'variant' => [],
+            'custom_prefix' => [],
+            'custom_suffix' => [],
+            'custom_text' => [],
+            'product_type' => [],
+            'year' => [],
+            'year_short' => [],
+            'month' => [],
+            'day' => [],
+            'date' => [],
+        ];
+
+        $entityTypes = collect($requiredTypes)
+            ->flatMap(static function (string $type) use ($componentDependencies) {
+                return $componentDependencies[$type] ?? [];
+            })
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $warnings = [];
+        foreach ($entityTypes as $type) {
+            if (! isset($entityMap[$type])) {
+                continue;
+            }
+
+            $meta = $entityMap[$type];
+            $records = $meta['records'];
+            if ($records->isEmpty()) {
+                $warnings[] = 'No '.$meta['label'].' exist yet. Create at least one '.$meta['singular'].' before previewing this template.';
+                continue;
+            }
+
+            if (! empty($meta['requires_code'])) {
+                $hasCodes = $records->contains(static function ($record) use ($meta) {
+                    return trim((string) data_get($record, $meta['field'])) !== '';
+                });
+
+                if (! $hasCodes) {
+                    $warnings[] = 'The existing '.$meta['label'].' do not yet have '.$meta['code_label'].' values. Add one before previewing this template.';
+                }
+            }
+        }
+
+        return $warnings;
+    }
+
+    private function firstCodedRecordId($records, string $codeField, string $idField): ?int
+    {
+        $record = $records->first(static function ($item) use ($codeField) {
+            return trim((string) data_get($item, $codeField)) !== '';
+        });
+
+        if (! $record) {
+            return null;
+        }
+
+        $id = data_get($record, $idField);
+        return $id !== null && $id !== '' ? (int) $id : null;
     }
 
     private function buildDraftConfiguration(Request $request, ?ProductCodeConfiguration $existing = null): ProductCodeConfiguration
     {
+        $codeType = $this->normalizeCodeType($request->input('code_type', $existing?->code_type ?? 'product'));
+        $defaults = $this->defaultSnapshot($codeType);
         $configuration = $existing ? clone $existing : new ProductCodeConfiguration();
-        $components = $this->normalizeComponents((array) $request->input('components', $existing ? $existing->components->toArray() : []));
+        $components = $this->normalizeComponents((array) $request->input('components', $existing ? $existing->components->toArray() : $defaults['components']));
+        $existingName = $existing?->name ?? null;
+        $existingCompanyId = $existing?->company_id ?? null;
+        $existingBranchId = $existing?->branch_id ?? null;
+        $existingSeparator = $existing?->separator ?? $defaults['separator'];
+        $existingSequenceScope = $existing?->sequence_scope ?? $defaults['sequence_scope'];
+        $existingSequenceLength = $existing?->sequence_length ?? $defaults['sequence_length'];
+        $existingSequenceStart = $existing?->sequence_start ?? $defaults['sequence_start'];
+        $existingResetRule = $existing?->reset_rule ?? $defaults['reset_rule'];
+        $existingEffectiveFrom = $existing?->effective_from ?? null;
+        $existingEffectiveTo = $existing?->effective_to ?? null;
+        $existingIsActive = $existing?->is_active ?? true;
 
         $configuration->forceFill([
             'id' => $existing?->id,
-            'name' => $request->input('name', $existing->name ?? config('product_code.default_name', 'Default Product Code')),
-            'company_id' => $request->filled('company_id') ? (int) $request->input('company_id') : ($existing->company_id ?? null),
-            'branch_id' => $request->filled('branch_id') ? (int) $request->input('branch_id') : ($existing->branch_id ?? null),
-            'auto_generate' => (int) ($request->boolean('auto_generate', $existing->auto_generate ?? config('product_code.default_auto_generate', true))),
-            'template' => $this->compileTemplate($components ?: ($existing ? $this->normalizeComponents($existing->components->toArray()) : []), $request->input('separator', $existing->separator ?? config('product_code.default_separator', '-'))),
-            'separator' => $request->input('separator', $existing->separator ?? config('product_code.default_separator', '-')),
-            'sequence_scope' => $request->input('sequence_scope', $existing->sequence_scope ?? config('product_code.default_sequence_scope', 'global')),
-            'sequence_length' => (int) $request->input('sequence_length', $existing->sequence_length ?? config('product_code.default_sequence_length', 6)),
-            'sequence_start' => (int) $request->input('sequence_start', $existing->sequence_start ?? config('product_code.default_sequence_start', 1)),
-            'reset_rule' => $request->input('reset_rule', $existing->reset_rule ?? config('product_code.default_reset_rule', 'never')),
-            'strict_mode' => (int) ($request->boolean('strict_mode', $existing->strict_mode ?? config('product_code.default_strict_mode', true))),
-            'skip_empty_components' => (int) ($request->boolean('skip_empty_components', $existing->skip_empty_components ?? config('product_code.default_skip_empty_components', false))),
-            'allow_manual_override' => (int) ($request->boolean('allow_manual_override', $existing->allow_manual_override ?? config('product_code.default_allow_manual_override', false))),
-            'allow_regeneration' => (int) ($request->boolean('allow_regeneration', $existing->allow_regeneration ?? config('product_code.default_allow_regeneration', true))),
-            'effective_from' => $request->input('effective_from', $existing->effective_from ?? null),
-            'effective_to' => $request->input('effective_to', $existing->effective_to ?? null),
-            'is_active' => (int) ($request->boolean('is_active', $existing->is_active ?? true)),
+            'code_type' => $codeType,
+            'name' => $request->input('name', $existingName ?? $defaults['name']),
+            'company_id' => $request->filled('company_id') ? (int) $request->input('company_id') : $existingCompanyId,
+            'branch_id' => $request->filled('branch_id') ? (int) $request->input('branch_id') : $existingBranchId,
+            'auto_generate' => (int) ($request->boolean('auto_generate', $existing?->auto_generate ?? $defaults['auto_generate'])),
+            'template' => $this->compileTemplate($components ?: ($existing ? $this->normalizeComponents($existing->components->toArray()) : $defaults['components']), $request->input('separator', $existingSeparator)),
+            'separator' => $request->input('separator', $existingSeparator),
+            'sequence_scope' => $request->input('sequence_scope', $existingSequenceScope),
+            'sequence_length' => (int) $request->input('sequence_length', $existingSequenceLength),
+            'sequence_start' => (int) $request->input('sequence_start', $existingSequenceStart),
+            'reset_rule' => $request->input('reset_rule', $existingResetRule),
+            'strict_mode' => (int) ($request->boolean('strict_mode', $existing?->strict_mode ?? $defaults['strict_mode'])),
+            'skip_empty_components' => (int) ($request->boolean('skip_empty_components', $existing?->skip_empty_components ?? $defaults['skip_empty_components'])),
+            'allow_manual_override' => (int) ($request->boolean('allow_manual_override', $existing?->allow_manual_override ?? $defaults['allow_manual_override'])),
+            'allow_regeneration' => (int) ($request->boolean('allow_regeneration', $existing?->allow_regeneration ?? $defaults['allow_regeneration'])),
+            'effective_from' => $request->input('effective_from', $existingEffectiveFrom),
+            'effective_to' => $request->input('effective_to', $existingEffectiveTo),
+            'is_active' => (int) ($request->boolean('is_active', $existingIsActive)),
         ]);
 
         $configuration->setRelation('components', collect($components)->map(function (array $component) {
