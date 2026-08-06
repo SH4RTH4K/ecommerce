@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Services\StorefrontThemeService;
 use Tests\TestCase;
 
 class SiteCustomizationTest extends TestCase
@@ -162,6 +163,11 @@ class SiteCustomizationTest extends TestCase
         ]), $overrides);
     }
 
+    private function storefrontThemePayload(array $overrides = []): array
+    {
+        return array_merge(app(StorefrontThemeService::class)->defaults(), $overrides);
+    }
+
     public function testModernSettingsWorkspaceRendersAllBusinessSections()
     {
         $admin=$this->settingsAdmin();
@@ -169,7 +175,7 @@ class SiteCustomizationTest extends TestCase
         $this->withSession(['admin_id'=>$admin->admin_id,'admin_name'=>$admin->admin_name])
             ->get('/site-customization')->assertStatus(200)
             ->assertSee('Store setup')->assertSee('Business identity')
-            ->assertSee('Contact &amp; location',false)->assertSee('Search &amp; sharing',false)
+            ->assertSee('Contact &amp; location',false)->assertSee('Theme &amp; colors',false)->assertSee('Search &amp; sharing',false)
             ->assertSee('Changes become public immediately')
             ->assertSee('brand-logo-upload',false)->assertSee('brand-favicon-upload',false)
             ->assertSee('Recommended output: 600 × 200 px (3:1)',false)
@@ -221,17 +227,104 @@ class SiteCustomizationTest extends TestCase
                 ->assertSee('--brand-tagline-font-size:16px',false)
                 ->assertSee('css/brand-tagline.css',false)
                 ->assertSee('lt-startech-menu',false)
-                ->assertSee('lt-menu-strip',false)
+                ->assertSee('lt-category-nav',false)
+                ->assertSee('lt-menu-empty',false)
                 ->assertSee('lt-nav-cta',false)
                 ->assertSee('PC Builder',false)
-                ->assertSee('Offers',false)
-                ->assertSee('Latest Offers',false)
-                ->assertSee('Happy Hour Special Deals',false)
-                ->assertSee('Track Order',false)
+                ->assertDontSee('All Categories',false)
                 ->assertDontSee('Browse by department',false);
             $this->app['session']->flush();
             $this->get('/admin/login')->assertOk()->assertSee('admin-login-tagline',false)->assertSee('Trusted technology store');
         } finally { DB::rollBack(); Cache::forget('site-settings'); }
+    }
+
+    public function testStorefrontThemeCanBeSavedAndRenderedWithSectionOverrides()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $theme = $this->storefrontThemePayload([
+                'preset' => 'blue-orange',
+                'global_primary' => '#123456',
+                'global_secondary' => '#0f2233',
+                'global_accent' => '#f5821f',
+                'header_use_global' => '0',
+                'header_background' => '#112233',
+                'header_text' => '#f8fbff',
+            ]);
+
+            $response = $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
+                ->post('/site-settings', array_merge($this->websiteSettingsPayload([
+                    'site_name' => 'Theme Demo Store',
+                    'development_mode_enabled' => '0',
+                ]), [
+                    'storefront_theme' => $theme,
+                ]));
+
+            $response->assertRedirect('/site-customization')->assertSessionHas('message');
+
+            $storedTheme = DB::table('site_settings')->where('setting_key', 'storefront_theme')->value('setting_value');
+            $this->assertNotEmpty($storedTheme);
+
+            $decodedTheme = json_decode($storedTheme, true);
+            $this->assertSame('blue-orange', $decodedTheme['preset']);
+            $this->assertSame('#123456', $decodedTheme['global_primary']);
+            $this->assertSame('#0f2233', $decodedTheme['global_secondary']);
+            $this->assertSame(0, $decodedTheme['header_use_global']);
+            $this->assertSame('#112233', $decodedTheme['header_background']);
+            $this->assertSame('#f8fbff', $decodedTheme['header_text']);
+
+            Cache::forget('site-settings');
+            $this->get('/')->assertOk()
+                ->assertSee('--theme-nav-bg: #123456', false)
+                ->assertSee('--theme-header-bg: #112233', false)
+                ->assertSee('--theme-footer-bg: #0f2233', false)
+                ->assertSee('--theme-button-primary-bg: #123456', false)
+                ->assertSee('lt-startech-menu', false);
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+        }
+    }
+
+    public function testInvalidStorefrontThemeColorIsRejected()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+            $before = DB::table('site_settings')->where('setting_key', 'storefront_theme')->value('setting_value');
+
+            $response = $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
+                ->from('/site-customization')
+                ->post('/site-settings', array_merge($this->websiteSettingsPayload([
+                    'site_name' => 'Theme Validation Store',
+                    'development_mode_enabled' => '0',
+                ]), [
+                    'storefront_theme' => $this->storefrontThemePayload([
+                        'global_primary' => 'not-a-color',
+                    ]),
+                ]));
+
+            $response->assertRedirect('/site-customization')->assertSessionHasErrors(['storefront_theme.global_primary']);
+            $after = DB::table('site_settings')->where('setting_key', 'storefront_theme')->value('setting_value');
+            $this->assertSame($before, $after);
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+        }
     }
 
     public function testLogoAndBrowserIconCanBeUploadedTogether()
@@ -483,9 +576,18 @@ class SiteCustomizationTest extends TestCase
                     'logo' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'reset-logo.png'),
                     'favicon' => $this->imageUpload('asset/front-end/img/branding/favicon-736a0b0a2889.png', 'reset-favicon.png'),
                     'seo_image' => $this->imageUpload('asset/front-end/img/ecommerce-logo.png', 'reset-seo.png'),
+                    'storefront_theme' => $this->storefrontThemePayload([
+                        'global_primary' => '#224466',
+                        'global_secondary' => '#0f2233',
+                        'header_use_global' => '0',
+                        'header_background' => '#112233',
+                    ]),
                 ]));
 
             $customResponse->assertRedirect('/site-customization')->assertSessionHas('message');
+
+            $storedTheme = DB::table('site_settings')->where('setting_key', 'storefront_theme')->value('setting_value');
+            $this->assertNotEmpty($storedTheme);
 
             $storedPaths = [
                 DB::table('site_settings')->where('setting_key', 'site_logo')->value('setting_value'),
@@ -512,6 +614,7 @@ class SiteCustomizationTest extends TestCase
                 'site_logo',
                 'favicon',
                 'default_og_image',
+                'storefront_theme',
                 'development_mode_enabled',
                 'startech_source_import_enabled',
             ] as $settingKey) {

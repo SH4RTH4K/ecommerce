@@ -23,6 +23,7 @@ class WelcomeController extends Controller
                     $query->where('publication_status', 1);
                 }])
                 ->where('publication_status', 1)
+                ->orderByRaw('CASE WHEN display_order IS NULL OR display_order = 0 THEN 999999 ELSE display_order END')
                 ->orderBy('category_name')
                 ->get();
         });

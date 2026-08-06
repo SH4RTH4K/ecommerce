@@ -21,6 +21,7 @@ use App\Services\RecycleBinService;
 use App\Services\StarTechCatalogImporter;
 use App\Services\ProductCodeGenerator;
 use App\Services\SafeMediaDeletionService;
+use App\Services\StorefrontThemeService;
 use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -1069,6 +1070,8 @@ class SuperAdminController extends Controller {
         $settings = DB::table('site_settings')->pluck('setting_value', 'setting_key');
         $topAnnouncements = \Schema::hasTable('top_announcements') ? \App\TopAnnouncement::orderByDesc('priority')->orderBy('display_order')->get() : collect();
         $siteContactItems = \Schema::hasTable('site_contact_items') ? \App\SiteContactItem::orderByDesc('is_primary')->orderBy('display_order')->get() : collect();
+        $themeService = app(StorefrontThemeService::class);
+        $storefrontTheme = $themeService->fromSettings($settings);
         $setup = $this->siteCustomizationSetup($settings);
         return view('admin.admin-pages.site-customization', [
             'settings' => $settings,
@@ -1077,6 +1080,12 @@ class SuperAdminController extends Controller {
             'storeSetupChecks' => $setup['checks'],
             'storeSetupPercent' => $setup['percent'],
             'siteCustomizationDefaults' => $this->siteCustomizationDefaults(),
+            'storefrontTheme' => $storefrontTheme,
+            'storefrontThemeDefaults' => $themeService->defaults(),
+            'storefrontThemeGroups' => $themeService->groupedFields(),
+            'storefrontThemePresets' => $themeService->presetOptions(),
+            'storefrontThemePresetPalettes' => $themeService->presetPalettes(),
+            'storefrontThemeContrast' => $themeService->contrastReport($storefrontTheme),
         ]);
     }
 
@@ -1096,9 +1105,12 @@ class SuperAdminController extends Controller {
         $settingsDefaults = $this->siteCustomizationDefaults();
         $settingKeys = $this->siteCustomizationSettingKeys();
         $assetKeys = $this->siteCustomizationAssetKeys();
+        $themeService = app(StorefrontThemeService::class);
         $currentSettings = DB::table('site_settings')->pluck('setting_value', 'setting_key');
         $previousDevelopmentMode = $currentSettings->get('development_mode_enabled');
-        $this->validate($request, [
+        $themeRules = $themeService->validationRules();
+        $themeMessages = $themeService->validationMessages();
+        $this->validate($request, array_merge([
             'site_name' => 'required|string|max:120',
             'site_name_font_size' => 'nullable|integer|min:14|max:32',
             'site_tagline' => 'nullable|string|max:180',
@@ -1186,7 +1198,7 @@ class SuperAdminController extends Controller {
             'development_mode_availability_text' => 'nullable|string|max:255',
             'development_mode_show_admin_login' => 'required|boolean',
             'development_mode_login_button_text' => 'nullable|string|max:100',
-        ], [
+        ], $themeRules), array_merge([
             'logo.uploaded' => 'The logo could not be uploaded. Choose a PNG, JPG, or WebP image no larger than 5 MB.',
             'logo.image' => 'The logo must be a valid PNG, JPG, or WebP image.',
             'logo.mimes' => 'The logo must be a PNG, JPG, or WebP image.',
@@ -1206,12 +1218,13 @@ class SuperAdminController extends Controller {
             'favicon_resize_height.required_if' => 'Enter the browser icon output height when automatic resizing is enabled.',
             'favicon_resize_height.min' => 'The browser icon output height must be at least 16 pixels.',
             'favicon_resize_height.max' => 'The browser icon output height may not exceed 1024 pixels.',
-        ]);
+        ], $themeMessages));
         $fileCleanupPaths = [];
         if ($resetRequested) {
             $fileCleanupPaths = $currentSettings->only(array_values($assetKeys))->filter()->values()->all();
         }
         $booleanKeys = ['logo_resize_enabled', 'favicon_resize_enabled', 'development_mode_enabled', 'development_mode_show_admin_login', 'startech_source_import_enabled'];
+        $themePayload = $themeService->normalize((array) $request->input('storefront_theme', []));
         $storedAssets = [];
         $assetRemovals = [];
 
@@ -1245,7 +1258,7 @@ class SuperAdminController extends Controller {
         }
 
         try {
-            DB::transaction(function () use ($request, $resetRequested, $settingKeys, $assetKeys, $storedAssets, $assetRemovals, $booleanKeys) {
+            DB::transaction(function () use ($request, $resetRequested, $settingKeys, $assetKeys, $storedAssets, $assetRemovals, $booleanKeys, $themePayload) {
                 if (app()->environment('testing') && $request->boolean('simulate_db_failure')) {
                     throw new \RuntimeException('Simulated site settings database failure.');
                 }
@@ -1257,7 +1270,9 @@ class SuperAdminController extends Controller {
 
                 foreach ($settingKeys as $key) {
                     $value = null;
-                    if (in_array($key, $booleanKeys, true)) {
+                    if ($key === 'storefront_theme') {
+                        $value = json_encode($themePayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                    } elseif (in_array($key, $booleanKeys, true)) {
                         $value = $request->has($key) ? ($request->boolean($key) ? '1' : '0') : null;
                     } elseif ($request->filled($key)) {
                         $value = (string) $request->input($key);
@@ -1315,9 +1330,13 @@ class SuperAdminController extends Controller {
         $freshLogoDisplayHeight = max(40, min(82, (int) round($freshLogoResizeHeight * 73 / 200)));
         $freshLogoMobileWidth = max(90, min(150, (int) round($freshLogoResizeWidth * 150 / 600)));
         $freshLogoMobileHeight = max(30, min(54, (int) round($freshLogoResizeHeight * 50 / 200)));
+        $freshStorefrontTheme = $themeService->fromSettings($freshSettings);
+        $freshStorefrontThemeCss = $themeService->cssVariables($freshStorefrontTheme);
+        $freshBrandLogoHeader = $themeService->resolvedLogoPath($freshStorefrontTheme, $freshSettings->get('site_logo') ?: null);
         \View::share('siteSettings',$freshSettings);
         \View::share('brandName',$freshBrandName);
         \View::share('brandLogo',$freshSettings->get('site_logo') ?: null);
+        \View::share('brandLogoHeader',$freshBrandLogoHeader ?: ($freshSettings->get('site_logo') ?: null));
         \View::share('brandFavicon',$freshSettings->get('favicon') ?: null);
         \View::share('hasCustomBrandLogo',(bool)$freshSettings->get('site_logo'));
         \View::share('hasCustomBrandFavicon',(bool)$freshSettings->get('favicon'));
@@ -1327,6 +1346,8 @@ class SuperAdminController extends Controller {
         \View::share('brandLogoDisplayHeight',$freshLogoDisplayHeight);
         \View::share('brandLogoMobileWidth',$freshLogoMobileWidth);
         \View::share('brandLogoMobileHeight',$freshLogoMobileHeight);
+        \View::share('storefrontTheme',$freshStorefrontTheme);
+        \View::share('storefrontThemeCss',$freshStorefrontThemeCss);
         config(['app.name'=>$freshBrandName]);
         $newDevelopmentMode = (string)$request->input('development_mode_enabled') === '1';
         $previouslyEnabled = in_array($previousDevelopmentMode, [true, 1, '1', 'true', 'on'], true);
@@ -1573,7 +1594,7 @@ class SuperAdminController extends Controller {
             'development_mode_availability_text', 'development_mode_show_admin_login',
             'development_mode_login_button_text', 'logo_resize_enabled', 'logo_resize_width',
             'logo_resize_height', 'favicon_resize_enabled', 'favicon_resize_width',
-            'favicon_resize_height', 'startech_source_import_enabled',
+            'favicon_resize_height', 'startech_source_import_enabled', 'storefront_theme',
         ];
     }
 

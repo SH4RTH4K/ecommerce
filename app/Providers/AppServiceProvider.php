@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Category;
+use App\Services\StorefrontThemeService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
@@ -42,10 +43,15 @@ class AppServiceProvider extends ServiceProvider
         $brandLogoDisplayHeight = max(40, min(82, (int) round($brandLogoResizeHeight * 73 / 200)));
         $brandLogoMobileWidth = max(90, min(150, (int) round($brandLogoResizeWidth * 150 / 600)));
         $brandLogoMobileHeight = max(30, min(54, (int) round($brandLogoResizeHeight * 50 / 200)));
+        $storefrontThemeService = app(StorefrontThemeService::class);
+        $storefrontTheme = $storefrontThemeService->fromSettings($siteSettings);
+        $storefrontThemeCss = $storefrontThemeService->cssVariables($storefrontTheme);
+        $brandLogoHeader = $storefrontThemeService->resolvedLogoPath($storefrontTheme, $siteSettings->get('site_logo') ?: null);
         config(['app.name' => $brandName]);
         View::share('siteSettings', $siteSettings);
         View::share('brandName', $brandName);
         View::share('brandLogo', $siteSettings->get('site_logo') ?: null);
+        View::share('brandLogoHeader', $brandLogoHeader ?: ($siteSettings->get('site_logo') ?: null));
         View::share('brandFavicon', $siteSettings->get('favicon') ?: null);
         View::share('hasCustomBrandLogo', (bool)$siteSettings->get('site_logo'));
         View::share('hasCustomBrandFavicon', (bool)$siteSettings->get('favicon'));
@@ -55,6 +61,8 @@ class AppServiceProvider extends ServiceProvider
         View::share('brandLogoDisplayHeight', $brandLogoDisplayHeight);
         View::share('brandLogoMobileWidth', $brandLogoMobileWidth);
         View::share('brandLogoMobileHeight', $brandLogoMobileHeight);
+        View::share('storefrontTheme', $storefrontTheme);
+        View::share('storefrontThemeCss', $storefrontThemeCss);
         View::composer('partials.topbar', function ($view) {
             $view->with('topBar', app(\App\Services\TopBarService::class)->data());
         });
@@ -65,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
                         $query->where('publication_status', 1);
                     }])
                     ->where('publication_status', 1)
+                    ->orderByRaw('CASE WHEN display_order IS NULL OR display_order = 0 THEN 999999 ELSE display_order END')
                     ->orderBy('category_name')
                     ->get();
             });

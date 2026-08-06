@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{{ asset('css/ecommerce-home.css') }}?v={{ filemtime(public_path('css/ecommerce-home.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/brand-tagline.css') }}?v={{ filemtime(public_path('css/brand-tagline.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/top-bar.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/storefront-theme.css') }}?v={{ filemtime(public_path('css/storefront-theme.css')) }}">
+    @include('partials.storefront-theme-vars')
     @include('partials.google-analytics')
 </head>
 <body>

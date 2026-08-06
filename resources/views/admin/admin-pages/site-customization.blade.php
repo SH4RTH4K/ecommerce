@@ -69,6 +69,7 @@
                     <button type="button" class="active" data-settings-tab="identity"><i class="icon-certificate"></i> Identity</button>
                     <button type="button" data-settings-tab="contact"><i class="icon-phone"></i> Contact &amp; location</button>
                     <button type="button" data-settings-tab="content"><i class="icon-align-left"></i> Storefront content</button>
+                    <button type="button" data-settings-tab="theme"><i class="icon-tint"></i> Theme &amp; colors</button>
                     <button type="button" data-settings-tab="development-mode"><i class="icon-wrench"></i> Development Mode</button>
                     <button type="button" data-settings-tab="seo"><i class="icon-search"></i> Search &amp; sharing</button>
                     <button type="button" data-settings-tab="connections"><i class="icon-signal"></i> Connections</button>
@@ -202,6 +203,10 @@
                     </div></div></div>
                 </section>
 
+                <section class="ws-panel" data-settings-panel="theme">
+                    @include('admin.components.storefront-theme-manager')
+                </section>
+
                 <section class="ws-panel" data-settings-panel="development-mode">
                     <div class="ws-card"><div class="ws-card-head"><h2>Development Mode</h2><p>Temporarily hide the public storefront behind a controlled service message.</p></div><div class="ws-card-body">
                         <div class="dm-status {{ $developmentModeEnabled ? 'is-active' : '' }}" data-dm-status><div><b data-dm-status-label>{{ $developmentModeEnabled ? 'Development Mode Active' : 'Development Mode Off' }}</b><div data-dm-status-copy>{{ $developmentModeEnabled ? 'Public website is hidden. Only the Development Mode message and admin access are available.' : 'Public website is available.' }}</div></div><label class="dm-toggle"><input type="hidden" name="development_mode_enabled" value="0"><input type="checkbox" id="development_mode_enabled" name="development_mode_enabled" value="1" {{ $developmentModeEnabled ? 'checked' : '' }}> Turn on</label></div>
@@ -313,6 +318,7 @@ document.addEventListener('DOMContentLoaded',function(){
         setTextValue('development_mode_availability_text','');
         setCheckboxValue('development_mode_show_admin_login',true);
         setTextValue('development_mode_login_button_text',defaults.development_mode_login_button_text||'Admin Login');
+        if(window.storefrontThemeManager&&typeof window.storefrontThemeManager.resetAll==='function')window.storefrontThemeManager.resetAll();
         ['logo','favicon','seo_image'].forEach(function(key){setAssetRemoval(key,true)});
         document.querySelectorAll('.ws-upload.has-error,.ws-field.has-error').forEach(function(node){node.classList.remove('has-error')});
         document.querySelectorAll('.ws-upload-error').forEach(function(node){node.textContent=''});

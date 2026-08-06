@@ -1,24 +1,50 @@
-<nav id="main-menu" class="lt-mega lt-startech-menu" aria-label="Primary navigation">
-    <div class="lt-container lt-mega-inner">
-        @php
-            $menuLinks = [
-                ['label' => 'Offers', 'href' => url('/#offers'), 'icon' => 'fa-tag'],
-                ['label' => 'Latest Offers', 'href' => url('/#latest-offers'), 'icon' => 'fa-bolt'],
-                ['label' => 'Happy Hour Special Deals', 'href' => url('/#offers'), 'icon' => 'fa-fire'],
-                ['label' => 'Compare', 'href' => route('compare.index'), 'icon' => 'fa-exchange'],
-                ['label' => 'Track Order', 'href' => route('orders.track.form'), 'icon' => 'fa-truck'],
-                ['label' => 'About Us', 'href' => url('/about-us'), 'icon' => 'fa-info-circle'],
-                ['label' => 'Contact Us', 'href' => url('/contact-us'), 'icon' => 'fa-phone'],
-            ];
-        @endphp
-        <div class="lt-menu-strip" aria-label="Featured links">
-            @foreach($menuLinks as $link)
-                <a class="lt-menu-pill" href="{{ $link['href'] }}"><i class="fa {{ $link['icon'] }}"></i><span>{{ $link['label'] }}</span></a>
-            @endforeach
-        </div>
-        <a class="lt-nav-cta" href="{{ route('pc-builder.index') }}">
-            <i class="fa fa-wrench"></i>
-            <span>PC Builder</span>
-        </a>
+<nav id="main-menu" class="lt-mega lt-startech-menu" aria-label="Primary categories">
+    @php
+        $menuCategories = collect($categoryTree ?? []);
+        $visibleCategories = $menuCategories->take(20);
+        $extraCategories = $menuCategories->slice(20);
+    @endphp
+    <div class="lt-container lt-category-nav">
+        @forelse($visibleCategories as $category)
+            @php
+                $categoryLink = url('/product-by-category/'.$category->category_id);
+                $subCategories = collect($category->subCategories ?? []);
+                $visibleSubCategories = $subCategories->take(10);
+            @endphp
+            <div class="lt-category-item {{ $loop->first ? 'is-active' : '' }} {{ $subCategories->isNotEmpty() ? 'has-children' : '' }}">
+                <a href="{{ $categoryLink }}">
+                    <span>{{ $category->category_name }}</span>
+                    @if($subCategories->isNotEmpty())
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    @endif
+                </a>
+                @if($subCategories->isNotEmpty())
+                    <div class="lt-category-dropdown" aria-label="{{ $category->category_name }} subcategories">
+                        @foreach($visibleSubCategories as $subCategory)
+                            <a href="{{ url('/product-by-sub-category/'.$subCategory->sub_category_id) }}">{{ $subCategory->sub_category_name }}</a>
+                        @endforeach
+                        @if($subCategories->count() > $visibleSubCategories->count())
+                            <a class="lt-view-all" href="{{ $categoryLink }}">Show all {{ $category->category_name }}</a>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @empty
+            <div class="lt-menu-empty">Publish categories in the admin panel to populate this menu.</div>
+        @endforelse
+
+        @if($extraCategories->isNotEmpty())
+            <div class="lt-category-item lt-more-menu">
+                <button class="lt-more-toggle" type="button" aria-expanded="false" aria-controls="lt-more-dropdown">
+                    <span>More</span>
+                    <i class="fa fa-angle-down" aria-hidden="true"></i>
+                </button>
+                <div class="lt-category-dropdown lt-category-dropdown--more" id="lt-more-dropdown" aria-label="More categories">
+                    @foreach($extraCategories as $category)
+                        <a href="{{ url('/product-by-category/'.$category->category_id) }}">{{ $category->category_name }}</a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 </nav>
