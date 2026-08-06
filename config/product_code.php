@@ -14,6 +14,7 @@ return [
     'default_allow_manual_override' => false,
     'default_allow_regeneration' => true,
     'code_types' => [
+        'company' => 'Company Code',
         'category' => 'Category Code',
         'subcategory' => 'Subcategory Code',
         'brand' => 'Brand Code',
@@ -21,6 +22,24 @@ return [
         'product' => 'Product Code',
     ],
     'code_type_defaults' => [
+        'company' => [
+            'name' => 'Company Code',
+            'template' => '{PREFIX}-{NAME_CODE}-{SEQUENCE}',
+            'separator' => '-',
+            'sequence_scope' => 'global',
+            'sequence_length' => 3,
+            'sequence_start' => 1,
+            'reset_rule' => 'never',
+            'strict_mode' => true,
+            'skip_empty_components' => false,
+            'allow_manual_override' => false,
+            'allow_regeneration' => true,
+            'components' => [
+                ['component_type' => 'prefix', 'position' => 1, 'static_value' => 'CO', 'format_options' => null, 'is_required' => true],
+                ['component_type' => 'name_code', 'position' => 2, 'static_value' => null, 'format_options' => ['length' => 3], 'is_required' => true],
+                ['component_type' => 'sequence', 'position' => 3, 'static_value' => null, 'format_options' => null, 'is_required' => true],
+            ],
+        ],
         'category' => [
             'name' => 'Category Code',
             'template' => '{PREFIX}-{NAME_CODE}-{SEQUENCE}',

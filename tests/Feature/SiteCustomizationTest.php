@@ -176,6 +176,10 @@ class SiteCustomizationTest extends TestCase
             ->get('/site-customization')->assertStatus(200)
             ->assertSee('Store setup')->assertSee('Business identity')
             ->assertSee('Contact &amp; location',false)->assertSee('Theme &amp; colors',false)->assertSee('Search &amp; sharing',false)
+            ->assertSee('How this tab works',false)
+            ->assertSee('Public page copy',false)
+            ->assertSee('Live About page preview',false)
+            ->assertSee('data-page-preview="terms"',false)
             ->assertSee('Changes become public immediately')
             ->assertSee('brand-logo-upload',false)->assertSee('brand-favicon-upload',false)
             ->assertSee('Recommended output: 600 × 200 px (3:1)',false)
@@ -934,5 +938,78 @@ class SiteCustomizationTest extends TestCase
             DB::rollBack();
             Cache::forget('site-settings');
         }
+    }
+
+    public function testAboutUsAndTermsPagesCanBeCustomizedFromSiteSettings()
+    {
+        $admin = $this->settingsAdmin();
+        if (! $admin) {
+            return $this->assertTrue(true);
+        }
+
+        DB::beginTransaction();
+        try {
+            DB::table('site_settings')->where('setting_key', 'development_mode_enabled')->update(['setting_value' => '0']);
+            Cache::forget('site-settings');
+
+            $payload = array_merge($this->websiteSettingsPayload([
+                'site_name' => 'Lucent Tech BD',
+                'development_mode_enabled' => '0',
+            ]), [
+                'about_us_hero_kicker' => 'About Lucent Tech',
+                'about_us_hero_title' => 'Technology, service, and support that feels personal.',
+                'about_us_hero_text' => '<strong>We tailor</strong> every recommendation for the customer in front of us.',
+                'about_us_story_text_1' => 'We help people choose reliable products and explain the tradeoffs <em>clearly</em>.',
+                'about_us_story_text_2' => 'That approach keeps the store easy to trust and easy to grow.',
+                'about_us_capabilities_items' => "Custom builds\nBusiness sourcing\nAfter-sales support",
+                'about_us_cta_button_text' => 'Reach our team',
+                'terms_hero_text' => 'Please review these <strong>conditions</strong> before purchasing, receiving, or submitting a product for service.',
+                'terms_hero_title' => 'Warranty, service, and store terms',
+                'terms_coverage_text' => 'Coverage always follows the manufacturer policy noted on the invoice. <a href="'.url('/contact-us').'">Ask our team</a> if you need help.',
+                'terms_exclusions_items' => "Water damage.\nPhysical damage.\nUnauthorized repair.",
+                'terms_service_items' => "Bring the invoice.\nAllow inspection.\nWait for supplier confirmation.",
+                'terms_help_text' => 'Call us if you need help understanding service eligibility.',
+                'terms_help_button_text' => 'Talk to support',
+            ]);
+
+            $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
+                ->post('/site-settings', $payload)
+                ->assertRedirect('/site-customization')
+                ->assertSessionHas('message');
+
+            Cache::forget('site-settings');
+
+            $this->get('/about-us')
+                ->assertOk()
+                ->assertSee('About Lucent Tech')
+                ->assertSee('Technology, service, and support that feels personal.')
+                ->assertSee('<strong>We tailor</strong> every recommendation for the customer in front of us.', false)
+                ->assertSee('<em>clearly</em>', false)
+                ->assertSee('Custom builds')
+                ->assertSee('Reach our team');
+
+            $this->get('/terms&conditions')
+                ->assertOk()
+                ->assertSee('Warranty, service, and store terms')
+                ->assertSee('<strong>conditions</strong>', false)
+                ->assertSee('Coverage always follows the manufacturer policy noted on the invoice.')
+                ->assertSee('Ask our team')
+                ->assertSee('Water damage.')
+                ->assertSee('Talk to support');
+        } finally {
+            DB::rollBack();
+            Cache::forget('site-settings');
+        }
+    }
+
+    public function testSitemapIncludesTheTermsPage(): void
+    {
+        Cache::forget('xml-sitemap');
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee(url('/about-us'))
+            ->assertSee(url('/terms&conditions'))
+            ->assertSee(url('/contact-us'));
     }
 }

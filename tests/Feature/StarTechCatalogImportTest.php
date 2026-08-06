@@ -380,6 +380,60 @@ HTML;
         }
     }
 
+    public function testStarTechCatalogImportBackfillsConfiguredCodesForEverySection(): void
+    {
+        Http::fake([
+            'https://www.startech.com.bd/' => Http::response($this->fakeHomeHtml(), 200),
+            'https://www.startech.com.bd/sitemap.xml' => Http::response($this->fakeSitemapXml(), 200),
+        ]);
+
+        DB::beginTransaction();
+        try {
+            Cache::forget('mega-menu-tree');
+            Cache::forget('xml-sitemap');
+
+            $importer = app(StarTechCatalogImporter::class);
+            $importer->import(['categories', 'subcategories', 'brands', 'series'], false, 'https://www.startech.com.bd/');
+
+            $desktopId = DB::table('category')->where('category_name', 'Desktops')->value('category_id');
+            $laptopId = DB::table('category')->where('category_name', 'Laptop & Notebook')->value('category_id');
+            $subcategoryId = DB::table('sub_category')
+                ->where('category_id', $laptopId)
+                ->where('sub_category_name', 'Quantum Station')
+                ->value('sub_category_id');
+            $companyId = DB::table('companies')->where('name', 'Star Tech Imported Brands')->value('id');
+            $brandId = DB::table('manufacturer')->where('manufacturer_name', 'Beelink')->value('manufacturer_id');
+            $seriesId = DB::table('product_series')
+                ->where('manufacturer_id', $brandId)
+                ->where('name', 'Mini PC')
+                ->value('id');
+
+            $this->assertNotNull($desktopId);
+            $this->assertNotNull($subcategoryId);
+            $this->assertNotNull($companyId);
+            $this->assertNotNull($brandId);
+            $this->assertNotNull($seriesId);
+
+            DB::table('category')->where('category_id', $desktopId)->update(['category_code' => null]);
+            DB::table('sub_category')->where('sub_category_id', $subcategoryId)->update(['subcategory_code' => null]);
+            DB::table('companies')->where('id', $companyId)->update(['company_code' => null]);
+            DB::table('manufacturer')->where('manufacturer_id', $brandId)->update(['brand_code' => null]);
+            DB::table('product_series')->where('id', $seriesId)->update(['series_code' => null]);
+
+            $importer->import(['categories', 'subcategories', 'brands', 'series'], false, 'https://www.startech.com.bd/');
+
+            $this->assertNotEmpty(trim((string) DB::table('category')->where('category_id', $desktopId)->value('category_code')));
+            $this->assertNotEmpty(trim((string) DB::table('sub_category')->where('sub_category_id', $subcategoryId)->value('subcategory_code')));
+            $this->assertNotEmpty(trim((string) DB::table('companies')->where('id', $companyId)->value('company_code')));
+            $this->assertNotEmpty(trim((string) DB::table('manufacturer')->where('manufacturer_id', $brandId)->value('brand_code')));
+            $this->assertNotEmpty(trim((string) DB::table('product_series')->where('id', $seriesId)->value('series_code')));
+        } finally {
+            DB::rollBack();
+            Cache::forget('mega-menu-tree');
+            Cache::forget('xml-sitemap');
+        }
+    }
+
     public function testAdministratorCanImportStarTechCatalogFromTheCatalogHierarchyPage(): void
     {
         Http::fake([
@@ -410,6 +464,43 @@ HTML;
                     ->where('sub_category_name', 'Quantum Station')
                     ->exists()
             );
+        } finally {
+            DB::rollBack();
+            Cache::forget('mega-menu-tree');
+            Cache::forget('xml-sitemap');
+        }
+    }
+
+    public function testStarTechCategoryImportRestoresPreviouslyDeletedCategories(): void
+    {
+        DB::beginTransaction();
+        try {
+            $categoryId = DB::table('category')->where('category_name', 'Desktops')->value('category_id');
+            if (! $categoryId) {
+                $categoryId = DB::table('category')->insertGetId([
+                    'category_name' => 'Desktops',
+                    'category_description' => 'Temporarily deleted category.',
+                    'publication_status' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::table('category')->where('category_id', $categoryId)->update([
+                'publication_status' => 0,
+                'deleted_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $result = app(StarTechCatalogImporter::class)->importCategories();
+
+            $this->assertGreaterThanOrEqual(1, (int) ($result['updated'] ?? 0));
+            $this->assertDatabaseHas('category', [
+                'category_id' => $categoryId,
+                'category_name' => 'Desktops',
+                'publication_status' => 1,
+                'deleted_at' => null,
+            ]);
         } finally {
             DB::rollBack();
             Cache::forget('mega-menu-tree');

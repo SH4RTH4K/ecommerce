@@ -165,6 +165,7 @@ class Controller extends BaseController
     private function businessCodeTypeForTable(string $table, string $column): ?string
     {
         $map = [
+            'companies' => ['company_code' => 'company'],
             'category' => ['category_code' => 'category'],
             'sub_category' => ['subcategory_code' => 'subcategory'],
             'manufacturer' => ['brand_code' => 'brand'],

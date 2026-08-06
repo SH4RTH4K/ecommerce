@@ -302,6 +302,11 @@ function template_functions(){
 	
 	/* ---------- Text editor ---------- */
 	$('.cleditor').cleditor();
+	$('.ws-richtext').cleditor({
+		width: '100%',
+		height: 240,
+		controls: 'bold italic underline strikethrough | bullets numbering | outdent indent | alignleft center alignright justify | undo redo | link unlink | removeformat | source'
+	});
 	
 	/* ---------- Datapicker ---------- */
 	$('.datepicker').datepicker();

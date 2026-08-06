@@ -67,6 +67,19 @@ class RecycleBinService
         return $items->sortByDesc('deleted_at')->values();
     }
 
+    public function counts(): array
+    {
+        $counts = ['all' => 0];
+
+        foreach ($this->definitions() as $type => $definition) {
+            $count = (int) $definition['model']::onlyTrashed()->count();
+            $counts[$type] = $count;
+            $counts['all'] += $count;
+        }
+
+        return $counts;
+    }
+
     public function getItem(string $type, int $id): ?array
     {
         $definition = $this->definitions()[$type] ?? null;
@@ -162,6 +175,18 @@ class RecycleBinService
         return $count;
     }
 
+    public function bulkRestoreItems(array $items): int
+    {
+        $groups = $this->normalizeItemGroups($items);
+        $count = 0;
+
+        foreach ($groups as $type => $ids) {
+            $count += $this->bulkRestore($type, $ids);
+        }
+
+        return $count;
+    }
+
     public function bulkPurge(string $type, array $ids): array
     {
         $ids = $this->normalizeIds($ids);
@@ -172,6 +197,18 @@ class RecycleBinService
         $paths = [];
         foreach ($ids as $id) {
             $paths = array_merge($paths, $this->purge($type, $id));
+        }
+
+        return array_values(array_unique(array_filter($paths)));
+    }
+
+    public function bulkPurgeItems(array $items): array
+    {
+        $groups = $this->normalizeItemGroups($items);
+        $paths = [];
+
+        foreach ($groups as $type => $ids) {
+            $paths = array_merge($paths, $this->bulkPurge($type, $ids));
         }
 
         return array_values(array_unique(array_filter($paths)));
@@ -340,5 +377,34 @@ class RecycleBinService
     private function normalizeIds(array $ids): array
     {
         return array_values(array_unique(array_filter(array_map('intval', $ids))));
+    }
+
+    private function normalizeItemGroups(array $items): array
+    {
+        $definitions = $this->definitions();
+        $groups = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $type = strtolower(trim((string) ($item['type'] ?? '')));
+            $id = (int) ($item['id'] ?? 0);
+            if ($id <= 0 || ! isset($definitions[$type])) {
+                continue;
+            }
+
+            $groups[$type][] = $id;
+        }
+
+        foreach ($groups as $type => $ids) {
+            $groups[$type] = $this->normalizeIds($ids);
+            if ($groups[$type] === []) {
+                unset($groups[$type]);
+            }
+        }
+
+        return $groups;
     }
 }

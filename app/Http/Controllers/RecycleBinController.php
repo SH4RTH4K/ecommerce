@@ -20,6 +20,7 @@ class RecycleBinController extends Controller
 
         return view('admin.admin-master')->with('admin_main_content', view('admin.admin-pages.recycle-bin', [
             'types' => $recycleBin->types(),
+            'typeCounts' => $recycleBin->counts(),
             'selectedType' => $type,
             'items' => $recycleBin->items($type),
         ]));
@@ -67,11 +68,22 @@ class RecycleBinController extends Controller
         $this->requireAdminPermission('restore_deleted_items');
 
         $validated = $request->validate([
-            'ids' => 'required|array|min:1',
+            'ids' => 'nullable|array',
             'ids.*' => 'required|integer|distinct',
+            'items' => 'nullable|array',
+            'items.*.type' => 'required_with:items|string',
+            'items.*.id' => 'required_with:items|integer',
         ]);
 
-        $count = $recycleBin->bulkRestore($type, $validated['ids']);
+        $items = $validated['items'] ?? [];
+        $ids = $validated['ids'] ?? [];
+        if ($items === [] && $ids === []) {
+            return Redirect::back()->withErrors(['ids' => 'Select at least one item first.']);
+        }
+
+        $count = $items !== []
+            ? $recycleBin->bulkRestoreItems($items)
+            : $recycleBin->bulkRestore($type, $ids);
         $this->auditAdminAction('RESTORE', [
             'entity_type' => $type,
             'count' => $count,
@@ -86,19 +98,33 @@ class RecycleBinController extends Controller
         $this->requireAdminPermission('permanently_delete_items');
 
         $validated = $request->validate([
-            'ids' => 'required|array|min:1',
+            'ids' => 'nullable|array',
             'ids.*' => 'required|integer|distinct',
+            'items' => 'nullable|array',
+            'items.*.type' => 'required_with:items|string',
+            'items.*.id' => 'required_with:items|integer',
             'confirm_text' => 'required|string|in:DELETE',
         ]);
 
-        $paths = $recycleBin->bulkPurge($type, $validated['ids']);
+        $items = $validated['items'] ?? [];
+        $ids = $validated['ids'] ?? [];
+        if ($items === [] && $ids === []) {
+            return Redirect::back()->withErrors(['ids' => 'Select at least one item first.']);
+        }
+
+        $paths = $items !== []
+            ? $recycleBin->bulkPurgeItems($items)
+            : $recycleBin->bulkPurge($type, $ids);
+        $count = $items !== []
+            ? count($items)
+            : count($ids);
         foreach ($paths as $path) {
             $mediaLifecycle->deleteIfUnreferenced($path, [], 'Bulk permanent delete: '.$type);
         }
 
         $this->auditAdminAction('PERMANENT_DELETE', [
             'entity_type' => $type,
-            'count' => count($validated['ids']),
+            'count' => $count,
             'bulk' => true,
             'removed_files' => array_map('basename', $paths),
         ]);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Banner;
+use App\Category;
 use App\Services\MediaLifecycleService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -108,6 +109,105 @@ class RecycleBinLifecycleTest extends TestCase
                 unlink(public_path($mobilePath));
             }
         }
+    }
+
+    public function testRecycleBinCanBatchRestoreMixedSelectedItems(): void
+    {
+        DB::beginTransaction();
+        try {
+            $suffix = str_random(10);
+            $banner = Banner::create([
+                'banner_type' => 'information',
+                'title' => 'Batch restore banner '.$suffix,
+                'image_path' => 'asset/front-end/img/home/pic 1.jpg',
+                'image_position' => 'center',
+                'display_order' => 1,
+                'is_active' => 0,
+            ]);
+            $category = Category::create([
+                'category_name' => 'Batch restore category '.$suffix,
+                'category_code' => 'BR'.strtoupper($suffix),
+                'category_description' => 'Batch restore category.',
+                'publication_status' => 1,
+            ]);
+
+            $banner->delete();
+            $category->delete();
+
+            $session = $this->adminSession();
+            $this->withSession($session)
+                ->get('/recycle-bin')
+                ->assertOk()
+                ->assertSee('Restore Selected')
+                ->assertSee('Delete Selected')
+                ->assertSee('Select all')
+                ->assertSee('items in this filter');
+
+            $this->withSession($session)->post('/recycle-bin/all/bulk-restore', [
+                'items' => [
+                    ['type' => 'banner', 'id' => $banner->id],
+                    ['type' => 'category', 'id' => $category->category_id],
+                ],
+            ])->assertRedirect()->assertSessionHas('message');
+
+            $this->assertNotNull(Banner::find($banner->id));
+            $this->assertNotNull(Category::find($category->category_id));
+        } finally {
+            DB::rollBack();
+        }
+    }
+
+    public function testRecycleBinCanBatchDeleteMixedSelectedItems(): void
+    {
+        DB::beginTransaction();
+        try {
+            $suffix = str_random(10);
+            $banner = Banner::create([
+                'banner_type' => 'information',
+                'title' => 'Batch delete banner '.$suffix,
+                'image_path' => 'asset/front-end/img/home/pic 1.jpg',
+                'image_position' => 'center',
+                'display_order' => 1,
+                'is_active' => 0,
+            ]);
+            $category = Category::create([
+                'category_name' => 'Batch delete category '.$suffix,
+                'category_code' => 'BD'.strtoupper($suffix),
+                'category_description' => 'Batch delete category.',
+                'publication_status' => 1,
+            ]);
+
+            $banner->delete();
+            $category->delete();
+
+            $this->withSession($this->adminSession())->post('/recycle-bin/all/bulk-delete', [
+                'confirm_text' => 'DELETE',
+                'items' => [
+                    ['type' => 'banner', 'id' => $banner->id],
+                    ['type' => 'category', 'id' => $category->category_id],
+                ],
+            ])->assertRedirect()->assertSessionHas('message');
+
+            $this->assertNull(Banner::withTrashed()->find($banner->id));
+            $this->assertNull(Category::withTrashed()->find($category->category_id));
+        } finally {
+            DB::rollBack();
+        }
+    }
+
+    public function testRecycleBinEmptyStateDoesNotRenderDatatableRow(): void
+    {
+        view()->share('errors', new \Illuminate\Support\ViewErrorBag());
+
+        $html = view('admin.admin-pages.recycle-bin', [
+            'types' => app(\App\Services\RecycleBinService::class)->types(),
+            'typeCounts' => ['all' => 0],
+            'selectedType' => 'all',
+            'items' => collect(),
+        ])->render();
+
+        $this->assertStringContainsString('No deleted items found', $html);
+        $this->assertStringNotContainsString('bootstrap-datatable datatable rb-table', $html);
     }
 
     public function testOrphanScannerDryRunLeavesRecentlyCreatedFilesUntouched(): void

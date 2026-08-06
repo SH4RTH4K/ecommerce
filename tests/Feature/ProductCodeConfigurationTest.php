@@ -196,13 +196,15 @@ class ProductCodeConfigurationTest extends TestCase
         DB::beginTransaction();
         try {
             $session = $this->adminSession(['view_product_code_configuration']);
+            DB::table('inventory_locations')->where('type', 'branch')->update(['type' => 'warehouse']);
+
             $configuration = ProductCodeConfiguration::create([
-                'name' => 'Series Preview Only',
-                'code_type' => 'series',
+                'name' => 'Branch Preview Only',
+                'code_type' => 'product',
                 'company_id' => null,
                 'branch_id' => null,
                 'auto_generate' => 1,
-                'template' => '{SERIES}-{SEQUENCE}',
+                'template' => '{BRANCH}-{SEQUENCE}',
                 'separator' => '-',
                 'sequence_scope' => 'global',
                 'sequence_length' => 6,
@@ -216,7 +218,7 @@ class ProductCodeConfigurationTest extends TestCase
             ]);
             ProductCodeComponent::create([
                 'configuration_id' => $configuration->id,
-                'component_type' => 'series',
+                'component_type' => 'branch',
                 'position' => 1,
                 'static_value' => null,
                 'format_options' => null,
@@ -233,7 +235,7 @@ class ProductCodeConfigurationTest extends TestCase
             ]);
 
             $message = (string) $response->json('message');
-            $this->assertStringContainsString('No series exist yet', $message);
+            $this->assertStringContainsString('No branches exist yet', $message);
         } finally {
             DB::rollBack();
         }

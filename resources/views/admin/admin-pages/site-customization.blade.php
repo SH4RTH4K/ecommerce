@@ -46,6 +46,7 @@
 .ws-page{padding-bottom:88px;color:#263746}.ws-hero{background:linear-gradient(125deg,#123e59,#176f91);border-radius:14px;color:#fff;padding:24px 28px;margin:0 0 18px;box-shadow:0 10px 28px rgba(16,61,85,.18)}.ws-hero h1{font-size:25px;line-height:1.25;margin:0 0 7px;color:#fff}.ws-hero p{margin:0;opacity:.88;font-size:14px}.ws-hero-actions{float:right;margin-top:-43px}.ws-hero-actions .btn{border:0;border-radius:7px;padding:9px 14px}.ws-layout{display:grid;grid-template-columns:245px minmax(0,1fr);gap:18px}.ws-sidebar,.ws-card{background:#fff;border:1px solid #dfe8ed;border-radius:12px;box-shadow:0 4px 16px rgba(30,58,76,.06)}.ws-sidebar{align-self:start;position:sticky;top:56px;overflow:hidden}.ws-progress{padding:18px;border-bottom:1px solid #e7eef2}.ws-progress-head{display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px}.ws-progress-bar{height:8px;background:#e7eef2;border-radius:20px;overflow:hidden}.ws-progress-bar i{display:block;height:100%;background:#20a576;border-radius:20px}.ws-checks{margin:12px 0 0;list-style:none}.ws-checks li{font-size:12px;padding:4px 0;color:#657783}.ws-checks i{width:16px;color:#b5c0c7}.ws-checks .done i{color:#20a576}.ws-nav{padding:8px}.ws-nav button{background:none;border:0;border-radius:8px;color:#526672;display:block;text-align:left;width:100%;padding:11px 12px;margin:2px 0;font-weight:600}.ws-nav button i{width:22px}.ws-nav button:hover,.ws-nav button.active{background:#eaf6fa;color:#116381}.ws-panel{display:none}.ws-panel.active{display:block}.ws-card{margin-bottom:16px;overflow:hidden}.ws-card-head{padding:17px 20px;border-bottom:1px solid #e7eef2}.ws-card-head h2{font-size:18px;margin:0 0 3px;color:#173f56}.ws-card-head p{margin:0;color:#71828c;font-size:12px}.ws-card-body{padding:20px}.ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px 20px}.ws-grid .full{grid-column:1/-1}.ws-field label{display:block;font-size:12px;font-weight:700;color:#3c515e;margin-bottom:6px}.ws-required{color:#db4b4b}.ws-field input,.ws-field textarea,.ws-field select{box-sizing:border-box;width:100%;min-height:39px;border:1px solid #cbd8df;border-radius:7px;padding:8px 10px;margin:0;background:#fff;box-shadow:none}.ws-field textarea{resize:vertical}.ws-field input:focus,.ws-field textarea:focus,.ws-field select:focus{border-color:#1988ad;box-shadow:0 0 0 3px rgba(25,136,173,.1);outline:0}.ws-help{display:block;color:#7a8992;font-size:11px;line-height:1.45;margin-top:5px}.ws-counter{float:right}.ws-upload{border:1px dashed #afc4cf;border-radius:9px;padding:13px;background:#f8fbfc}.ws-upload img{display:block;max-width:210px;max-height:86px;object-fit:contain;margin-bottom:10px;border-radius:5px}.ws-upload .ws-og{width:210px;height:110px;object-fit:cover}.ws-rule{display:flex;gap:10px;background:#f1f8fb;border-left:3px solid #1988ad;border-radius:5px;padding:11px 13px;margin-bottom:17px;font-size:12px;line-height:1.5}.ws-rule i{color:#1988ad;margin-top:2px}.ws-savebar{position:fixed;z-index:20;bottom:0;right:0;left:14.5%;background:rgba(255,255,255,.96);border-top:1px solid #d8e3e8;box-shadow:0 -5px 18px rgba(24,57,75,.08);padding:12px 24px;text-align:right}.ws-savebar span{float:left;color:#687b86;line-height:36px}.ws-savebar .btn{border-radius:7px;padding:9px 18px}.ws-alert{border-radius:9px}.ws-preview-note{background:#fff8e7;border:1px solid #f2d997;border-radius:8px;padding:11px 13px;color:#765e22}.ws-file-name{font-size:11px;color:#1988ad;margin-left:7px}.ws-footer-link{display:flex;align-items:center;justify-content:space-between}.ws-footer-link strong{display:block;color:#173f56}.ws-footer-link small{color:#71828c}@media(max-width:979px){.ws-layout{grid-template-columns:1fr}.ws-sidebar{position:static}.ws-nav{display:flex;overflow-x:auto}.ws-nav button{min-width:150px}.ws-savebar{left:0}.ws-hero-actions{float:none;margin:15px 0 0}}@media(max-width:680px){.ws-grid{grid-template-columns:1fr}.ws-grid .full{grid-column:auto}.ws-hero{padding:20px}.ws-savebar span{display:none}}
 .dm-status{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:9px;background:#eef8f3;border:1px solid #c8e7d7;margin-bottom:18px}.dm-status.is-active{background:#fff1e8;border-color:#f2c49e}.dm-status b{color:#267552}.dm-status.is-active b{color:#b64d0b}.dm-toggle{display:flex;align-items:center;gap:10px}.dm-toggle input{width:auto;min-height:auto}.dm-preview{background:linear-gradient(140deg,#f5f8fa,#e9f2f6);border:1px solid #d6e3e9;border-radius:12px;padding:25px;text-align:center}.dm-preview-badge{display:inline-block;background:#fff2e6;color:#b94f00;border-radius:20px;padding:5px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.dm-preview h3{color:#0b3d62;font-size:24px;margin:13px 0 9px}.dm-preview p{max-width:560px;margin:7px auto;color:#627785;white-space:pre-line}.dm-preview .dm-preview-extra{color:#334f61}.dm-preview-availability{display:inline-block;margin-top:10px;padding:7px 10px;background:#fff;border-radius:7px;font-weight:700}.dm-preview-button{display:inline-block;margin-top:15px;padding:9px 15px;border-radius:7px;background:#0b3d62;color:#fff;font-weight:700}@media(max-width:680px){.dm-status{align-items:flex-start;gap:10px;flex-direction:column}}
 .ws-contact-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(250px,.75fr);gap:20px;align-items:start}.ws-contact-preview{position:sticky;top:70px;background:linear-gradient(145deg,#123e59,#176f91);border-radius:12px;color:#fff;padding:20px;box-shadow:0 12px 25px rgba(18,62,89,.18)}.ws-contact-preview>small{display:block;color:#a9d3e2;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px}.ws-contact-preview h3{color:#fff;font-size:20px;margin:0 0 5px}.ws-contact-preview>p{color:rgba(255,255,255,.75);font-size:12px;margin:0 0 16px}.ws-contact-item{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-top:1px solid rgba(255,255,255,.14)}.ws-contact-item i{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;flex:0 0 30px}.ws-contact-item small,.ws-contact-item strong{display:block;color:#fff;overflow-wrap:anywhere}.ws-contact-item small{opacity:.65;font-size:10px;text-transform:uppercase;letter-spacing:.05em}.ws-contact-empty{opacity:.68;font-style:italic}.ws-location-link{display:flex;gap:12px;align-items:center;margin-top:16px;padding:14px;border:1px solid #d9e7ed;background:#f7fbfc;border-radius:9px}.ws-location-link>i{font-size:22px;color:#1988ad}.ws-location-link div{flex:1}.ws-location-link strong,.ws-location-link small{display:block}.ws-location-link small{color:#71828c;margin-top:2px}.ws-location-link .btn{white-space:nowrap}@media(max-width:900px){.ws-contact-layout{grid-template-columns:1fr}.ws-contact-preview{position:static}}@media(max-width:680px){.ws-location-link{align-items:flex-start;flex-wrap:wrap}.ws-location-link .btn{margin-left:42px}}
+.ws-page-editor{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(300px,.78fr);gap:20px;align-items:start}.ws-page-fields{min-width:0}.ws-page-fields .cleditorMain{max-width:100%}.ws-page-preview{position:sticky;top:70px;background:#fbfdfe;border:1px solid #d7e5eb;border-radius:13px;box-shadow:0 10px 24px rgba(28,61,78,.08);overflow:hidden}.ws-preview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 16px;background:linear-gradient(135deg,#143e58,#1c7898);color:#fff}.ws-preview-head strong{display:block;color:#fff;font-size:14px}.ws-preview-head small{display:block;color:rgba(255,255,255,.75);font-size:11px;margin-top:2px}.ws-preview-path{border:1px solid rgba(255,255,255,.25);border-radius:999px;color:#fff;font-size:10px;font-weight:800;padding:4px 8px;white-space:nowrap}.ws-preview-body{padding:16px}.ws-preview-kicker{display:block;color:#1682a7;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}.ws-preview-title{display:block;color:#153d55;font-size:20px;font-weight:900;line-height:1.2;margin:0 0 9px}.ws-preview-copy{color:#566d79;font-size:12px;line-height:1.55;margin-bottom:12px;overflow-wrap:anywhere}.ws-preview-copy p{margin:0 0 8px}.ws-preview-copy p:last-child{margin-bottom:0}.ws-preview-copy ul,.ws-preview-copy ol{padding-left:18px;margin:6px 0}.ws-preview-copy a{color:#147899;text-decoration:underline}.ws-preview-divider{height:1px;background:#e4edf1;margin:13px 0}.ws-preview-chips{display:grid;grid-template-columns:1fr;gap:7px}.ws-preview-chip,.ws-preview-mini{border:1px solid #e0ebf0;border-radius:9px;background:#fff;padding:9px 10px}.ws-preview-chip strong,.ws-preview-mini strong{display:block;color:#173f56;font-size:12px;margin-bottom:3px}.ws-preview-chip small,.ws-preview-mini small{display:block;color:#667b86;font-size:11px;line-height:1.4;overflow-wrap:anywhere}.ws-preview-minis{display:grid;gap:8px;margin-top:10px}.ws-preview-list{padding-left:18px;margin:8px 0 0;color:#4f6672;font-size:12px;line-height:1.45}.ws-preview-list li{margin-bottom:5px}.ws-preview-nav{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 12px}.ws-preview-nav span{background:#eaf6fa;border-radius:999px;color:#12607d;font-size:10px;font-weight:800;padding:5px 8px}.ws-preview-button{display:inline-block;margin-top:8px;background:#f47b20;color:#fff;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:800}.ws-preview-muted{color:#7d8e97;font-size:11px;margin-bottom:9px}.ws-preview-empty{color:#8a9aa3;font-style:italic}@media(max-width:1100px){.ws-page-editor{grid-template-columns:1fr}.ws-page-preview{position:static}}@media(max-width:680px){.ws-preview-head{display:block}.ws-preview-path{display:inline-block;margin-top:8px}.ws-preview-title{font-size:18px}}
 .ws-upload-missing{display:flex;align-items:center;gap:10px;min-height:58px;margin-bottom:10px;padding:10px;border-radius:7px;background:#fff4e8;color:#9a5318}.ws-upload-missing i{font-size:24px}.ws-upload-missing strong,.ws-upload-missing small{display:block}.ws-upload-missing small{color:#8a7463;margin-top:2px}
 .ws-upload.has-error{border-color:#d9534f;background:#fff8f8}.ws-upload-error{display:block;margin-top:7px;color:#b52b27;font-size:12px;font-weight:600}.ws-upload-error:empty{display:none}.ws-upload input[type=file]{height:auto;min-height:0;padding:7px;background:#fff}.ws-file-name{display:inline-block;margin-top:7px}
 .ws-upload-specs{margin-top:8px;padding:8px 10px;border-radius:6px;background:#eaf6fa;color:#315666;font-size:11px;line-height:1.5}.ws-upload-specs strong{color:#17475d}.ws-file-details{display:block;min-height:16px;margin-top:6px;color:#147899;font-size:11px;font-weight:700}.ws-resize-box{margin-top:10px;padding:10px;border:1px solid #d8e5ea;border-radius:7px;background:#fff}.ws-resize-toggle{display:flex!important;align-items:flex-start;gap:8px;margin:0!important;cursor:pointer}.ws-resize-toggle input{width:auto!important;min-height:auto!important;margin:2px 0 0!important;flex:0 0 auto}.ws-resize-toggle strong,.ws-resize-toggle small{display:block}.ws-resize-toggle small{margin-top:2px;color:#71828c;font-size:10px;font-weight:400}.ws-resize-options{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.ws-resize-options[hidden]{display:none}.ws-dimension label{margin-bottom:4px}.ws-dimension input{min-height:34px}.ws-resize-note{display:block;margin-top:7px;color:#71828c;font-size:10px;line-height:1.4}@media(max-width:680px){.ws-resize-options{grid-template-columns:1fr}}
@@ -186,6 +187,7 @@
                 </section>
 
                 <section class="ws-panel" data-settings-panel="content">
+                    <div class="ws-rule"><i class="icon-info-sign"></i><div><strong>How this tab works:</strong> Each card controls one public page or message area. The long editors support rich text, so you can add bold text, links, lists, and line breaks without touching HTML.</div></div>
                     <div class="ws-card"><div class="ws-card-head"><h2>Storefront messages</h2><p>Short text used on the homepage and global notice area.</p></div><div class="ws-card-body"><div class="ws-grid">
                         <div class="ws-field full"><label for="notice_text">Top announcement</label><textarea id="notice_text" name="notice_text" maxlength="300" rows="3" data-count placeholder="Free delivery on selected products this week">{{ $setting('notice_text') }}</textarea><small class="ws-help">Keep announcements current. Leave blank to hide the notice. <span class="ws-counter"></span></small></div>
                         <div class="ws-field"><label for="hero_side_title">Homepage feature title</label><input id="hero_side_title" name="hero_side_title" maxlength="120" value="{{ $setting('hero_side_title') }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
@@ -195,6 +197,150 @@
                         <div class="ws-field full"><label for="footer_description">Business description</label><textarea id="footer_description" name="footer_description" maxlength="500" rows="4" data-count>{{ $setting('footer_description') }}</textarea><small class="ws-help">Use one or two clear sentences. <span class="ws-counter"></span></small></div>
                         <div class="ws-field full"><label for="copyright_text">Copyright line</label><input id="copyright_text" name="copyright_text" maxlength="255" value="{{ $setting('copyright_text', '© {year} '.$defaults['site_name'].'. All rights reserved.') }}"><small class="ws-help">Use <code>{year}</code> to keep the year current automatically.</small></div>
                     </div></div></div>
+                    <div class="ws-card">
+                        <div class="ws-card-head">
+                            <h2>About Us page</h2>
+                            <p>Edit the customer-facing copy shown on <code>/about-us</code>. The longer fields support bold text, links, lists, and line breaks.</p>
+                        </div>
+                        <div class="ws-card-body">
+                            <div class="ws-rule"><i class="icon-info-sign"></i><div><strong>Quick guide:</strong> Use the short fields for headings and labels. Use the rich-text editors for the paragraph copy customers will read.</div></div>
+                            <div class="ws-page-editor">
+                                <div class="ws-page-fields">
+                                    <div class="ws-grid">
+                                <div class="ws-field"><label for="about_us_hero_kicker">Hero kicker</label><input id="about_us_hero_kicker" name="about_us_hero_kicker" maxlength="60" value="{{ $setting('about_us_hero_kicker', $defaults['about_us_hero_kicker']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_hero_title">Hero title</label><input id="about_us_hero_title" name="about_us_hero_title" maxlength="180" value="{{ $setting('about_us_hero_title', $defaults['about_us_hero_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_hero_text">Hero intro</label><textarea id="about_us_hero_text" name="about_us_hero_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_hero_text', $defaults['about_us_hero_text']) }}</textarea><small class="ws-help">This text appears under the main About Us heading. Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="about_us_story_kicker">Story kicker</label><input id="about_us_story_kicker" name="about_us_story_kicker" maxlength="60" value="{{ $setting('about_us_story_kicker', $defaults['about_us_story_kicker']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_story_title">Story title</label><input id="about_us_story_title" name="about_us_story_title" maxlength="180" value="{{ $setting('about_us_story_title', $defaults['about_us_story_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_story_text_1">Story paragraph 1</label><textarea id="about_us_story_text_1" name="about_us_story_text_1" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_story_text_1', $defaults['about_us_story_text_1']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field full"><label for="about_us_story_text_2">Story paragraph 2</label><textarea id="about_us_story_text_2" name="about_us_story_text_2" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_story_text_2', $defaults['about_us_story_text_2']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="about_us_highlight_1_title">Highlight 1 title</label><input id="about_us_highlight_1_title" name="about_us_highlight_1_title" maxlength="80" value="{{ $setting('about_us_highlight_1_title', $defaults['about_us_highlight_1_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_highlight_1_text">Highlight 1 text</label><input id="about_us_highlight_1_text" name="about_us_highlight_1_text" maxlength="120" value="{{ $setting('about_us_highlight_1_text', $defaults['about_us_highlight_1_text']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_highlight_2_title">Highlight 2 title</label><input id="about_us_highlight_2_title" name="about_us_highlight_2_title" maxlength="80" value="{{ $setting('about_us_highlight_2_title', $defaults['about_us_highlight_2_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_highlight_2_text">Highlight 2 text</label><input id="about_us_highlight_2_text" name="about_us_highlight_2_text" maxlength="120" value="{{ $setting('about_us_highlight_2_text', $defaults['about_us_highlight_2_text']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_highlight_3_title">Highlight 3 title</label><input id="about_us_highlight_3_title" name="about_us_highlight_3_title" maxlength="80" value="{{ $setting('about_us_highlight_3_title', $defaults['about_us_highlight_3_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_highlight_3_text">Highlight 3 text</label><input id="about_us_highlight_3_text" name="about_us_highlight_3_text" maxlength="120" value="{{ $setting('about_us_highlight_3_text', $defaults['about_us_highlight_3_text']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_mission_title">Mission title</label><input id="about_us_mission_title" name="about_us_mission_title" maxlength="80" value="{{ $setting('about_us_mission_title', $defaults['about_us_mission_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_mission_text">Mission paragraph</label><textarea id="about_us_mission_text" name="about_us_mission_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_mission_text', $defaults['about_us_mission_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="about_us_vision_title">Vision title</label><input id="about_us_vision_title" name="about_us_vision_title" maxlength="80" value="{{ $setting('about_us_vision_title', $defaults['about_us_vision_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_vision_text">Vision paragraph</label><textarea id="about_us_vision_text" name="about_us_vision_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_vision_text', $defaults['about_us_vision_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="about_us_promise_title">Promise title</label><input id="about_us_promise_title" name="about_us_promise_title" maxlength="80" value="{{ $setting('about_us_promise_title', $defaults['about_us_promise_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_promise_text">Promise paragraph</label><textarea id="about_us_promise_text" name="about_us_promise_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_promise_text', $defaults['about_us_promise_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="about_us_capabilities_kicker">Capabilities kicker</label><input id="about_us_capabilities_kicker" name="about_us_capabilities_kicker" maxlength="60" value="{{ $setting('about_us_capabilities_kicker', $defaults['about_us_capabilities_kicker']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_capabilities_title">Capabilities title</label><input id="about_us_capabilities_title" name="about_us_capabilities_title" maxlength="180" value="{{ $setting('about_us_capabilities_title', $defaults['about_us_capabilities_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_capabilities_text">Capabilities intro</label><textarea id="about_us_capabilities_text" name="about_us_capabilities_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_capabilities_text', $defaults['about_us_capabilities_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field full"><label for="about_us_capabilities_items">Capabilities bullets</label><textarea id="about_us_capabilities_items" name="about_us_capabilities_items" maxlength="1000" rows="4" data-count placeholder="One item per line">{{ $setting('about_us_capabilities_items', $defaults['about_us_capabilities_items']) }}</textarea><small class="ws-help">Enter one bullet item per line. <span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_cta_title">CTA title</label><input id="about_us_cta_title" name="about_us_cta_title" maxlength="180" value="{{ $setting('about_us_cta_title', $defaults['about_us_cta_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="about_us_cta_button_text">CTA button text</label><input id="about_us_cta_button_text" name="about_us_cta_button_text" maxlength="80" value="{{ $setting('about_us_cta_button_text', $defaults['about_us_cta_button_text']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="about_us_cta_text">Call-to-action copy</label><textarea id="about_us_cta_text" name="about_us_cta_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('about_us_cta_text', $defaults['about_us_cta_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                    </div>
+                                </div>
+                                <aside class="ws-page-preview" data-page-preview="about" aria-live="polite">
+                                    <div class="ws-preview-head">
+                                        <div><strong>Live About page preview</strong><small>Updates as you type before saving</small></div>
+                                        <span class="ws-preview-path">/about-us</span>
+                                    </div>
+                                    <div class="ws-preview-body">
+                                        <span class="ws-preview-kicker" data-preview-text="about_us_hero_kicker"></span>
+                                        <span class="ws-preview-title" data-preview-text="about_us_hero_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="about_us_hero_text"></div>
+                                        <div class="ws-preview-divider"></div>
+                                        <span class="ws-preview-kicker" data-preview-text="about_us_story_kicker"></span>
+                                        <span class="ws-preview-title" data-preview-text="about_us_story_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="about_us_story_text_1"></div>
+                                        <div class="ws-preview-copy" data-preview-rich="about_us_story_text_2"></div>
+                                        <div class="ws-preview-chips">
+                                            <div class="ws-preview-chip"><strong data-preview-text="about_us_highlight_1_title"></strong><small data-preview-text="about_us_highlight_1_text"></small></div>
+                                            <div class="ws-preview-chip"><strong data-preview-text="about_us_highlight_2_title"></strong><small data-preview-text="about_us_highlight_2_text"></small></div>
+                                            <div class="ws-preview-chip"><strong data-preview-text="about_us_highlight_3_title"></strong><small data-preview-text="about_us_highlight_3_text"></small></div>
+                                        </div>
+                                        <div class="ws-preview-minis">
+                                            <div class="ws-preview-mini"><strong data-preview-text="about_us_mission_title"></strong><div class="ws-preview-copy" data-preview-rich="about_us_mission_text"></div></div>
+                                            <div class="ws-preview-mini"><strong data-preview-text="about_us_vision_title"></strong><div class="ws-preview-copy" data-preview-rich="about_us_vision_text"></div></div>
+                                            <div class="ws-preview-mini"><strong data-preview-text="about_us_promise_title"></strong><div class="ws-preview-copy" data-preview-rich="about_us_promise_text"></div></div>
+                                        </div>
+                                        <div class="ws-preview-divider"></div>
+                                        <span class="ws-preview-kicker" data-preview-text="about_us_capabilities_kicker"></span>
+                                        <span class="ws-preview-title" data-preview-text="about_us_capabilities_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="about_us_capabilities_text"></div>
+                                        <ul class="ws-preview-list" data-preview-lines="about_us_capabilities_items"></ul>
+                                        <div class="ws-preview-divider"></div>
+                                        <span class="ws-preview-title" data-preview-text="about_us_cta_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="about_us_cta_text"></div>
+                                        <span class="ws-preview-button" data-preview-text="about_us_cta_button_text"></span>
+                                    </div>
+                                </aside>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ws-card">
+                        <div class="ws-card-head">
+                            <h2>Terms &amp; conditions page</h2>
+                            <p>Edit the customer-facing copy shown on <code>/terms&amp;conditions</code>. The rich-text fields below support bold text, links, lists, and line breaks.</p>
+                        </div>
+                        <div class="ws-card-body">
+                            <div class="ws-rule"><i class="icon-info-sign"></i><div><strong>Quick guide:</strong> Use the intro and paragraph fields for rich text. Keep the list fields one item per line so they render as bullets and steps.</div></div>
+                            <div class="ws-page-editor">
+                                <div class="ws-page-fields">
+                                    <div class="ws-grid">
+                                <div class="ws-field"><label for="terms_hero_kicker">Hero kicker</label><input id="terms_hero_kicker" name="terms_hero_kicker" maxlength="60" value="{{ $setting('terms_hero_kicker', $defaults['terms_hero_kicker']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_hero_title">Hero title</label><input id="terms_hero_title" name="terms_hero_title" maxlength="180" value="{{ $setting('terms_hero_title', $defaults['terms_hero_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="terms_hero_text">Hero intro</label><textarea id="terms_hero_text" name="terms_hero_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('terms_hero_text', $defaults['terms_hero_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="terms_nav_coverage">Coverage nav label</label><input id="terms_nav_coverage" name="terms_nav_coverage" maxlength="80" value="{{ $setting('terms_nav_coverage', $defaults['terms_nav_coverage']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_nav_exclusions">Exclusions nav label</label><input id="terms_nav_exclusions" name="terms_nav_exclusions" maxlength="80" value="{{ $setting('terms_nav_exclusions', $defaults['terms_nav_exclusions']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_nav_service">Service nav label</label><input id="terms_nav_service" name="terms_nav_service" maxlength="80" value="{{ $setting('terms_nav_service', $defaults['terms_nav_service']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_nav_delivery">Delivery nav label</label><input id="terms_nav_delivery" name="terms_nav_delivery" maxlength="80" value="{{ $setting('terms_nav_delivery', $defaults['terms_nav_delivery']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_coverage_title">Coverage title</label><input id="terms_coverage_title" name="terms_coverage_title" maxlength="120" value="{{ $setting('terms_coverage_title', $defaults['terms_coverage_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="terms_coverage_text">Warranty coverage paragraph</label><textarea id="terms_coverage_text" name="terms_coverage_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('terms_coverage_text', $defaults['terms_coverage_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="terms_exclusions_title">Exclusions title</label><input id="terms_exclusions_title" name="terms_exclusions_title" maxlength="120" value="{{ $setting('terms_exclusions_title', $defaults['terms_exclusions_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="terms_exclusions_items">Exclusions bullets</label><textarea id="terms_exclusions_items" name="terms_exclusions_items" maxlength="1000" rows="4" data-count placeholder="One item per line">{{ $setting('terms_exclusions_items', $defaults['terms_exclusions_items']) }}</textarea><small class="ws-help">Enter one bullet item per line. <span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_service_title">Service title</label><input id="terms_service_title" name="terms_service_title" maxlength="120" value="{{ $setting('terms_service_title', $defaults['terms_service_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="terms_service_items">Service steps</label><textarea id="terms_service_items" name="terms_service_items" maxlength="1000" rows="4" data-count placeholder="One step per line">{{ $setting('terms_service_items', $defaults['terms_service_items']) }}</textarea><small class="ws-help">Enter one step per line. <span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_delivery_title">Delivery title</label><input id="terms_delivery_title" name="terms_delivery_title" maxlength="120" value="{{ $setting('terms_delivery_title', $defaults['terms_delivery_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="terms_delivery_text">Delivery &amp; inspection paragraph</label><textarea id="terms_delivery_text" name="terms_delivery_text" class="ws-richtext" maxlength="2000" rows="5">{{ $setting('terms_delivery_text', $defaults['terms_delivery_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                <div class="ws-field"><label for="terms_help_title">Help title</label><input id="terms_help_title" name="terms_help_title" maxlength="120" value="{{ $setting('terms_help_title', $defaults['terms_help_title']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field"><label for="terms_help_button_text">Help button text</label><input id="terms_help_button_text" name="terms_help_button_text" maxlength="80" value="{{ $setting('terms_help_button_text', $defaults['terms_help_button_text']) }}" data-count><small class="ws-help"><span class="ws-counter"></span></small></div>
+                                <div class="ws-field full"><label for="terms_help_text">Support note</label><textarea id="terms_help_text" name="terms_help_text" class="ws-richtext" maxlength="2000" rows="4">{{ $setting('terms_help_text', $defaults['terms_help_text']) }}</textarea><small class="ws-help">Up to 2000 characters.</small></div>
+                                    </div>
+                                </div>
+                                <aside class="ws-page-preview" data-page-preview="terms" aria-live="polite">
+                                    <div class="ws-preview-head">
+                                        <div><strong>Live Terms page preview</strong><small>Updates as you type before saving</small></div>
+                                        <span class="ws-preview-path">/terms&amp;conditions</span>
+                                    </div>
+                                    <div class="ws-preview-body">
+                                        <span class="ws-preview-kicker" data-preview-text="terms_hero_kicker"></span>
+                                        <span class="ws-preview-title" data-preview-text="terms_hero_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="terms_hero_text"></div>
+                                        <div class="ws-preview-nav">
+                                            <span data-preview-text="terms_nav_coverage"></span>
+                                            <span data-preview-text="terms_nav_exclusions"></span>
+                                            <span data-preview-text="terms_nav_service"></span>
+                                            <span data-preview-text="terms_nav_delivery"></span>
+                                        </div>
+                                        <div class="ws-preview-divider"></div>
+                                        <span class="ws-preview-title" data-preview-text="terms_coverage_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="terms_coverage_text"></div>
+                                        <div class="ws-preview-mini">
+                                            <strong data-preview-text="terms_exclusions_title"></strong>
+                                            <ul class="ws-preview-list" data-preview-lines="terms_exclusions_items"></ul>
+                                        </div>
+                                        <div class="ws-preview-mini">
+                                            <strong data-preview-text="terms_service_title"></strong>
+                                            <ol class="ws-preview-list" data-preview-lines="terms_service_items"></ol>
+                                        </div>
+                                        <div class="ws-preview-divider"></div>
+                                        <span class="ws-preview-title" data-preview-text="terms_delivery_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="terms_delivery_text"></div>
+                                        <div class="ws-preview-divider"></div>
+                                        <span class="ws-preview-title" data-preview-text="terms_help_title"></span>
+                                        <div class="ws-preview-copy" data-preview-rich="terms_help_text"></div>
+                                        <span class="ws-preview-button" data-preview-text="terms_help_button_text"></span>
+                                    </div>
+                                </aside>
+                            </div>
+                        </div>
+                    </div>
                     <div class="ws-card"><div class="ws-card-body ws-footer-link"><div><strong>Homepage banners</strong><small>Campaign banners are managed in their own workspace.</small></div><a class="btn btn-primary" href="{{ url('/banner-management') }}"><i class="icon-picture"></i> Open Banner Studio</a></div></div>
                     <div class="ws-card" id="catalog-import-workspace" style="scroll-margin-top:90px"><div class="ws-card-head"><h2>Catalog source import</h2><p>Control whether the {{ $catalogSourceLabel }} source import workspace appears on catalog admin pages.</p></div><div class="ws-card-body"><div class="ws-grid">
                         <div class="ws-field full"><label class="dm-toggle"><input type="hidden" name="startech_source_import_enabled" value="0"><input type="checkbox" id="startech_source_import_enabled" name="startech_source_import_enabled" value="1" {{ $startechSourceImportEnabled ? 'checked' : '' }}> Show {{ $catalogSourceLabel }} source import workspace</label><small class="ws-help">When enabled, the source import panel appears on Manage Category, Manage Subcategory, Manage Manufacturer, Manage Product, Catalog Attributes, Catalog Hierarchy, and the Catalog Import Center. Use Fetch only to preview selected source data without saving changes.</small></div>
@@ -278,7 +424,7 @@ document.addEventListener('DOMContentLoaded',function(){
         if(removing&&file){file.value='';file.setCustomValidity('');var name=holder.querySelector('.ws-file-name'),details=holder.querySelector('[data-image-details]'),error=holder.querySelector('[data-file-error]');if(name)name.textContent='';if(details)details.textContent='';if(error)error.textContent=''}
     }
     document.querySelectorAll('[data-remove-asset]').forEach(function(button){var key=button.getAttribute('data-remove-asset'),input=document.querySelector('[data-remove-input="'+key+'"]');button.addEventListener('click',function(){var removing=!(input&&input.value==='1');if(removing&&!window.confirm('This managed upload file will be permanently deleted after you save Website Settings. Continue?'))return;setAssetRemoval(key,removing)});setAssetRemoval(key,!!(input&&input.value==='1'))});
-    function setTextValue(id,value){var field=document.getElementById(id);if(!field)return;field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))}
+    function setTextValue(id,value){var field=document.getElementById(id);if(!field)return;field.value=value;if(window.jQuery){var editor=window.jQuery(field).data('cleditor');if(editor&&typeof editor.updateFrame==='function')editor.updateFrame()}field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))}
     function setCheckboxValue(id,checked){var field=document.getElementById(id);if(!field)return;field.checked=checked;field.dispatchEvent(new Event('change',{bubbles:true}))}
     function resetWebsiteSettings(){
         if(resetInput)resetInput.value='1';
@@ -297,6 +443,52 @@ document.addEventListener('DOMContentLoaded',function(){
         setTextValue('copyright_text','© {year} '+(defaults.site_name||'Ecommerce')+'. All rights reserved.');
         setTextValue('hero_side_title','');
         setTextValue('hero_side_text','');
+        [
+            'about_us_hero_kicker',
+            'about_us_hero_title',
+            'about_us_hero_text',
+            'about_us_story_kicker',
+            'about_us_story_title',
+            'about_us_story_text_1',
+            'about_us_story_text_2',
+            'about_us_highlight_1_title',
+            'about_us_highlight_1_text',
+            'about_us_highlight_2_title',
+            'about_us_highlight_2_text',
+            'about_us_highlight_3_title',
+            'about_us_highlight_3_text',
+            'about_us_mission_title',
+            'about_us_mission_text',
+            'about_us_vision_title',
+            'about_us_vision_text',
+            'about_us_promise_title',
+            'about_us_promise_text',
+            'about_us_capabilities_kicker',
+            'about_us_capabilities_title',
+            'about_us_capabilities_text',
+            'about_us_capabilities_items',
+            'about_us_cta_title',
+            'about_us_cta_text',
+            'about_us_cta_button_text',
+            'terms_hero_kicker',
+            'terms_hero_title',
+            'terms_hero_text',
+            'terms_nav_coverage',
+            'terms_nav_exclusions',
+            'terms_nav_service',
+            'terms_nav_delivery',
+            'terms_coverage_title',
+            'terms_coverage_text',
+            'terms_exclusions_title',
+            'terms_exclusions_items',
+            'terms_service_title',
+            'terms_service_items',
+            'terms_delivery_title',
+            'terms_delivery_text',
+            'terms_help_title',
+            'terms_help_text',
+            'terms_help_button_text'
+        ].forEach(function(key){setTextValue(key,defaults[key]||'')});
         setTextValue('google_analytics_id','');
         setTextValue('google_site_verification','');
         setTextValue('default_meta_title','');
@@ -359,6 +551,40 @@ document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('#logo-resize-width,#logo-resize-height').forEach(function(field){field.addEventListener('input',updateLogoPreviewSize);field.addEventListener('change',updateLogoPreviewSize)});updateLogoPreviewSize();
     function updateContactPreview(){var hasValue=false;document.querySelectorAll('[data-contact-preview]').forEach(function(field){var key=field.getAttribute('data-contact-preview'),row=document.querySelector('[data-contact-output="'+key+'"]'),value=field.value.trim();if(!row)return;row.style.display=value?'flex':'none';var output=row.querySelector('[data-contact-value]');if(output)output.textContent=value;if(value)hasValue=true});var empty=document.querySelector('[data-contact-empty]');if(empty)empty.style.display=hasValue?'none':'block'}
     document.querySelectorAll('[data-contact-preview]').forEach(function(field){field.addEventListener('input',updateContactPreview)});updateContactPreview();
+    function pagePreviewFieldValue(key){var field=document.getElementById(key),value=field?field.value:'';return value.trim()?value:(defaults[key]||'')}
+    function syncPreviewRichText(key){var field=document.getElementById(key);if(field&&window.jQuery){var editor=window.jQuery(field).data('cleditor');if(editor&&typeof editor.updateTextArea==='function')editor.updateTextArea()}return pagePreviewFieldValue(key)}
+    function escapePreviewHtml(value){return String(value||'').replace(/[&<>"']/g,function(character){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]})}
+    function sanitizePreviewHtml(value){
+        var template=document.createElement('template'),allowed={p:1,br:1,strong:1,b:1,em:1,i:1,u:1,s:1,strike:1,ul:1,ol:1,li:1,blockquote:1,a:1,div:1,span:1,hr:1,sub:1,sup:1,code:1,pre:1};
+        template.innerHTML=String(value||'');
+        function clean(parent){
+            Array.prototype.slice.call(parent.childNodes).forEach(function(node){
+                if(node.nodeType===1){
+                    var tag=node.nodeName.toLowerCase();
+                    if(!allowed[tag]){node.parentNode.replaceChild(document.createTextNode(node.textContent||''),node);return}
+                    Array.prototype.slice.call(node.attributes).forEach(function(attribute){
+                        var name=attribute.name.toLowerCase(),safeLink=tag==='a'&&(name==='href'||name==='title'||name==='target'||name==='rel');
+                        if(!safeLink){node.removeAttribute(attribute.name);return}
+                        if(name==='href'&&!/^(https?:|mailto:|tel:|#|\/)/i.test(attribute.value.trim()))node.removeAttribute(attribute.name);
+                    });
+                    if(tag==='a'&&node.getAttribute('target')==='_blank')node.setAttribute('rel','noopener noreferrer');
+                    clean(node);
+                }else if(node.nodeType!==3)node.parentNode.removeChild(node);
+            });
+        }
+        clean(template.content);
+        return template.innerHTML;
+    }
+    function previewRichHtml(value){value=String(value||'').trim();if(!value)return '<span class="ws-preview-empty">Empty field</span>';if(/<\/?[a-z][\s\S]*>/i.test(value))return sanitizePreviewHtml(value);return escapePreviewHtml(value).replace(/\r?\n/g,'<br>')}
+    function updatePagePreviews(){
+        document.querySelectorAll('[data-preview-text]').forEach(function(output){var value=pagePreviewFieldValue(output.getAttribute('data-preview-text')).trim();output.textContent=value||'Empty field';output.classList.toggle('ws-preview-empty',!value)});
+        document.querySelectorAll('[data-preview-rich]').forEach(function(output){output.innerHTML=previewRichHtml(syncPreviewRichText(output.getAttribute('data-preview-rich')))});
+        document.querySelectorAll('[data-preview-lines]').forEach(function(list){var value=pagePreviewFieldValue(list.getAttribute('data-preview-lines')),lines=value.split(/\r?\n/).map(function(line){return line.trim()}).filter(Boolean);list.innerHTML='';if(!lines.length){var empty=document.createElement('li');empty.className='ws-preview-empty';empty.textContent='Empty field';list.appendChild(empty);return}lines.forEach(function(line){var item=document.createElement('li');item.textContent=line;list.appendChild(item)})});
+    }
+    function collectPagePreviewKeys(){var keys=[];['text','rich','lines'].forEach(function(type){document.querySelectorAll('[data-preview-'+type+']').forEach(function(node){var key=node.getAttribute('data-preview-'+type);if(key&&keys.indexOf(key)===-1)keys.push(key)})});return keys}
+    collectPagePreviewKeys().forEach(function(key){var field=document.getElementById(key);if(field)['input','change','keyup','blur'].forEach(function(eventName){field.addEventListener(eventName,updatePagePreviews)})});
+    function bindRichTextPreviewFrames(){if(!window.jQuery)return;document.querySelectorAll('.ws-richtext').forEach(function(field){var editor=window.jQuery(field).data('cleditor');if(!editor||!editor.doc||field.getAttribute('data-preview-frame-bound'))return;field.setAttribute('data-preview-frame-bound','1');['keyup','input','paste','mouseup'].forEach(function(eventName){editor.doc.addEventListener(eventName,function(){setTimeout(function(){if(typeof editor.updateTextArea==='function')editor.updateTextArea();field.dispatchEvent(new Event('input',{bubbles:true}))},0)})})})}
+    updatePagePreviews();setTimeout(function(){bindRichTextPreviewFrames();updatePagePreviews()},500);setTimeout(function(){bindRichTextPreviewFrames();updatePagePreviews()},1200);
     var brandInput=document.querySelector('[data-brand-preview]'),brandOutput=document.querySelector('[data-brand-output]');if(brandInput&&brandOutput)brandInput.addEventListener('input',function(){brandOutput.textContent=this.value.trim()||(defaults.site_name||'Your business')});
     var dmEnabled=document.getElementById('development_mode_enabled'),initialDm={{ $developmentModeEnabled ? 'true' : 'false' }},dmTypes={development:'Development in Progress',maintenance:'Scheduled Maintenance',coming_soon:'Coming Soon',system_upgrade:'System Upgrade',emergency:'Temporary Service Interruption',custom:'Custom Message'};
     function dmValue(id){var el=document.getElementById(id);return el?el.value:''}

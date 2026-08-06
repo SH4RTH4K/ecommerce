@@ -6,6 +6,7 @@ use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -241,7 +242,10 @@ class StarTechCatalogImporter
                 'display_order' => (int) ($meta['order'] ?? 0),
                 'publication_status' => 1,
                 'updated_at' => now(),
-            ];
+            ] + $this->restoreSoftDeletedPayload('category');
+            $payload = $this->withImportBusinessCode($payload, 'category', 'category', 'category_code', $meta['name'], 'CAT', $existing, 'category_id', [
+                'category_name' => $meta['name'],
+            ], $dryRun);
             if ($existing) {
                 $updated++;
                 if (! $dryRun) {
@@ -299,7 +303,12 @@ class StarTechCatalogImporter
                     'sub_category_name' => $candidate,
                     'publication_status' => 1,
                     'updated_at' => now(),
-                ];
+                ] + $this->restoreSoftDeletedPayload('sub_category');
+                $payload = $this->withImportBusinessCode($payload, 'subcategory', 'sub_category', 'subcategory_code', $candidate, 'SUB', $existing, 'sub_category_id', [
+                    'category_id' => $categoryId,
+                    'category_name' => $meta['name'],
+                    'subcategory_name' => $candidate,
+                ], $dryRun);
 
                 if ($existing) {
                     $updated++;
@@ -337,7 +346,12 @@ class StarTechCatalogImporter
                 'manufacturer_name' => $brandName,
                 'publication_status' => 1,
                 'updated_at' => now(),
-            ];
+            ] + $this->restoreSoftDeletedPayload('manufacturer');
+            $payload = $this->withImportBusinessCode($payload, 'brand', 'manufacturer', 'brand_code', $brandName, 'BR', $existing, 'manufacturer_id', [
+                'company_id' => $companyId,
+                'brand_name' => $brandName,
+                'manufacturer_name' => $brandName,
+            ], $dryRun);
 
             if ($existing) {
                 $updated++;
@@ -394,7 +408,12 @@ class StarTechCatalogImporter
                     'name' => $seriesName,
                     'is_active' => 1,
                     'updated_at' => now(),
-                ];
+                ] + $this->restoreSoftDeletedPayload('product_series');
+                $payload = $this->withImportBusinessCode($payload, 'series', 'product_series', 'series_code', $seriesName, 'SER', $existing, 'id', [
+                    'manufacturer_id' => $manufacturerId,
+                    'brand_name' => $brandName,
+                    'series_name' => $seriesName,
+                ], $dryRun);
 
                 if ($existing) {
                     $updated++;
@@ -482,17 +501,25 @@ class StarTechCatalogImporter
                         $query->where('product_code', $sourceCode)->orWhere('sku', $sourceCode);
                     })->first()
                     : DB::table('product')->where('product_id', $product['product_id'])->first();
-                $productCode = $sourceCode !== null && $sourceCode !== ''
+                $sku = $sourceCode !== null && $sourceCode !== ''
                     ? $sourceCode
-                    : trim((string) ($existing->product_code ?? $existing->sku ?? $existing->product_id ?? ''));
-                if ($productCode === '' && $existing) {
-                    $productCode = trim((string) ($existing->product_code ?? $existing->sku ?? $existing->product_id ?? ''));
-                }
+                    : trim((string) ($existing->sku ?? ''));
+                $productCode = $this->businessCodeForImport('product', 'product', 'product_code', $product['product_name'], 'PRD', $existing, 'id', [
+                    'company_id' => $manufacturerId ? (int) DB::table('manufacturer')->where('manufacturer_id', $manufacturerId)->value('company_id') : null,
+                    'category_id' => $categoryId,
+                    'subcategory_id' => $subCategoryId,
+                    'manufacturer_id' => $manufacturerId,
+                    'series_id' => $productSeriesId,
+                    'source_code' => $sourceCode,
+                    'sku' => $sku,
+                    'product_name' => $product['product_name'],
+                    'product_model' => $product['product_model'] ?: $product['product_name'],
+                ], $dryRun);
 
                 $payload = [
                     'product_id' => $product['product_id'],
                     'product_code' => $productCode ?: null,
-                    'sku' => $productCode ?: null,
+                    'sku' => $sku ?: null,
                     'barcode' => $product['barcode'] ?: null,
                     'company_id' => $manufacturerId ? (int) DB::table('manufacturer')->where('manufacturer_id', $manufacturerId)->value('company_id') : null,
                     'category_id' => $categoryId,
@@ -1925,6 +1952,18 @@ class StarTechCatalogImporter
         }
 
         if ($existing) {
+            $code = $this->businessCodeForImport('brand', 'manufacturer', 'brand_code', $brandName, 'BR', $existing, 'manufacturer_id', [
+                'company_id' => $existing->company_id ?? null,
+                'brand_name' => $brandName,
+                'manufacturer_name' => $brandName,
+            ], $dryRun);
+            if (! $dryRun && $code !== null) {
+                DB::table('manufacturer')->where('manufacturer_id', $existing->manufacturer_id)->update([
+                    'brand_code' => $code,
+                    'updated_at' => now(),
+                ]);
+            }
+
             return (int) $existing->manufacturer_id;
         }
 
@@ -1933,13 +1972,20 @@ class StarTechCatalogImporter
         }
 
         $companyId = $this->defaultCompanyId(false);
-        return (int) DB::table('manufacturer')->insertGetId([
+        $payload = [
             'company_id' => $companyId ?: null,
             'manufacturer_name' => $brandName,
             'publication_status' => 1,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+        $payload = $this->withImportBusinessCode($payload, 'brand', 'manufacturer', 'brand_code', $brandName, 'BR', null, 'manufacturer_id', [
+            'company_id' => $companyId ?: null,
+            'brand_name' => $brandName,
+            'manufacturer_name' => $brandName,
+        ], false);
+
+        return (int) DB::table('manufacturer')->insertGetId($payload);
     }
 
     private function resolveSeriesId(?int $manufacturerId, ?string $seriesName, bool $dryRun = false): ?int
@@ -1964,6 +2010,19 @@ class StarTechCatalogImporter
         }
 
         if ($existing) {
+            $brandName = DB::table('manufacturer')->where('manufacturer_id', $manufacturerId)->value('manufacturer_name');
+            $code = $this->businessCodeForImport('series', 'product_series', 'series_code', $seriesName, 'SER', $existing, 'id', [
+                'manufacturer_id' => $manufacturerId,
+                'brand_name' => $brandName,
+                'series_name' => $seriesName,
+            ], $dryRun);
+            if (! $dryRun && $code !== null) {
+                DB::table('product_series')->where('id', $existing->id)->update([
+                    'series_code' => $code,
+                    'updated_at' => now(),
+                ]);
+            }
+
             return (int) $existing->id;
         }
 
@@ -1971,13 +2030,21 @@ class StarTechCatalogImporter
             return null;
         }
 
-        return (int) DB::table('product_series')->insertGetId([
+        $brandName = DB::table('manufacturer')->where('manufacturer_id', $manufacturerId)->value('manufacturer_name');
+        $payload = [
             'manufacturer_id' => $manufacturerId,
             'name' => $seriesName,
             'is_active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+        $payload = $this->withImportBusinessCode($payload, 'series', 'product_series', 'series_code', $seriesName, 'SER', null, 'id', [
+            'manufacturer_id' => $manufacturerId,
+            'brand_name' => $brandName,
+            'series_name' => $seriesName,
+        ], false);
+
+        return (int) DB::table('product_series')->insertGetId($payload);
     }
 
     private function sourceUrlForPath(string $path): string
@@ -2606,6 +2673,17 @@ class StarTechCatalogImporter
     {
         $company = DB::table('companies')->where('name', self::DEFAULT_COMPANY)->first();
         if ($company) {
+            $code = $this->businessCodeForImport('company', 'companies', 'company_code', self::DEFAULT_COMPANY, 'CO', $company, 'id', [
+                'company_id' => $company->id,
+                'company_name' => self::DEFAULT_COMPANY,
+            ], $dryRun);
+            if (! $dryRun && $code !== null) {
+                DB::table('companies')->where('id', $company->id)->update([
+                    'company_code' => $code,
+                    'updated_at' => now(),
+                ]);
+            }
+
             return (int) $company->id;
         }
 
@@ -2613,11 +2691,165 @@ class StarTechCatalogImporter
             return 0;
         }
 
-        return (int) DB::table('companies')->insertGetId([
+        $payload = [
             'name' => self::DEFAULT_COMPANY,
             'is_active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
+        ];
+        $payload = $this->withImportBusinessCode($payload, 'company', 'companies', 'company_code', self::DEFAULT_COMPANY, 'CO', null, 'id', [
+            'company_name' => self::DEFAULT_COMPANY,
+        ], false);
+
+        return (int) DB::table('companies')->insertGetId($payload);
+    }
+
+    private function withImportBusinessCode(
+        array $payload,
+        string $codeType,
+        string $table,
+        string $column,
+        string $seed,
+        string $fallbackPrefix,
+        ?object $existing = null,
+        string $keyColumn = 'id',
+        array $context = [],
+        bool $dryRun = false
+    ): array {
+        $code = $this->businessCodeForImport($codeType, $table, $column, $seed, $fallbackPrefix, $existing, $keyColumn, $context, $dryRun);
+        if ($code !== null) {
+            $payload[$column] = $code;
+        }
+
+        return $payload;
+    }
+
+    private function businessCodeForImport(
+        string $codeType,
+        string $table,
+        string $column,
+        string $seed,
+        string $fallbackPrefix,
+        ?object $existing = null,
+        string $keyColumn = 'id',
+        array $context = [],
+        bool $dryRun = false
+    ): ?string {
+        if (! Schema::hasColumn($table, $column)) {
+            return null;
+        }
+
+        $current = trim((string) ($existing->{$column} ?? ''));
+        if ($current !== '' && ! $this->shouldRegenerateImportBusinessCode($codeType, $table, $current, $seed, $context)) {
+            return $current;
+        }
+
+        if ($dryRun) {
+            return null;
+        }
+
+        $ignoreId = isset($existing->{$keyColumn}) ? (int) $existing->{$keyColumn} : null;
+        $context = array_merge($context, [
+            'code_type' => $codeType,
+            'name' => $seed,
+            'entity_name' => $seed,
+            'ignore_id' => $ignoreId,
+            'table' => $table,
+            'column' => $column,
+            'key_column' => $keyColumn,
         ]);
+
+        try {
+            $allocation = app(ProductCodeGenerator::class)->allocate($context);
+            $code = trim((string) ($allocation['code'] ?? $allocation['product_code'] ?? ''));
+            if ($code !== '') {
+                return $code;
+            }
+        } catch (\Throwable $exception) {
+            // If the configured rule is temporarily incomplete, keep imports usable
+            // and fall back to the legacy unique code pattern.
+        }
+
+        return $this->legacyImportBusinessCode($table, $column, $seed, $fallbackPrefix, $ignoreId, $keyColumn);
+    }
+
+    private function shouldRegenerateImportBusinessCode(
+        string $codeType,
+        string $table,
+        string $current,
+        string $seed,
+        array $context = []
+    ): bool {
+        $legacy = normalize_business_code($seed, $this->importBusinessCodeMaxLength($table));
+        if ($legacy !== null && $legacy !== '' && $current === $legacy) {
+            return true;
+        }
+
+        if ($codeType === 'product') {
+            foreach (['source_code', 'sku'] as $key) {
+                $sourceCode = normalize_product_code($context[$key] ?? null, 100);
+                if ($sourceCode !== null && $sourceCode !== '' && $current === $sourceCode) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function legacyImportBusinessCode(
+        string $table,
+        string $column,
+        string $seed,
+        string $fallbackPrefix,
+        ?int $ignoreId = null,
+        string $keyColumn = 'id'
+    ): string {
+        $maxLength = $this->importBusinessCodeMaxLength($table);
+        $base = normalize_business_code($seed, $maxLength) ?: normalize_business_code($fallbackPrefix, $maxLength) ?: $fallbackPrefix;
+        $candidate = $base;
+        $counter = 2;
+
+        while ($this->importBusinessCodeExists($table, $column, $candidate, $ignoreId, $keyColumn)) {
+            $suffix = (string) $counter;
+            $prefixLength = max(1, $maxLength - strlen($suffix));
+            $candidate = normalize_business_code(substr($base, 0, $prefixLength).$suffix, $maxLength) ?: $fallbackPrefix.$suffix;
+            $counter++;
+        }
+
+        return $candidate;
+    }
+
+    private function importBusinessCodeMaxLength(string $table): int
+    {
+        return $table === 'product' ? 100 : 30;
+    }
+
+    private function importBusinessCodeExists(
+        string $table,
+        string $column,
+        string $code,
+        ?int $ignoreId = null,
+        string $keyColumn = 'id'
+    ): bool {
+        $query = DB::table($table)->where($column, $code);
+
+        if ($ignoreId !== null) {
+            $query->where($keyColumn, '<>', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    private function restoreSoftDeletedPayload(string $table): array
+    {
+        $payload = [];
+        foreach (['deleted_at', 'deleted_by', 'delete_reason'] as $column) {
+            if (Schema::hasColumn($table, $column)) {
+                $payload[$column] = null;
+            }
+        }
+
+        return $payload;
     }
 }

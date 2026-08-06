@@ -1068,6 +1068,7 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         $settings = DB::table('site_settings')->pluck('setting_value', 'setting_key');
+        $brandName = trim((string) ($settings->get('site_name') ?: config('app.default_name', 'Ecommerce')));
         $topAnnouncements = \Schema::hasTable('top_announcements') ? \App\TopAnnouncement::orderByDesc('priority')->orderBy('display_order')->get() : collect();
         $siteContactItems = \Schema::hasTable('site_contact_items') ? \App\SiteContactItem::orderByDesc('is_primary')->orderBy('display_order')->get() : collect();
         $themeService = app(StorefrontThemeService::class);
@@ -1079,7 +1080,7 @@ class SuperAdminController extends Controller {
             'siteContactItems' => $siteContactItems,
             'storeSetupChecks' => $setup['checks'],
             'storeSetupPercent' => $setup['percent'],
-            'siteCustomizationDefaults' => $this->siteCustomizationDefaults(),
+            'siteCustomizationDefaults' => $this->siteCustomizationDefaults($brandName),
             'storefrontTheme' => $storefrontTheme,
             'storefrontThemeDefaults' => $themeService->defaults(),
             'storefrontThemeGroups' => $themeService->groupedFields(),
@@ -1102,7 +1103,6 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         $resetRequested = $request->boolean('reset_to_default');
-        $settingsDefaults = $this->siteCustomizationDefaults();
         $settingKeys = $this->siteCustomizationSettingKeys();
         $assetKeys = $this->siteCustomizationAssetKeys();
         $themeService = app(StorefrontThemeService::class);
@@ -1198,7 +1198,7 @@ class SuperAdminController extends Controller {
             'development_mode_availability_text' => 'nullable|string|max:255',
             'development_mode_show_admin_login' => 'required|boolean',
             'development_mode_login_button_text' => 'nullable|string|max:100',
-        ], $themeRules), array_merge([
+        ], $themeRules, $this->siteCustomizationPageValidationRules()), array_merge([
             'logo.uploaded' => 'The logo could not be uploaded. Choose a PNG, JPG, or WebP image no larger than 5 MB.',
             'logo.image' => 'The logo must be a valid PNG, JPG, or WebP image.',
             'logo.mimes' => 'The logo must be a PNG, JPG, or WebP image.',
@@ -1276,8 +1276,12 @@ class SuperAdminController extends Controller {
                         $value = $request->has($key) ? ($request->boolean($key) ? '1' : '0') : null;
                     } elseif ($request->filled($key)) {
                         $value = (string) $request->input($key);
-                        $value = preg_replace('/<(script|iframe|object|embed|style)\b[^>]*>.*?<\/\1>/is', '', $value);
-                        $value = trim(strip_tags($value));
+                        if (in_array($key, $this->siteCustomizationRichTextKeys(), true)) {
+                            $value = $this->sanitizeSiteCustomizationRichText($value);
+                        } else {
+                            $value = preg_replace('/<(script|iframe|object|embed|style)\b[^>]*>.*?<\/\1>/is', '', $value);
+                            $value = trim(strip_tags($value));
+                        }
                     }
 
                     if ($value === null || $value === '') {
@@ -1316,6 +1320,7 @@ class SuperAdminController extends Controller {
         }
         Cache::forget('site-settings');
         Cache::forget('site-top-bar');
+        Cache::forget('xml-sitemap');
         $freshSettings=DB::table('site_settings')->pluck('setting_value','setting_key');
         $freshBrandName=$freshSettings->get('site_name') ?: config('app.default_name', 'Ecommerce');
         $freshNameFontSize=(int)($freshSettings->get('site_name_font_size') ?: 23);
@@ -1553,9 +1558,11 @@ class SuperAdminController extends Controller {
         ];
     }
 
-    private function siteCustomizationDefaults()
+    private function siteCustomizationDefaults(?string $brandName = null)
     {
-        return [
+        $brandName = trim((string) ($brandName ?: config('app.default_name', 'Ecommerce')));
+
+        return array_merge([
             'site_name' => config('app.default_name', 'Ecommerce'),
             'site_name_font_size' => 23,
             'site_tagline' => '',
@@ -1577,12 +1584,320 @@ class SuperAdminController extends Controller {
             'development_mode_login_button_text' => 'Admin Login',
             'startech_source_import_enabled' => 1,
             'copyright_text' => '',
+        ], $this->siteCustomizationPageDefaults($brandName));
+    }
+
+    private function siteCustomizationPageDefaults(string $brandName): array
+    {
+        return [
+            'about_us_hero_kicker' => 'About our store',
+            'about_us_hero_title' => 'A flexible ecommerce experience built around customers.',
+            'about_us_hero_text' => $brandName.' presents products clearly, accepts orders securely, and provides dependable customer service.',
+            'about_us_story_kicker' => 'Our approach',
+            'about_us_story_title' => 'Clear information and practical service',
+            'about_us_story_text_1' => 'This storefront can be customized for different industries, product catalogs, delivery areas, and business models.',
+            'about_us_story_text_2' => 'Store owners can configure branding, contact details, policies, products, inventory, payments, and customer support from the administration dashboard.',
+            'about_us_highlight_1_title' => 'Flexible',
+            'about_us_highlight_1_text' => 'Configurable catalog and branding',
+            'about_us_highlight_2_title' => 'Responsive',
+            'about_us_highlight_2_text' => 'Shopping across devices',
+            'about_us_highlight_3_title' => 'Customer first',
+            'about_us_highlight_3_text' => 'Support before and after purchase',
+            'about_us_mission_title' => 'Our Mission',
+            'about_us_mission_text' => 'Make dependable technology accessible through honest advice, suitable products, and responsive service.',
+            'about_us_vision_title' => 'Our Vision',
+            'about_us_vision_text' => 'Become a trusted technology partner for households, professionals, and growing organizations.',
+            'about_us_promise_title' => 'Our Promise',
+            'about_us_promise_text' => 'Put customer needs first and recommend products with value, quality, and long-term usability in mind.',
+            'about_us_capabilities_kicker' => 'What we provide',
+            'about_us_capabilities_title' => 'Products and expertise for every setup',
+            'about_us_capabilities_text' => 'Our catalog covers desktops, laptops, monitors, networking products, printers, office equipment, cameras, security systems, accessories, and PC components from established brands.',
+            'about_us_capabilities_items' => "Personal and custom PC solutions\nNetworking and office hardware\nCorporate procurement support\nNationwide product delivery",
+            'about_us_cta_title' => 'Need help choosing the right product?',
+            'about_us_cta_text' => 'Tell our team what you need and we will help you compare suitable options.',
+            'about_us_cta_button_text' => 'Talk to our team',
+            'terms_hero_kicker' => 'Customer information',
+            'terms_hero_title' => 'Warranty, Service & Terms',
+            'terms_hero_text' => 'Please review these conditions before purchasing, receiving, or submitting a product for service.',
+            'terms_nav_coverage' => 'Warranty coverage',
+            'terms_nav_exclusions' => 'Exclusions',
+            'terms_nav_service' => 'Service process',
+            'terms_nav_delivery' => 'Delivery & inspection',
+            'terms_coverage_title' => 'Warranty Coverage',
+            'terms_coverage_text' => 'Product warranty follows the applicable manufacturer or distributor policy and begins from the purchase date shown on the invoice. Keep the invoice and warranty documents for any service request.',
+            'terms_exclusions_title' => 'Warranty Exclusions',
+            'terms_exclusions_items' => "Unauthorized opening, repair, modification, or installation.\nAccident, fire, lightning, voltage fluctuation, short circuit, water, or physical damage.\nBroken panels, connectors, casing, or other visible physical damage.\nDamage caused by misuse, improper installation, or unsuitable operating conditions.",
+            'terms_service_title' => 'Warranty Service Process',
+            'terms_service_items' => "Contact our team with the invoice and product details.\nBring the product to our showroom or send it through a reliable courier.\nOur team will inspect it and coordinate eligible service with the supplier.\nCustomers are responsible for courier and transport costs in both directions.",
+            'terms_delivery_title' => 'Delivery & Product Inspection',
+            'terms_delivery_text' => 'Inspect the model, configuration, physical condition, and included accessories when receiving the product. Report any delivery-related issue immediately. After acceptance, configuration concerns remain subject to the invoice and warranty policy.',
+            'terms_help_title' => 'Need clarification?',
+            'terms_help_text' => 'Call +88 01612-717349 before submitting a product for service.',
+            'terms_help_button_text' => 'Contact support',
+        ];
+    }
+
+    private function siteCustomizationRichTextKeys(): array
+    {
+        return [
+            'about_us_hero_text',
+            'about_us_story_text_1',
+            'about_us_story_text_2',
+            'about_us_mission_text',
+            'about_us_vision_text',
+            'about_us_promise_text',
+            'about_us_capabilities_text',
+            'about_us_cta_text',
+            'terms_hero_text',
+            'terms_coverage_text',
+            'terms_delivery_text',
+            'terms_help_text',
+        ];
+    }
+
+    private function sanitizeSiteCustomizationRichText(?string $value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        $allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'blockquote', 'a', 'div', 'span', 'hr', 'sub', 'sup', 'code', 'pre'];
+        $allowedTagMarkup = '<'.implode('><', $allowedTags).'>';
+
+        if (! class_exists(\DOMDocument::class)) {
+            return trim(strip_tags($value, $allowedTagMarkup));
+        }
+
+        $document = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $document->loadHTML('<?xml encoding="UTF-8"><div>'.$value.'</div>', LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (! $loaded) {
+            return trim(strip_tags($value, $allowedTagMarkup));
+        }
+
+        $root = $document->getElementsByTagName('div')->item(0);
+        if (! $root) {
+            return trim(strip_tags($value, $allowedTagMarkup));
+        }
+
+        $this->sanitizeRichTextNode($root, $allowedTags);
+
+        $clean = '';
+        for ($i = 0; $i < $root->childNodes->length; $i++) {
+            $child = $root->childNodes->item($i);
+            if ($child) {
+                $clean .= $document->saveHTML($child);
+            }
+        }
+
+        return trim($clean);
+    }
+
+    private function sanitizeRichTextNode(\DOMNode $node, array $allowedTags): void
+    {
+        for ($index = $node->childNodes->length - 1; $index >= 0; $index--) {
+            $child = $node->childNodes->item($index);
+            if (! $child) {
+                continue;
+            }
+
+            if ($child->nodeType === XML_COMMENT_NODE) {
+                $node->removeChild($child);
+                continue;
+            }
+
+            if ($child->nodeType !== XML_ELEMENT_NODE) {
+                continue;
+            }
+
+            $tag = strtolower($child->nodeName);
+            if (! in_array($tag, $allowedTags, true)) {
+                $grandChildren = [];
+                while ($child->firstChild) {
+                    $grandChildren[] = $child->firstChild;
+                    $child->removeChild($child->firstChild);
+                }
+
+                foreach ($grandChildren as $grandChild) {
+                    $node->insertBefore($grandChild, $child);
+                    if ($grandChild->nodeType === XML_ELEMENT_NODE) {
+                        $this->sanitizeRichTextNode($grandChild, $allowedTags);
+                    }
+                }
+
+                $node->removeChild($child);
+                continue;
+            }
+
+            $this->sanitizeRichTextAttributes($child, $tag);
+            $this->sanitizeRichTextNode($child, $allowedTags);
+        }
+    }
+
+    private function sanitizeRichTextAttributes(\DOMElement $element, string $tag): void
+    {
+        $allowedAttributes = [];
+
+        if ($tag === 'a') {
+            $allowedAttributes = ['href', 'title', 'target', 'rel'];
+        } elseif (in_array($tag, ['div', 'span', 'p', 'blockquote', 'li'], true)) {
+            $allowedAttributes = ['align', 'style'];
+        } elseif (in_array($tag, ['hr', 'pre', 'code', 'sub', 'sup'], true)) {
+            $allowedAttributes = [];
+        }
+
+        for ($index = $element->attributes->length - 1; $index >= 0; $index--) {
+            $attribute = $element->attributes->item($index);
+            if (! $attribute) {
+                continue;
+            }
+
+            $name = strtolower($attribute->nodeName);
+            if (! in_array($name, $allowedAttributes, true)) {
+                $element->removeAttributeNode($attribute);
+                continue;
+            }
+
+            $value = $this->sanitizeRichTextAttributeValue($tag, $name, $attribute->nodeValue);
+            if ($value === null || $value === '') {
+                $element->removeAttributeNode($attribute);
+                continue;
+            }
+
+            $element->setAttribute($attribute->nodeName, $value);
+        }
+
+        if ($tag === 'a' && strtolower($element->getAttribute('target')) === '_blank') {
+            $rel = trim((string) $element->getAttribute('rel'));
+            $relParts = preg_split('/\s+/', $rel, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $relParts = array_values(array_unique(array_merge($relParts, ['noopener', 'noreferrer'])));
+            $element->setAttribute('rel', implode(' ', $relParts));
+        }
+    }
+
+    private function sanitizeRichTextAttributeValue(string $tag, string $name, string $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if ($name === 'href') {
+            if (preg_match('/^(?:https?:|mailto:|tel:|\/(?!\/)|#)/i', $value)) {
+                return $value;
+            }
+
+            return null;
+        }
+
+        if ($name === 'target') {
+            $target = strtolower($value);
+            return in_array($target, ['_blank', '_self', '_parent', '_top'], true) ? $target : null;
+        }
+
+        if ($name === 'rel') {
+            $rel = preg_replace('/[^a-zA-Z0-9 _-]/', '', $value);
+            $rel = trim(preg_replace('/\s+/', ' ', (string) $rel));
+
+            return $rel !== '' ? $rel : null;
+        }
+
+        if ($name === 'align') {
+            $align = strtolower($value);
+            return in_array($align, ['left', 'center', 'right', 'justify'], true) ? $align : null;
+        }
+
+        if ($name === 'style') {
+            $styles = [];
+            foreach (explode(';', $value) as $declaration) {
+                $declaration = trim($declaration);
+                if ($declaration === '' || ! str_contains($declaration, ':')) {
+                    continue;
+                }
+
+                [$property, $propertyValue] = array_map('trim', explode(':', $declaration, 2));
+                if (strtolower($property) !== 'text-align') {
+                    continue;
+                }
+
+                $propertyValue = strtolower($propertyValue);
+                if (! in_array($propertyValue, ['left', 'center', 'right', 'justify'], true)) {
+                    continue;
+                }
+
+                $styles[] = 'text-align: '.$propertyValue;
+            }
+
+            $styles = array_values(array_unique($styles));
+
+            return $styles ? implode('; ', $styles) : null;
+        }
+
+        return $value;
+    }
+
+    private function siteCustomizationPageSettingKeys(): array
+    {
+        return array_keys($this->siteCustomizationPageDefaults(config('app.default_name', 'Ecommerce')));
+    }
+
+    private function siteCustomizationPageValidationRules(): array
+    {
+        return [
+            'about_us_hero_kicker' => 'nullable|string|max:60',
+            'about_us_hero_title' => 'nullable|string|max:180',
+            'about_us_hero_text' => 'nullable|string|max:2000',
+            'about_us_story_kicker' => 'nullable|string|max:60',
+            'about_us_story_title' => 'nullable|string|max:180',
+            'about_us_story_text_1' => 'nullable|string|max:2000',
+            'about_us_story_text_2' => 'nullable|string|max:2000',
+            'about_us_highlight_1_title' => 'nullable|string|max:80',
+            'about_us_highlight_1_text' => 'nullable|string|max:120',
+            'about_us_highlight_2_title' => 'nullable|string|max:80',
+            'about_us_highlight_2_text' => 'nullable|string|max:120',
+            'about_us_highlight_3_title' => 'nullable|string|max:80',
+            'about_us_highlight_3_text' => 'nullable|string|max:120',
+            'about_us_mission_title' => 'nullable|string|max:80',
+            'about_us_mission_text' => 'nullable|string|max:2000',
+            'about_us_vision_title' => 'nullable|string|max:80',
+            'about_us_vision_text' => 'nullable|string|max:2000',
+            'about_us_promise_title' => 'nullable|string|max:80',
+            'about_us_promise_text' => 'nullable|string|max:2000',
+            'about_us_capabilities_kicker' => 'nullable|string|max:60',
+            'about_us_capabilities_title' => 'nullable|string|max:180',
+            'about_us_capabilities_text' => 'nullable|string|max:2000',
+            'about_us_capabilities_items' => 'nullable|string|max:1000',
+            'about_us_cta_title' => 'nullable|string|max:180',
+            'about_us_cta_text' => 'nullable|string|max:2000',
+            'about_us_cta_button_text' => 'nullable|string|max:80',
+            'terms_hero_kicker' => 'nullable|string|max:60',
+            'terms_hero_title' => 'nullable|string|max:180',
+            'terms_hero_text' => 'nullable|string|max:2000',
+            'terms_nav_coverage' => 'nullable|string|max:80',
+            'terms_nav_exclusions' => 'nullable|string|max:80',
+            'terms_nav_service' => 'nullable|string|max:80',
+            'terms_nav_delivery' => 'nullable|string|max:80',
+            'terms_coverage_title' => 'nullable|string|max:120',
+            'terms_coverage_text' => 'nullable|string|max:2000',
+            'terms_exclusions_title' => 'nullable|string|max:120',
+            'terms_exclusions_items' => 'nullable|string|max:1000',
+            'terms_service_title' => 'nullable|string|max:120',
+            'terms_service_items' => 'nullable|string|max:1000',
+            'terms_delivery_title' => 'nullable|string|max:120',
+            'terms_delivery_text' => 'nullable|string|max:2000',
+            'terms_help_title' => 'nullable|string|max:120',
+            'terms_help_text' => 'nullable|string|max:2000',
+            'terms_help_button_text' => 'nullable|string|max:80',
         ];
     }
 
     private function siteCustomizationSettingKeys()
     {
-        return [
+        return array_merge([
             'site_name', 'site_name_font_size', 'site_tagline', 'site_tagline_font_size',
             'notice_text', 'phone', 'support_phone', 'whatsapp_number', 'support_email',
             'shop_address', 'business_hours', 'facebook_url', 'instagram_url', 'youtube_url',
@@ -1595,7 +1910,7 @@ class SuperAdminController extends Controller {
             'development_mode_login_button_text', 'logo_resize_enabled', 'logo_resize_width',
             'logo_resize_height', 'favicon_resize_enabled', 'favicon_resize_width',
             'favicon_resize_height', 'startech_source_import_enabled', 'storefront_theme',
-        ];
+        ], $this->siteCustomizationPageSettingKeys());
     }
 
     private function siteCustomizationAssetKeys()
@@ -1606,17 +1921,28 @@ class SuperAdminController extends Controller {
     private function siteCustomizationSetup($settings)
     {
         $settings = collect($settings);
-        $defaults = $this->siteCustomizationDefaults();
+        $brandName = trim((string) ($settings->get('site_name', '') ?: config('app.default_name', 'Ecommerce')));
+        $defaults = $this->siteCustomizationDefaults($brandName);
         $siteName = trim((string) $settings->get('site_name', ''));
         $siteTagline = trim((string) $settings->get('site_tagline', ''));
         $siteNameFontSize = (int) ($settings->get('site_name_font_size') ?: $defaults['site_name_font_size']);
         $siteTaglineFontSize = (int) ($settings->get('site_tagline_font_size') ?: $defaults['site_tagline_font_size']);
+        $publicPageCustomized = false;
+        foreach ($this->siteCustomizationPageSettingKeys() as $key) {
+            $currentValue = trim((string) $settings->get($key, ''));
+            $defaultValue = trim((string) ($defaults[$key] ?? ''));
+            if ($currentValue !== '' && $currentValue !== $defaultValue) {
+                $publicPageCustomized = true;
+                break;
+            }
+        }
         $checks = [
             ['Business identity', ($siteName !== '' && strcasecmp($siteName, (string) $defaults['site_name']) !== 0) || $siteTagline !== '' || $siteNameFontSize !== (int) $defaults['site_name_font_size'] || $siteTaglineFontSize !== (int) $defaults['site_tagline_font_size'], 'identity'],
             ['Customer contact', trim((string) $settings->get('phone', '')) !== '' || trim((string) $settings->get('support_phone', '')) !== '' || trim((string) $settings->get('whatsapp_number', '')) !== '' || trim((string) $settings->get('support_email', '')) !== '', 'contact'],
             ['Store address', trim((string) $settings->get('shop_address', '')) !== '' || trim((string) $settings->get('business_hours', '')) !== '', 'contact'],
             ['Search description', trim((string) $settings->get('default_meta_title', '')) !== '' || trim((string) $settings->get('default_meta_description', '')) !== '' || trim((string) $settings->get('meta_keywords', '')) !== '' || trim((string) $settings->get('default_og_image', '')) !== '', 'seo'],
             ['Header branding', trim((string) $settings->get('site_logo', '')) !== '' || trim((string) $settings->get('favicon', '')) !== '', 'identity'],
+            ['Public page copy', $publicPageCustomized, 'content'],
         ];
         $complete = collect($checks)->where(1, true)->count();
 

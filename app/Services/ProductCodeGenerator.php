@@ -468,6 +468,7 @@ class ProductCodeGenerator
     private function resolveEntityName(string $codeType, array $context): string
     {
         return match ($this->normalizeCodeType($codeType)) {
+            'company' => $this->resolveCompanyName($context),
             'category' => $this->resolveCategoryName($context),
             'subcategory' => $this->resolveSubCategoryName($context),
             'brand' => $this->resolveBrandName($context),
@@ -477,12 +478,23 @@ class ProductCodeGenerator
                 ?? Arr::get($context, 'entity_name')
                 ?? Arr::get($context, 'product_name')
                 ?? Arr::get($context, 'product_model')
+                ?? Arr::get($context, 'company_name')
                 ?? Arr::get($context, 'category_name')
                 ?? Arr::get($context, 'manufacturer_name')
                 ?? Arr::get($context, 'series_name')
                 ?? ''
             )),
         };
+    }
+
+    private function resolveCompanyName(array $context): string
+    {
+        $company = $this->resolveCompany($context);
+        if ($company && trim((string) $company->name) !== '') {
+            return (string) $company->name;
+        }
+
+        return trim((string) (Arr::get($context, 'company_name') ?? Arr::get($context, 'name') ?? ''));
     }
 
     private function resolveCategoryName(array $context): string
@@ -553,6 +565,7 @@ class ProductCodeGenerator
         }
 
         return match ($this->normalizeCodeType($codeType)) {
+            'company' => DB::table('companies')->where('company_code', $code)->exists(),
             'category' => DB::table('category')->where('category_code', $code)->exists(),
             'subcategory' => DB::table('sub_category')->where('subcategory_code', $code)->exists(),
             'brand' => DB::table('manufacturer')->where('brand_code', $code)->exists(),
