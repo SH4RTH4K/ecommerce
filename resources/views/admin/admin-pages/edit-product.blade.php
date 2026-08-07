@@ -61,7 +61,7 @@
                     <div class="control-group">
                         <label class="control-label" for="company_id">Company</label>
                         <div class="controls">
-                            <select id="company_id" name="company_id" class="span6">
+                            <select id="company_id" name="company_id" class="span6" data-rel="chosen" data-placeholder="Search companies...">
                                 <option value="">Auto-detect from brand</option>
                                 @foreach($companies as $company)
                                 <option value="{{ $company->id }}" {{ old('company_id', $product_info->company_id) == $company->id ? 'selected' : '' }}>{{ $company->name }}{{ $company->company_code ? ' · '.$company->company_code : '' }}</option>
@@ -73,7 +73,7 @@
                     <div class="control-group">
                         <label class="control-label" for="branch_id">Branch</label>
                         <div class="controls">
-                            <select id="branch_id" name="branch_id" class="span6">
+                            <select id="branch_id" name="branch_id" class="span6" data-rel="chosen" data-placeholder="Search branches...">
                                 <option value="">Global / not branch-specific</option>
                                 @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}" {{ old('branch_id', $product_info->branch_id) == $branch->id ? 'selected' : '' }}>{{ $branch->name }}{{ $branch->code ? ' · '.$branch->code : '' }}</option>
@@ -107,7 +107,7 @@
                     <div class="control-group">
                         <label class="control-label" for="catId">Product Category</label>
                         <div class="controls">
-                            <select id="catId" name="category_id">
+                            <select id="catId" name="category_id" data-rel="chosen" data-placeholder="Search categories...">
                                 @foreach($category as $vcategory)
                                 <option value="{{$vcategory->category_id}}">{{$vcategory->category_name}}</option>
                                 @endforeach
@@ -117,7 +117,7 @@
                     <div class="control-group">
                         <label class="control-label" for="selectSubCategory">Sub Category</label>
                         <div class="controls">
-                            <select id="selectSubCategory" name="sub_category_id">
+                            <select id="selectSubCategory" name="sub_category_id" data-rel="chosen" data-placeholder="Search sub-categories...">
                                 <option value="">None</option>
                                 @foreach($sub_category as $vcategory)
                                 <option value="{{$vcategory->sub_category_id}}">{{$vcategory->sub_category_name}}</option>
@@ -128,7 +128,7 @@
                     <div class="control-group">
                         <label class="control-label" for="brand_id">Brand</label>
                         <div class="controls">
-                            <select id="brand_id" name="manufacturer_id"><option value="">No brand / not applicable</option>
+                            <select id="brand_id" name="manufacturer_id" data-rel="chosen" data-placeholder="Search brands..."><option value="">No brand / not applicable</option>
                                 @foreach($manufacturer as $vmanufacturer)
                                 <option value="{{$vmanufacturer->manufacturer_id}}">{{ $vmanufacturer->company_name ? $vmanufacturer->company_name.' → ' : '' }}{{$vmanufacturer->manufacturer_name}}</option>
                                 @endforeach
@@ -137,7 +137,7 @@
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="product_series_id">Collection / Product Line</label>
-                        <div class="controls"><select id="product_series_id" name="product_series_id"><option value="">None / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}" {{ $product_info->product_series_id==$series->id?'selected':'' }}>{{ $series->name }}</option>@endforeach</select><p class="help-block">Optional. Examples: ThinkPad, Summer Collection, or Premium Range.</p></div>
+                        <div class="controls"><select id="product_series_id" name="product_series_id" data-rel="chosen" data-placeholder="Search collections..."><option value="">None / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}" {{ $product_info->product_series_id==$series->id?'selected':'' }}>{{ $series->name }}</option>@endforeach</select><p class="help-block">Optional. Examples: ThinkPad, Summer Collection, or Premium Range.</p></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Product Model </label>
@@ -167,11 +167,11 @@
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="key_features">Key Features</label>
-                        <div class="controls"><textarea name="key_features" id="key_features" class="span6" rows="6">{{ implode("\n", (array) json_decode($product_info->key_features, true)) }}</textarea><p class="help-block">One feature per line.</p></div>
+                        <div class="controls"><textarea name="key_features" id="key_features" class="span6" rows="6">{{ implode("\n", (array) $product_info->key_features) }}</textarea><p class="help-block">One feature per line.</p></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="specifications">Specifications</label>
-                        <div class="controls"><textarea name="specifications" id="specifications" class="span6" rows="12">@foreach((array) json_decode($product_info->specifications, true) as $label => $value)@if(is_array($value))[{{ $label }}]{{ "\n" }}@foreach($value as $itemLabel => $itemValue){{ $itemLabel }}: {{ $itemValue }}{{ "\n" }}@endforeach{{ "\n" }}@else{{ $label }}: {{ $value }}{{ "\n" }}@endif @endforeach</textarea><p><button type="button" class="btn btn-small" id="load-spec-template"><i class="icon-list-alt"></i> Load category template</button> <span id="spec-template-status" class="help-inline"></span></p><p class="help-block">Use one Label: Value pair per line. Add a section heading as <strong>[Basic Information]</strong>.</p></div>
+                        <div class="controls"><textarea name="specifications" id="specifications" class="span6" rows="12">@foreach((array) $product_info->specifications as $label => $value)@if(is_array($value))[{{ $label }}]{{ "\n" }}@foreach($value as $itemLabel => $itemValue){{ $itemLabel }}: {{ $itemValue }}{{ "\n" }}@endforeach{{ "\n" }}@else{{ $label }}: {{ $value }}{{ "\n" }}@endif @endforeach</textarea><p><button type="button" class="btn btn-small" id="load-spec-template"><i class="icon-list-alt"></i> Load category template</button> <span id="spec-template-status" class="help-inline"></span></p><p class="help-block">Use one Label: Value pair per line. Add a section heading as <strong>[Basic Information]</strong>.</p></div>
                     </div>
                     <div class="control-group hidden-phone">
                         <label class="control-label" for="textarea2" >Product Description</label>
@@ -209,7 +209,7 @@
                     @include('admin.components.multi-industry-product-fields')
                     <div class="control-group">
                         <label class="control-label" for="warranty">Warranty</label>
-                        <div class="controls"><input type="text" name="warranty" id="warranty" value="{{ $product_info->warranty }}" class="span6"></div>
+                        <div class="controls"><input type="text" name="warranty" id="warranty" value="{{ $product_info->warranty }}" placeholder="Leave blank for No Warranty" class="span6"></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="fileInput">Product Image</label>
@@ -222,7 +222,7 @@
                     <div class="control-group">
                         <label class="control-label" for="gallery_images">Gallery Images</label>
                         <div class="controls">
-                            @php $galleryImages=array_values(array_filter((array)json_decode($product_info->gallery_images,true))); @endphp
+                            @php $galleryImages=array_values(array_filter((array)$product_info->gallery_images)); @endphp
                             @if($galleryImages)<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">@foreach($galleryImages as $galleryImage)<label style="position:relative;border:1px solid #ddd;padding:5px;border-radius:4px;text-align:center"><img src="{{ asset($galleryImage) }}" alt="Product gallery image" style="display:block;width:100px;height:100px;object-fit:cover"><span style="display:block;margin-top:5px"><input type="checkbox" name="remove_gallery_images[]" value="{{ $galleryImage }}"> Remove</span></label>@endforeach</div>@else<p class="muted">No gallery images uploaded yet.</p>@endif
                             <input class="input-file" name="gallery_images[]" id="gallery_images" type="file" multiple accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
                             <p class="help-block">Add up to 10 new JPG, PNG or WebP images per update. Each image can be up to 5MB.</p>
@@ -256,7 +256,7 @@
     document.forms['update_data'].elements['sub_category_id'].value='<?php echo isset($product_info->sub_category) ? $product_info->sub_category : ''?>';
     document.forms['update_data'].elements['manufacturer_id'].value='<?php echo $product_info->manufacturer_id?>';
 </script>
-<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();});</script>
+<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';if(window.jQuery)jQuery(series).trigger('liszt:updated');}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),templates=@json($specificationTemplates),field=document.getElementById('specifications'),button=document.getElementById('load-spec-template'),status=document.getElementById('spec-template-status');function refreshTemplate(){var template=templates[category.value];button.disabled=!template;status.textContent=template?template.name+' available':'No template configured';}category.addEventListener('change',refreshTemplate);button.addEventListener('click',function(){var template=templates[category.value];if(!template)return;if(field.value.trim()&&!confirm('Replace the current specifications with the category template?'))return;field.value=template.content;});refreshTemplate();});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
 <script>

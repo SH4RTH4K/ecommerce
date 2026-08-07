@@ -126,7 +126,7 @@ class Product extends Model
             return $warranty;
         }
 
-        return $this->extractWarrantyFromSpecifications((array) $this->specifications);
+        return 'No Warranty';
     }
 
     private function extractWarrantyFromSpecifications(array $specifications): ?string

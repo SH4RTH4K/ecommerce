@@ -249,6 +249,11 @@ Route::get('/orphan-media', 'OrphanMediaController@index')->name('orphan-media.i
 Route::post('/orphan-media/cleanup', 'OrphanMediaController@cleanup')->name('orphan-media.cleanup');
 Route::get('/system-health', 'SuperAdminController@systemHealth');
 Route::post('/system-health/backup', 'SuperAdminController@createSystemBackup');
+Route::post('/system-health/media-backup', 'SuperAdminController@createMediaSystemBackup');
+Route::post('/system-health/full-backup', 'SuperAdminController@createFullSystemBackup');
+Route::post('/system-health/restore', 'SuperAdminController@restoreSystemBackup');
+Route::post('/system-health/media-restore', 'SuperAdminController@restoreMediaSystemBackup');
+Route::post('/system-health/full-restore', 'SuperAdminController@restoreFullSystemBackup');
 Route::get('/system-health/backups/{id}/download', 'SuperAdminController@downloadSystemBackup');
 Route::post('/system-health/backups/{id}/delete', 'SuperAdminController@deleteSystemBackup');
 Route::post('/system-health/clear-cache', 'SuperAdminController@clearSystemCache');

@@ -55,7 +55,7 @@
                     <div class="control-group">
                         <label class="control-label" for="company_id">Company</label>
                         <div class="controls">
-                            <select id="company_id" name="company_id" class="span6">
+                            <select id="company_id" name="company_id" class="span6" data-rel="chosen" data-placeholder="Search companies...">
                                 <option value="">Auto-detect from brand</option>
                                 @foreach($companies as $company)
                                 <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}{{ $company->company_code ? ' · '.$company->company_code : '' }}</option>
@@ -67,7 +67,7 @@
                     <div class="control-group">
                         <label class="control-label" for="branch_id">Branch</label>
                         <div class="controls">
-                            <select id="branch_id" name="branch_id" class="span6">
+                            <select id="branch_id" name="branch_id" class="span6" data-rel="chosen" data-placeholder="Search branches...">
                                 <option value="">Global / not branch-specific</option>
                                 @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}{{ $branch->code ? ' · '.$branch->code : '' }}</option>
@@ -101,28 +101,21 @@
                     <div class="control-group">
                         <label class="control-label" for="catId">Product Category</label>
                         <div class="controls">
-                            <select id="catId" name="category_id">
+                            <select id="catId" name="category_id" data-rel="chosen" data-placeholder="Search categories...">
                                 @foreach($category as $vcategory)
                                 <option value="{{$vcategory->category_id}}">{{$vcategory->category_name}}</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
-                    <!--<div class="control-group">-->
-                    <!--    <label class="control-label" for="selectSubCategory">Sub Category</label>-->
-                    <!--    <div class="controls">-->
-                    <!--        <select id="selectSubCategory" name="sub_category_id">-->
-                    <!--            <option value="">None</option>-->
-                    <!--            @foreach($sub_category as $vcategory)-->
-                    <!--            <option value="{{$vcategory->sub_category_id}}">{{$vcategory->sub_category_name}}</option>-->
-                    <!--            @endforeach-->
-                    <!--        </select>-->
-                    <!--    </div>-->
-                    <!--</div>-->
+                    <div class="control-group">
+                        <label class="control-label" for="selectSubCategory">Sub Category</label>
+                        <div class="controls"><select id="selectSubCategory" name="sub_category_id" data-rel="chosen" data-placeholder="Search sub-categories..."><option value="">None</option>@foreach($sub_category as $vcategory)<option value="{{$vcategory->sub_category_id}}">{{$vcategory->sub_category_name}}</option>@endforeach</select></div>
+                    </div>
                     <div class="control-group">
                         <label class="control-label" for="brand_id">Brand</label>
                         <div class="controls">
-                            <select id="brand_id" name="manufacturer_id">
+                            <select id="brand_id" name="manufacturer_id" data-rel="chosen" data-placeholder="Search brands...">
                                 <option value="">No brand / not applicable</option>
                                 @foreach($manufacturer as $vmanufacturer)
                                 <option value="{{$vmanufacturer->manufacturer_id}}">{{ $vmanufacturer->company_name ? $vmanufacturer->company_name.' → ' : '' }}{{$vmanufacturer->manufacturer_name}}
@@ -133,7 +126,7 @@
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="product_series_id">Collection / Product Line</label>
-                        <div class="controls"><select id="product_series_id" name="product_series_id"><option value="">None / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}">{{ $series->name }}</option>@endforeach</select><p class="help-block">Optional. Examples: ThinkPad, Summer Collection, or Premium Range.</p></div>
+                        <div class="controls"><select id="product_series_id" name="product_series_id" data-rel="chosen" data-placeholder="Search collections..."><option value="">None / not applicable</option>@foreach($productSeries as $series)<option value="{{ $series->id }}" data-brand="{{ $series->manufacturer_id }}">{{ $series->name }}</option>@endforeach</select><p class="help-block">Optional. Examples: ThinkPad, Summer Collection, or Premium Range.</p></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="typeahead">Product Model </label>
@@ -205,7 +198,7 @@
                     @include('admin.components.multi-industry-product-fields')
                     <div class="control-group">
                         <label class="control-label" for="warranty">Warranty</label>
-                        <div class="controls"><input type="text" name="warranty" id="warranty" class="span6" placeholder="Example: 3 years"></div>
+                        <div class="controls"><input type="text" name="warranty" id="warranty" class="span6" placeholder="Leave blank for No Warranty"></div>
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="fileInput">Product Image</label>
@@ -247,7 +240,7 @@
 
     </div><!--/row-->
 </div><!--/.fluid-container-->
-<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
+<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';if(window.jQuery)jQuery(series).trigger('liszt:updated');}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),templates=@json($specificationTemplates),field=document.getElementById('specifications'),button=document.getElementById('load-spec-template'),status=document.getElementById('spec-template-status');function refreshTemplate(){var template=templates[category.value];button.disabled=!template;status.textContent=template?template.name+' available':'No template configured';}category.addEventListener('change',refreshTemplate);button.addEventListener('click',function(){var template=templates[category.value];if(!template)return;if(field.value.trim()&&!confirm('Replace the current specifications with the category template?'))return;field.value=template.content;});refreshTemplate();});</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

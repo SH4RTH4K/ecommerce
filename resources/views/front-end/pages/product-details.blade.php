@@ -9,7 +9,7 @@
 @endpush
 @section('main_content')
 @php
-    $warrantyText = $product_details->warranty_display ?: 'Contact us';
+    $warrantyText = $product_details->warranty_display;
 @endphp
 <section class="lt-detail-section">
     @include('partials.flash')
@@ -105,7 +105,7 @@
                 </div>
                 <div>
                     <dt>Warranty</dt>
-                    <dd>{{ $product_details->warranty ?: 'Contact us' }}</dd>
+                    <dd>{{ $product_details->warranty_display }}</dd>
                 </div>
                 <div>
                     <dt>Delivery</dt>

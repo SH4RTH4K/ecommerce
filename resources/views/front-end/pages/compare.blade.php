@@ -64,7 +64,7 @@
                     <tr>
                         <th>Warranty</th>
                         @foreach($items as $item)
-                            <td>{{ $item['product']->warranty ?: 'Contact us' }}</td>
+                            <td>{{ $item['product']->warranty_display }}</td>
                         @endforeach
                     </tr>
                     @foreach($attributes as $attribute)
