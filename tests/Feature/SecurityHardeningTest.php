@@ -83,11 +83,11 @@ class SecurityHardeningTest extends TestCase
         $this->assertFalse($validator->isAllowed('https://[::1]/hook'));
     }
 
-    public function testProductDescriptionUsesEscapedOutput(): void
+    public function testProductDescriptionUsesSanitizedHtmlOutput(): void
     {
         $view = file_get_contents(resource_path('views/front-end/pages/product-details.blade.php'));
 
-        $this->assertStringContainsString('nl2br(e($product_details->product_description', $view);
+        $this->assertStringContainsString('product_description_html($product_details->product_description)', $view);
         $this->assertStringNotContainsString('{!! $product_details->product_description', $view);
     }
 

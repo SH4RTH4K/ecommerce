@@ -150,3 +150,28 @@ if (! function_exists('suggest_business_code')) {
         return substr($slug, 0, max(1, $maxLength));
     }
 }
+
+if (! function_exists('product_description_html')) {
+    function product_description_html(?string $description): string
+    {
+        $description = trim((string) $description);
+        if ($description === '') {
+            return e('Contact us for full product information.');
+        }
+
+        $allowedTags = '<h1><h2><h3><h4><h5><h6><p><br><strong><b><em><i><u><ul><ol><li><a><span><div><blockquote>'; 
+        $html = strip_tags($description, $allowedTags);
+        $html = preg_replace('/\s+on[a-z]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?: '';
+        $html = preg_replace('/\s+style\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?: '';
+        $html = preg_replace_callback('/\s+(href|src)\s*=\s*(["\'])(.*?)\2/is', function (array $match): string {
+            $url = trim(html_entity_decode($match[3], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if (preg_match('/^(?:javascript|data|vbscript):/i', $url)) {
+                return '';
+            }
+
+            return ' '.$match[1].'='.$match[2].e($url).$match[2];
+        }, $html) ?: '';
+
+        return strip_tags($html) === $html ? nl2br(e($description)) : $html;
+    }
+}

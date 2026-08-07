@@ -241,7 +241,7 @@
 
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Update</button>
-                        <button type="reset" class="btn">Cancel</button>
+                        <a href="{{ url('/manage-product') }}" class="btn">Cancel</a>
                     </div>
                 </fieldset>
                 </form>

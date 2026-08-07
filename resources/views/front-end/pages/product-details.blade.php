@@ -262,7 +262,7 @@
 
     <div class="lt-description">
         <h2>Product Description</h2>
-        <div>{!! nl2br(e($product_details->product_description ?: 'Contact us for full product information.')) !!}</div>
+        <div class="lt-product-description">{!! product_description_html($product_details->product_description) !!}</div>
     </div>
 
     <div class="lt-price-note">
