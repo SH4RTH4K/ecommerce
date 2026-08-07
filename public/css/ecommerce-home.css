@@ -474,10 +474,16 @@
 	margin:18px 0;
 }
 .lt-detail-meta > div{
+	min-width:0;
 	padding:12px 14px;
 	border:1px solid #dce5ed;
 	border-radius:12px;
 	background:#fff;
+}
+.lt-detail-meta dd{
+	min-width:0;
+	overflow-wrap:anywhere;
+	word-break:break-word;
 }
 .lt-key-features{
 	padding:18px 18px 14px;

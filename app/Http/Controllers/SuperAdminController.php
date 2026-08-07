@@ -852,7 +852,7 @@ class SuperAdminController extends Controller {
             $companyId = $brandCompanyId ? (int) $brandCompanyId : null;
         }
 
-        $currentGallery = array_values(array_filter((array) json_decode($beforeProduct->gallery_images, true)));
+        $currentGallery = array_values(array_filter((array) $beforeProduct->gallery_images));
         $removeGallery = array_values(array_intersect($currentGallery, (array) $request->input('remove_gallery_images', [])));
         $keptGallery = array_values(array_diff($currentGallery, $removeGallery));
         $galleryUploads = (array) $request->file('gallery_images', []);
