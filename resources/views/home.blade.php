@@ -6,10 +6,21 @@
     @php
         $siteName = $brandName;
         $siteLogo = $brandLogo;
+        $publicImageExists = function ($path) {
+            if (!$path) return false;
+            if (preg_match('#^https?://#i', $path)) return true;
+            $path = parse_url($path, PHP_URL_PATH) ?: $path;
+            return file_exists(public_path(ltrim($path, '/')));
+        };
+        if (!$publicImageExists($siteLogo)) $siteLogo = null;
         $metaDescription = isset($siteSettings['default_meta_description']) && $siteSettings['default_meta_description'] ? $siteSettings['default_meta_description'] : 'Shop products online from '.$brandName.'.';
         $socialImage = $siteSettings->get('default_og_image') ?: $siteLogo;
+        if (!$publicImageExists($socialImage)) $socialImage = $siteLogo;
         $organization = ['@context'=>'https://schema.org','@type'=>'Organization','name'=>$siteName,'url'=>url('/'),'email'=>isset($siteSettings['support_email'])?$siteSettings['support_email']:'support@example.com','telephone'=>isset($siteSettings['phone'])?$siteSettings['phone']:'+8801711000000','sameAs'=>array_values(array_filter([isset($siteSettings['facebook_url'])?$siteSettings['facebook_url']:null,isset($siteSettings['instagram_url'])?$siteSettings['instagram_url']:null,isset($siteSettings['youtube_url'])?$siteSettings['youtube_url']:null,isset($siteSettings['linkedin_url'])?$siteSettings['linkedin_url']:null,isset($siteSettings['twitter_url'])?$siteSettings['twitter_url']:null]))];
         if ($siteLogo) $organization['logo'] = asset($siteLogo);
+        $heroCardStyle = function ($value, $fallback) { $value = strtoupper(trim((string) ($value ?: $fallback))); return in_array($value, ['BLUE','ORANGE','LIGHT','DARK'], true) ? strtolower($value) : strtolower($fallback); };
+        $heroCard1Style = $heroCardStyle($siteSettings->get('hero_side_style'), 'BLUE');
+        $heroCard2Style = $heroCardStyle($siteSettings->get('hero_side_2_style'), 'ORANGE');
     @endphp
     <meta name="description" content="{{ $metaDescription }}">
     <title>{{ isset($siteSettings['default_meta_title']) && $siteSettings['default_meta_title'] ? $siteSettings['default_meta_title'] : $siteName.' | Computers, Networking & Accessories' }}</title>
@@ -45,6 +56,14 @@
                         $mobileImage = $isCustom ? $slide->resolved_mobile_image : null;
                         $destination = $isCustom ? $slide->resolved_link : null;
                         $position = $isCustom && $slide->image_position ? $slide->image_position : 'center';
+                        $assetIsAvailable = function ($path) {
+                            if (!$path) return false;
+                            if (preg_match('#^https?://#i', $path)) return true;
+                            $path = parse_url($path, PHP_URL_PATH) ?: $path;
+                            return file_exists(public_path(ltrim($path, '/')));
+                        };
+                        if (!$assetIsAvailable($desktopImage)) $desktopImage = 'asset/front-end/img/home/product1.jpg';
+                        if ($mobileImage && !$assetIsAvailable($mobileImage)) $mobileImage = $desktopImage;
                     @endphp
                     <div class="lt-slide {{ $index === 0 ? 'is-active' : '' }} {{ $isCustom && $slide->show_overlay ? 'has-overlay' : '' }}" data-slide aria-hidden="{{ $index === 0 ? 'false' : 'true' }}">
                         @if($destination)<a href="{{ $destination }}" @if($slide->open_in_new_tab) target="_blank" rel="noopener noreferrer" @endif>@endif
@@ -63,9 +82,18 @@
                     <button class="lt-carousel-pause" type="button" data-pause aria-label="Pause carousel"><i class="fa fa-pause"></i></button>
                 @endif
             </div>
-            <aside class="lt-hero-side">
-                <div><span>{{ isset($siteSettings['hero_side_title']) && $siteSettings['hero_side_title'] ? $siteSettings['hero_side_title'] : 'Build your dream PC' }}</span><h2>{{ isset($siteSettings['hero_side_text']) && $siteSettings['hero_side_text'] ? $siteSettings['hero_side_text'] : 'Expert guidance. Genuine parts.' }}</h2><a href="{{ url('/contact-us') }}">Get a quotation</a></div>
-                <div><span>Fast nationwide delivery</span><h2>Technology at your doorstep.</h2><a href="#products">Shop products</a></div>
+            @php $featureCards = $homepageFeatureCards['cards'] ?? collect(); $featureCardConfig = $homepageFeatureCards['config'] ?? ['layout'=>'STACKED','card_gap'=>18,'equal_height'=>true,'slider_autoplay'=>true,'slider_interval'=>5,'slider_arrows'=>true,'slider_dots'=>true,'pause_on_hover'=>true]; @endphp
+            <aside class="lt-hero-side hfc-layout-{{ strtolower($featureCardConfig['layout']) }}" style="--hero-card-gap:{{ (int) $featureCardConfig['card_gap'] }}px" data-feature-cards data-layout="{{ $featureCardConfig['layout'] }}" data-interval="{{ (int) $featureCardConfig['slider_interval'] }}" data-autoplay="{{ $featureCardConfig['slider_autoplay'] ? '1' : '0' }}" data-pause="{{ $featureCardConfig['pause_on_hover'] ? '1' : '0' }}">
+                @foreach($featureCards as $card)
+                    @php $cardStyle = strtolower((string) $card->color_style); $cardLink = $card->resolvedLink(); $cardImage = $card->resolvedImage(); $cardClasses = 'hfc-store-card is-'.$cardStyle.' text-'.$card->text_position.' fit-'.$card->image_fit.' pos-'.$card->image_position.' overlay-'.$card->overlay_style; $cardInline = ''; foreach (['background'=>'custom_background_color','color'=>'custom_text_color'] as $css => $key) { if (preg_match('/^#[0-9a-fA-F]{6}$/', (string) $card->{$key})) $cardInline .= '--hfc-'.$css.':'.$card->{$key}.';'; } @endphp
+                    <div class="{{ $cardClasses }}" @if($cardInline) style="{{ $cardInline }}" @endif data-feature-card>
+                        @if($cardImage)<img src="{{ asset($cardImage) }}" alt="{{ $card->resolvedAlt() }}" loading="{{ $loop->index < 2 ? 'eager' : 'lazy' }}">@endif
+                        @if($cardImage && $card->overlay_style !== 'NONE')<span class="hfc-overlay" aria-hidden="true"></span>@endif
+                        <div class="hfc-store-content"><span>{{ $card->kicker_text }}</span>@if($card->title)<h2>{{ $card->title }}</h2>@endif @if($card->description)<p>{{ $card->description }}</p>@endif @if($card->button_text && $cardLink)<a href="{{ $cardLink }}" @if($card->open_in_new_tab) target="_blank" rel="noopener" @endif>{{ $card->button_text }}</a>@endif</div>
+                        @if($cardLink && $card->clickable_area === 'ENTIRE_CARD')<a class="hfc-card-link" href="{{ $cardLink }}" @if($card->open_in_new_tab) target="_blank" rel="noopener" @endif aria-label="{{ $card->title ?: $card->name }}"></a>@endif
+                    </div>
+                @endforeach
+                @if($featureCards->isEmpty())<div class="hfc-store-empty">No homepage promotions are currently available.</div>@endif
             </aside>
         </section>
         @endif

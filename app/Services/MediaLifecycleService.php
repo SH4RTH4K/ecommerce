@@ -17,6 +17,7 @@ class MediaLifecycleService
     private const PRODUCT_PREFIX = 'asset/front-end/img/Product_image/';
     private const LEGACY_PRODUCT_PREFIX = 'Product_image/';
     private const BANNER_PREFIX = 'asset/front-end/img/banners/';
+    private const FEATURE_CARD_PREFIX = 'asset/front-end/img/feature-cards/';
     private const BRANDING_PREFIX = 'asset/front-end/img/branding/';
     private const PAYMENT_PREFIX = 'asset/front-end/img/payments/';
 
@@ -133,6 +134,7 @@ class MediaLifecycleService
 
         return $this->productReferences($path, $ignore)
             || $this->bannerReferences($path, $ignore)
+            || $this->featureCardReferences($path, $ignore)
             || $this->brandingReferences($path, $ignore)
             || $this->paymentMethodReferences($path, $ignore);
     }
@@ -258,6 +260,7 @@ class MediaLifecycleService
                 self::PRODUCT_PREFIX => 'products',
                 self::LEGACY_PRODUCT_PREFIX => 'products',
                 self::BANNER_PREFIX => 'banners',
+                self::FEATURE_CARD_PREFIX => 'feature-cards',
                 self::BRANDING_PREFIX => 'branding',
                 self::PAYMENT_PREFIX => 'payments',
             ],
@@ -280,7 +283,7 @@ class MediaLifecycleService
             return null;
         }
 
-        foreach ([self::PRODUCT_PREFIX, self::LEGACY_PRODUCT_PREFIX, self::BANNER_PREFIX, self::BRANDING_PREFIX, self::PAYMENT_PREFIX] as $prefix) {
+        foreach ([self::PRODUCT_PREFIX, self::LEGACY_PRODUCT_PREFIX, self::BANNER_PREFIX, self::FEATURE_CARD_PREFIX, self::BRANDING_PREFIX, self::PAYMENT_PREFIX] as $prefix) {
             if (Str::startsWith($path, $prefix)) {
                 return $prefix;
             }
@@ -326,6 +329,15 @@ class MediaLifecycleService
             $query->whereNotIn('id', $ignoreIds);
         }
 
+        return $query->exists();
+    }
+
+    private function featureCardReferences(string $path, array $ignore = []): bool
+    {
+        if (! Schema::hasTable('homepage_feature_cards')) return false;
+        $ignoreIds = array_values(array_filter(array_map('intval', (array) ($ignore['homepage_feature_card'] ?? []))));
+        $query = DB::table('homepage_feature_cards')->where('image_path', $path);
+        if ($ignoreIds !== []) $query->whereNotIn('id', $ignoreIds);
         return $query->exists();
     }
 

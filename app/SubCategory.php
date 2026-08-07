@@ -17,8 +17,8 @@ class SubCategory extends Model
     protected static function boot()
     {
         parent::boot();
-        static::saved(function () { Cache::forget('mega-menu-tree'); });
-        static::deleted(function () { Cache::forget('mega-menu-tree'); });
-        static::restored(function () { Cache::forget('mega-menu-tree'); });
+        static::saved(function () { Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); });
+        static::deleted(function () { Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); });
+        static::restored(function () { Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); });
     }
 }

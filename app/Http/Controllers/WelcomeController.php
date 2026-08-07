@@ -11,22 +11,14 @@ use App\Category;
 use App\Manufacturer;
 use App\Product;
 use App\Banner;
-use Illuminate\Support\Facades\Cache;
+use App\Services\StorefrontNavbarService;
+use App\Services\HomepageFeatureCardService;
 
 class WelcomeController extends Controller
 {
-    public function index()
+    public function index(HomepageFeatureCardService $featureCards)
     {
-        $categoryTree = Cache::remember('mega-menu-tree', now()->addHours(6), function () {
-            return Category::with('subCategories')
-                ->withCount(['products as published_products_count' => function ($query) {
-                    $query->where('publication_status', 1);
-                }])
-                ->where('publication_status', 1)
-                ->orderByRaw('CASE WHEN display_order IS NULL OR display_order = 0 THEN 999999 ELSE display_order END')
-                ->orderBy('category_name')
-                ->get();
-        });
+        $categoryTree = app(StorefrontNavbarService::class)->categoryTree();
 
         // top_product is the legacy schema's featured flag.
         $featuredProducts = Product::where('publication_status', 1)
@@ -62,6 +54,8 @@ class WelcomeController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $homepageFeatureCards = $featureCards->storefront();
+
         return view('home', compact(
             'categoryTree',
             'featuredCategories',
@@ -69,7 +63,7 @@ class WelcomeController extends Controller
             'newArrivals',
             'latestProducts',
             'brands',
-            'banners'
+            'banners', 'homepageFeatureCards'
         ));
     }
     
@@ -122,10 +116,8 @@ class WelcomeController extends Controller
             ->where('publication_status',1)
             ->first();
         abort_unless($search_by_sub_category_name,404);
-        $all_sub_product_by_category=DB::table('product')
-                ->whereNull('deleted_at')
-                ->where('sub_category',$sub_category)
-                ->where('publication_status',1)
+        $all_sub_product_by_category = Product::where('sub_category', $sub_category)
+                ->where('publication_status', 1)
                 ->latest()
                 ->get();
         return view('front-end.pages.product-by-sub-category',compact('all_sub_product_by_category','search_by_sub_category_name'));

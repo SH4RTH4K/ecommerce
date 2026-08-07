@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Category;
 use App\Services\StorefrontThemeService;
+use App\Services\StorefrontNavbarService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
@@ -67,18 +67,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('topBar', app(\App\Services\TopBarService::class)->data());
         });
         View::composer('partials.mega-menu', function ($view) {
-            $categoryTree = Cache::remember('mega-menu-tree', now()->addHours(6), function () {
-                return Category::with('subCategories')
-                    ->withCount(['products as published_products_count' => function ($query) {
-                        $query->where('publication_status', 1);
-                    }])
-                    ->where('publication_status', 1)
-                    ->orderByRaw('CASE WHEN display_order IS NULL OR display_order = 0 THEN 999999 ELSE display_order END')
-                    ->orderBy('category_name')
-                    ->get();
-            });
-
-            $view->with('categoryTree', $categoryTree);
+            $view->with('navbar', app(StorefrontNavbarService::class)->storefront());
         });
         View::composer(['admin.components.admin-header','admin.components.main-menu'], function ($view) {
             $counts = ['inventory'=>0,'orders'=>0,'messages'=>0,'notifications'=>0];

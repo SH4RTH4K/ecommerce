@@ -89,6 +89,16 @@ Route::post('/admin/login', 'AdminController@login')->middleware('throttle:10,1'
 Route::middleware('admin.auth')->group(function () {
 Route::get('/dashboard', "SuperAdminController@index")->name('admin.dashboard');
 Route::post('/admin/logout', 'AdminController@logout')->name('admin.logout');
+Route::get('/storefront-navbar', 'StorefrontNavbarController@index')->name('admin.storefront-navbar.index');
+Route::get('/admin/storefront-navbar', 'StorefrontNavbarController@index');
+Route::post('/storefront-navbar/save', 'StorefrontNavbarController@save')->name('admin.storefront-navbar.save');
+Route::post('/admin/storefront-navbar/save', 'StorefrontNavbarController@save');
+Route::post('/storefront-navbar/reset', 'StorefrontNavbarController@reset')->name('admin.storefront-navbar.reset');
+Route::post('/admin/storefront-navbar/reset', 'StorefrontNavbarController@reset');
+Route::post('/storefront-navbar/reset-items', 'StorefrontNavbarController@resetItems')->name('admin.storefront-navbar.reset-items');
+Route::post('/admin/storefront-navbar/reset-items', 'StorefrontNavbarController@resetItems');
+Route::post('/storefront-navbar/reset-design', 'StorefrontNavbarController@resetDesign')->name('admin.storefront-navbar.reset-design');
+Route::post('/admin/storefront-navbar/reset-design', 'StorefrontNavbarController@resetDesign');
 Route::get('/admin-data/{resource}/template', 'AdminDataTransferController@template')->name('admin-data.template');
 Route::get('/admin-data/{resource}/export', 'AdminDataTransferController@export')->name('admin-data.export');
 Route::post('/admin-data/{resource}/import', 'AdminDataTransferController@import')->name('admin-data.import');
@@ -154,6 +164,8 @@ Route::post('/product-code-configuration/preview', 'ProductCodeConfigurationCont
 Route::get('/product-code-configuration/configuration', 'ProductCodeConfigurationController@configuration')->name('product-code-configuration.configuration');
 Route::post('/product-code-configuration/{id}/reset-sequence', 'ProductCodeConfigurationController@resetSequence')->name('product-code-configuration.reset-sequence');
  Route::get('/site-customization', 'SuperAdminController@siteCustomization');
+ Route::get('/homepage-feature-cards', 'SuperAdminController@homepageFeatureCards')->name('admin.homepage-feature-cards');
+ Route::post('/homepage-feature-cards', 'SuperAdminController@updateHomepageFeatureCards')->name('admin.homepage-feature-cards.update');
  Route::get('/banner-management', 'SuperAdminController@bannerManagement')->name('banner.index');
  Route::post('/site-settings', 'SuperAdminController@updateSiteSettings');
  Route::get('/top-bar-management', 'TopBarAdminController@index')->name('admin.top-bar.index');

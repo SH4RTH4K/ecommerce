@@ -50,7 +50,7 @@ class ImportStarTechCatalog extends Command
         }
 
         if (! $dryRun) {
-            Cache::forget('mega-menu-tree');
+            Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
             Cache::forget('xml-sitemap');
         }
 

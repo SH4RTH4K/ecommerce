@@ -9,7 +9,11 @@
     $siteNameIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $siteName);
     $headerTagline = (string)$siteSettings->get('site_tagline', '');
     $headerTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $headerTagline);
-    $resolvedHeaderLogo = $siteLogo ? (preg_match('#^https?://#i', $siteLogo) ? $siteLogo : asset($siteLogo)) : null;
+    $headerLogoIsRemote = $siteLogo && preg_match('#^https?://#i', $siteLogo);
+    $resolvedHeaderLogo = $siteLogo ? ($headerLogoIsRemote ? $siteLogo : asset($siteLogo)) : null;
+    $headerLogoPath = $siteLogo ? parse_url($siteLogo, PHP_URL_PATH) : null;
+    $headerLogoAvailable = $siteLogo && ($headerLogoIsRemote || ($headerLogoPath && file_exists(public_path(ltrim($headerLogoPath, '/')))));
+    if (!$headerLogoAvailable) $resolvedHeaderLogo = null;
 @endphp
 <header class="lt-header">
     <div class="lt-container lt-header-main">
@@ -34,3 +38,4 @@
     </div>
     @include('partials.mega-menu')
 </header>
+<script src="{{ asset('js/storefront-navbar.js') }}" defer></script>

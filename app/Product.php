@@ -29,9 +29,9 @@ class Product extends Model
     protected static function boot()
     {
         parent::boot();
-        static::saved(function () { Cache::forget('mega-menu-tree'); Cache::forget('xml-sitemap'); });
-        static::deleted(function () { Cache::forget('mega-menu-tree'); Cache::forget('xml-sitemap'); });
-        static::restored(function () { Cache::forget('mega-menu-tree'); Cache::forget('xml-sitemap'); });
+        static::saved(function () { Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); Cache::forget('xml-sitemap'); });
+        static::deleted(function () { Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); Cache::forget('xml-sitemap'); });
+        static::restored(function () { Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); Cache::forget('xml-sitemap'); });
     }
 
     public function getDiscountPercentAttribute()

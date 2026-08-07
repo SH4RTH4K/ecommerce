@@ -104,7 +104,7 @@ class AdminDataTransferController extends Controller
             DB::commit();
         }catch(\Throwable $e){if(is_resource($handle))fclose($handle);DB::rollBack();return back()->with('exception','Import failed: '.$e->getMessage());}
 
-        Cache::forget('mega-menu-tree');Cache::forget('xml-sitemap');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); Cache::forget('xml-sitemap');
         return back()->with('message',$config['label'].' import complete: '.$created.' created, '.$updated.' updated, '.$skipped.' skipped.');
     }
 

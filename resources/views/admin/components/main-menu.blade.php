@@ -63,20 +63,26 @@
                 </div>
             </section>
 
-            <section class="admin-menu-group {{ $groupOpen(['coupons*','abandoned-carts*','marketing-campaigns*','banner-management*','top-bar-management*']) }}" data-menu-group="marketing">
+            <section class="admin-menu-group {{ $groupOpen(['coupons*','abandoned-carts*','marketing-campaigns*','banner-management*','top-bar-management*','homepage-feature-cards*']) }}" data-menu-group="marketing">
                 <button type="button" class="admin-menu-group-toggle" data-menu-toggle aria-expanded="false"><i class="icon-bullhorn"></i><span>Marketing</span><i class="icon-chevron-down admin-menu-chevron"></i></button>
                 <div class="admin-menu-items">
                     <a class="admin-menu-link {{ $active('coupons*') }}" href="{{ url('/coupons') }}"><i class="icon-tags"></i><span>Coupons &amp; Offers</span></a>
                     <a class="admin-menu-link {{ $active('abandoned-carts*') }}" href="{{ url('/abandoned-carts') }}"><i class="icon-repeat"></i><span>Cart Recovery</span></a>
                     <a class="admin-menu-link {{ $active('marketing-campaigns*') }}" href="{{ url('/marketing-campaigns') }}"><i class="icon-envelope-alt"></i><span>Customer Campaigns</span></a>
                     <a class="admin-menu-link {{ $active('banner-management*') }}" href="{{ url('/banner-management') }}"><i class="icon-picture"></i><span>Homepage Banners</span></a>
+                    <a class="admin-menu-link {{ $active('homepage-feature-cards*') }}" href="{{ route('admin.homepage-feature-cards') }}"><i class="icon-th-large"></i><span>Homepage Feature Cards</span></a>
                     <a class="admin-menu-link {{ $active('top-bar-management*') }}" href="{{ url('/top-bar-management') }}"><i class="icon-bullhorn"></i><span>Top Bar &amp; Contacts</span></a>
                 </div>
             </section>
 
-            <section class="admin-menu-group {{ $groupOpen(['site-customization*']) }}" data-menu-group="website">
+            <section class="admin-menu-group {{ $groupOpen(['site-customization*','storefront-navbar*','admin/storefront-navbar*']) }}" data-menu-group="website">
                 <button type="button" class="admin-menu-group-toggle" data-menu-toggle aria-expanded="false"><i class="icon-globe"></i><span>Website</span><i class="icon-chevron-down admin-menu-chevron"></i></button>
-                <div class="admin-menu-items"><a class="admin-menu-link {{ $active('site-customization*') }}" href="{{ url('/site-customization') }}"><i class="icon-cogs"></i><span>Website Settings</span></a></div>
+                <div class="admin-menu-items">
+                    <a class="admin-menu-link {{ $active('site-customization*') }}" href="{{ url('/site-customization') }}"><i class="icon-cogs"></i><span>Website Settings</span></a>
+                    @if(in_array('view_storefront_navbar',(array)session('admin_permissions',[])))
+                        <a class="admin-menu-link {{ $active(['storefront-navbar*','admin/storefront-navbar*']) }}" href="{{ route('admin.storefront-navbar.index') }}"><i class="icon-list"></i><span>Navbar Management</span></a>
+                    @endif
+                </div>
             </section>
 
             @if(in_array('staff',(array)session('admin_permissions',[])))

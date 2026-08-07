@@ -22,6 +22,7 @@ use App\Services\StarTechCatalogImporter;
 use App\Services\ProductCodeGenerator;
 use App\Services\SafeMediaDeletionService;
 use App\Services\StorefrontThemeService;
+use App\Services\HomepageFeatureCardService;
 use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -111,7 +112,7 @@ class SuperAdminController extends Controller {
         $data['display_order'] = max(0, (int) $request->display_order);
         $data['publication_status'] = $request->publication_status;
         DB::table('category')->insert($data);
-        Cache::forget('mega-menu-tree');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
         Session::put('message', 'Save Category Successfully');
         return Redirect::to('/add-category');
     }
@@ -129,7 +130,7 @@ class SuperAdminController extends Controller {
         DB::table('category')
                 ->where('category_id', $category_id)
                 ->update(['publication_status' => 0]);
-        Cache::forget('mega-menu-tree');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
         return Redirect::to('/manage-category');
     }
 
@@ -137,7 +138,7 @@ class SuperAdminController extends Controller {
         DB::table('category')
                 ->where('category_id', $category_id)
                 ->update(['publication_status' => 1]);
-        Cache::forget('mega-menu-tree');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
         return Redirect::to('/manage-category');
     }
 
@@ -185,7 +186,7 @@ class SuperAdminController extends Controller {
         $data['is_featured'] = $request->has('is_featured') ? 1 : 0;
         $data['display_order'] = max(0, (int) $request->display_order);
         $existing->update($data);
-        Cache::forget('mega-menu-tree');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
         return Redirect::to('/manage-category');
     }
 
@@ -203,7 +204,7 @@ class SuperAdminController extends Controller {
         }
 
         app(RecycleBinService::class)->softDelete('category', (int) $category_id, session('admin_id'), 'Category moved to Recycle Bin.');
-        Cache::forget('mega-menu-tree');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
         return Redirect::to('/manage-category');
     }
 
@@ -225,7 +226,7 @@ class SuperAdminController extends Controller {
                 }
             });
         }
-        Cache::forget('mega-menu-tree');Cache::forget('xml-sitemap');
+        Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree'); Cache::forget('xml-sitemap');
         return $this->bulkDeleteResult('/manage-category',$deleted,count($used),'categor','products or subcategories');
     }
     
@@ -1087,7 +1088,58 @@ class SuperAdminController extends Controller {
             'storefrontThemePresets' => $themeService->presetOptions(),
             'storefrontThemePresetPalettes' => $themeService->presetPalettes(),
             'storefrontThemeContrast' => $themeService->contrastReport($storefrontTheme),
+            'initialPanel' => request()->is('homepage-feature-cards') ? 'content' : '',
         ]);
+    }
+
+    public function homepageFeatureCards(HomepageFeatureCardService $featureCards)
+    {
+        $this->authCheck();
+        $data = $featureCards->adminData();
+        $content = view('admin.admin-pages.homepage-feature-cards', $data);
+
+        return view('admin.admin-master')->with('admin_main_content', $content);
+    }
+
+    public function updateHomepageFeatureCards(Request $request, HomepageFeatureCardService $featureCards)
+    {
+        $this->authCheck();
+        $this->validate($request, [
+            'cards' => 'nullable|array',
+            'cards.*.name' => 'required|string|max:150', 'cards.*.card_type' => 'required|in:TEXT_CTA,IMAGE,IMAGE_TEXT,CATEGORY,SUBCATEGORY,PRODUCT,BRAND,SPECIAL_OFFER,CUSTOM',
+            'cards.*.kicker_text' => 'nullable|string|max:150', 'cards.*.title' => 'nullable|string|max:255', 'cards.*.description' => 'nullable|string|max:1000',
+            'cards.*.image_alt' => 'nullable|string|max:255',
+            'cards.*.button_text' => 'nullable|string|max:100', 'cards.*.link_type' => 'required|in:NONE,CUSTOM_URL,INTERNAL_PAGE,CATEGORY,SUBCATEGORY,PRODUCT,BRAND,CONTACT_PAGE,SHOP_PRODUCTS,ANCHOR',
+            'cards.*.custom_url' => ['nullable','regex:/^(https?:\/\/|\/|#)/i','max:255'], 'cards.*.category_id' => 'nullable|integer|exists:category,category_id',
+            'cards.*.sub_category_id' => 'nullable|integer|exists:sub_category,sub_category_id', 'cards.*.product_id' => 'nullable|integer|exists:product,id', 'cards.*.manufacturer_id' => 'nullable|integer|exists:manufacturer,manufacturer_id',
+            'cards.*.clickable_area' => 'required|in:BUTTON_ONLY,ENTIRE_CARD,IMAGE_ONLY', 'cards.*.open_in_new_tab' => 'nullable|boolean',
+            'cards.*.color_style' => 'required|in:THEME_PRIMARY,THEME_SECONDARY,THEME_ACCENT,BLUE,ORANGE,DARK,LIGHT,CUSTOM', 'cards.*.custom_background_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/', 'cards.*.custom_text_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/', 'cards.*.custom_button_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/', 'cards.*.custom_button_text_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'cards.*.image_fit' => 'required|in:COVER,CONTAIN', 'cards.*.image_position' => 'required|in:CENTER,TOP,BOTTOM,LEFT,RIGHT', 'cards.*.text_position' => 'required|in:TOP_LEFT,TOP_CENTER,TOP_RIGHT,CENTER_LEFT,CENTER,CENTER_RIGHT,BOTTOM_LEFT,BOTTOM_CENTER,BOTTOM_RIGHT', 'cards.*.overlay_style' => 'required|in:NONE,LIGHT,MEDIUM,DARK',
+            'cards.*.sort_order' => 'required|integer|min:0|max:999999', 'cards.*.is_active' => 'nullable|boolean', 'cards.*.use_product_image' => 'nullable|boolean', 'cards.*.use_product_name' => 'nullable|boolean', 'cards.*.use_product_price' => 'nullable|boolean', 'cards.*.publish_from' => 'nullable|date', 'cards.*.publish_until' => 'nullable|date|after_or_equal:cards.*.publish_from',
+            'new_card' => 'nullable|array', 'new_card.name' => 'nullable|string|max:150',
+            'card_image' => 'nullable|array', 'card_image.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096', 'new_card_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'config.layout' => 'required|in:STACKED,GRID,SLIDER', 'config.max_visible_cards' => 'required|in:1,2,3,4,5,AUTO', 'config.card_gap' => 'required|integer|min:0|max:40', 'config.slider_interval' => 'required|integer|min:3|max:30', 'delete_card' => 'nullable|integer|exists:homepage_feature_cards,id',
+        ]);
+        DB::transaction(function () use ($request, $featureCards) {
+            if ($request->filled('delete_card')) {
+                $card = \App\HomepageFeatureCard::findOrFail((int) $request->input('delete_card'));
+                $old = $card->image_path; $oldId = $card->id; $card->delete(); if ($old) app(\App\Services\MediaLifecycleService::class)->deleteIfUnreferenced($old, ['homepage_feature_card'=>[$oldId]], 'Feature card deleted.');
+            }
+            foreach ((array) $request->input('cards', []) as $id => $input) {
+                if ((int) $id === (int) $request->input('delete_card')) continue;
+                $card = \App\HomepageFeatureCard::findOrFail((int) $id);
+                $data = collect((array) $input)->only(['name','card_type','kicker_text','title','description','image_alt','button_text','link_type','custom_url','category_id','sub_category_id','product_id','manufacturer_id','clickable_area','open_in_new_tab','color_style','custom_background_color','custom_text_color','custom_button_color','custom_button_text_color','image_fit','image_position','text_position','overlay_style','sort_order','is_active','use_product_image','use_product_name','use_product_price','publish_from','publish_until'])->all();
+                foreach (['open_in_new_tab','is_active','use_product_image','use_product_name','use_product_price'] as $key) $data[$key] = ! empty($input[$key]);
+                foreach (['category_id','sub_category_id','product_id','manufacturer_id'] as $key) $data[$key] = ! empty($data[$key]) ? (int) $data[$key] : null;
+                $card->update($data);
+                if ($request->hasFile('card_image.'.$id)) { $old = $card->image_path; $card->image_path = \App\Support\PublicUpload::store($request->file('card_image.'.$id), 'asset/front-end/img/feature-cards/', 'feature-card-'.(int) $id.'-', ['jpg','jpeg','png','webp']); $card->save(); if ($old) app(\App\Services\MediaLifecycleService::class)->deleteIfUnreferenced($old, ['homepage_feature_card'=>[$card->id]], 'Feature card image replaced.'); }
+            }
+            $new = (array) $request->input('new_card', []);
+            if (trim((string) ($new['name'] ?? '')) !== '') { $new['sort_order'] = ((int) \App\HomepageFeatureCard::max('sort_order')) + 10; $new['card_type'] = $new['card_type'] ?? 'TEXT_CTA'; $new['link_type'] = $new['link_type'] ?? 'NONE'; $new['color_style'] = $new['color_style'] ?? 'BLUE'; $new['clickable_area'] = $new['clickable_area'] ?? 'BUTTON_ONLY'; $new['image_fit'] = 'COVER'; $new['image_position'] = 'CENTER'; $new['text_position'] = 'CENTER_LEFT'; $new['overlay_style'] = 'NONE'; $new['is_active'] = true; $new['created_by'] = session('admin_id'); $created = \App\HomepageFeatureCard::create($new); if ($request->hasFile('new_card_image')) { $created->image_path = \App\Support\PublicUpload::store($request->file('new_card_image'), 'asset/front-end/img/feature-cards/', 'feature-card-new-', ['jpg','jpeg','png','webp']); $created->save(); } }
+            $config = $featureCards->normalizeConfig((array) $request->input('config', [])); DB::table('site_settings')->updateOrInsert(['setting_key'=>HomepageFeatureCardService::CONFIG_KEY], ['setting_value'=>json_encode($config), 'created_at'=>now(), 'updated_at'=>now()]);
+        });
+        $featureCards->clear();
+        return redirect()->route('admin.homepage-feature-cards')->with('message', 'Homepage feature cards saved.');
     }
 
     public function bannerManagement()
@@ -1190,6 +1242,16 @@ class SuperAdminController extends Controller {
             'copyright_text' => 'nullable|string|max:255',
             'hero_side_title' => 'nullable|string|max:120',
             'hero_side_text' => 'nullable|string|max:240',
+            'hero_side_button_text' => 'nullable|string|max:80',
+            'hero_side_url' => ['nullable','regex:/^(https?:\/\/|\/|#)/i','max:255'],
+            'hero_side_enabled' => 'nullable|boolean',
+            'hero_side_style' => ['nullable', \Illuminate\Validation\Rule::in(['BLUE','ORANGE','LIGHT','DARK'])],
+            'hero_side_2_kicker' => 'nullable|string|max:120',
+            'hero_side_2_title' => 'nullable|string|max:240',
+            'hero_side_2_button_text' => 'nullable|string|max:80',
+            'hero_side_2_url' => ['nullable','regex:/^(https?:\/\/|\/|#)/i','max:255'],
+            'hero_side_2_enabled' => 'nullable|boolean',
+            'hero_side_2_style' => ['nullable', \Illuminate\Validation\Rule::in(['BLUE','ORANGE','LIGHT','DARK'])],
             'development_mode_enabled' => 'required|boolean',
             'development_mode_message_type' => ['required', \Illuminate\Validation\Rule::in(['development','maintenance','coming_soon','system_upgrade','emergency','custom'])],
             'development_mode_title' => 'required|string|max:150',
@@ -1223,7 +1285,7 @@ class SuperAdminController extends Controller {
         if ($resetRequested) {
             $fileCleanupPaths = $currentSettings->only(array_values($assetKeys))->filter()->values()->all();
         }
-        $booleanKeys = ['logo_resize_enabled', 'favicon_resize_enabled', 'development_mode_enabled', 'development_mode_show_admin_login', 'startech_source_import_enabled'];
+        $booleanKeys = ['logo_resize_enabled', 'favicon_resize_enabled', 'development_mode_enabled', 'development_mode_show_admin_login', 'startech_source_import_enabled', 'hero_side_enabled', 'hero_side_2_enabled'];
         $themePayload = $themeService->normalize((array) $request->input('storefront_theme', []));
         $storedAssets = [];
         $assetRemovals = [];
@@ -1584,6 +1646,16 @@ class SuperAdminController extends Controller {
             'development_mode_login_button_text' => 'Admin Login',
             'startech_source_import_enabled' => 1,
             'copyright_text' => '',
+            'hero_side_enabled' => 1,
+            'hero_side_button_text' => 'Get a quotation',
+            'hero_side_url' => '/contact-us',
+            'hero_side_style' => 'BLUE',
+            'hero_side_2_kicker' => 'Fast nationwide delivery',
+            'hero_side_2_title' => 'Technology at your doorstep.',
+            'hero_side_2_button_text' => 'Shop products',
+            'hero_side_2_url' => '#products',
+            'hero_side_2_enabled' => 1,
+            'hero_side_2_style' => 'ORANGE',
         ], $this->siteCustomizationPageDefaults($brandName));
     }
 
@@ -1903,7 +1975,7 @@ class SuperAdminController extends Controller {
             'shop_address', 'business_hours', 'facebook_url', 'instagram_url', 'youtube_url',
             'linkedin_url', 'twitter_url', 'google_analytics_id', 'google_site_verification',
             'default_meta_title', 'default_meta_description', 'meta_keywords', 'robots_directive',
-            'footer_description', 'copyright_text', 'hero_side_title', 'hero_side_text',
+            'footer_description', 'copyright_text',
             'development_mode_enabled', 'development_mode_message_type', 'development_mode_title',
             'development_mode_message', 'development_mode_additional_message',
             'development_mode_availability_text', 'development_mode_show_admin_login',

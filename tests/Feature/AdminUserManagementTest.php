@@ -48,7 +48,7 @@ class AdminUserManagementTest extends TestCase
                 ->assertStatus(200)
                 ->assertSee('Account information')
                 ->assertSee('Confirm new password')
-            ->assertSee('Allowed permissions (23 total)')
+            ->assertSee('Allowed permissions (25 total)')
                 ->assertSee('System role - permissions editable');
 
             $this->withSession($session)->post('/admin-roles/'.$roleId.'/update',[
@@ -92,7 +92,7 @@ class AdminUserManagementTest extends TestCase
     {
         $permissions = json_decode(DB::table('admin_roles')->where('name', 'Super Admin')->value('permissions'), true);
         $this->assertIsArray($permissions);
-        $this->assertCount(23, $permissions);
+        $this->assertCount(25, $permissions);
         $this->assertContains('view_product_code_configuration', $permissions);
         $this->assertContains('change_product_code_configuration', $permissions);
         $this->assertContains('view_product_code_history', $permissions);

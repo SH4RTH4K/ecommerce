@@ -25,6 +25,8 @@
         'empty_recycle_bin' => 'Empty recycle bin',
         'view_orphan_media' => 'View orphan media',
         'cleanup_orphan_media' => 'Cleanup orphan media',
+        'view_storefront_navbar' => 'View storefront navbar',
+        'change_storefront_navbar' => 'Change storefront navbar',
     ];
     $permissionTotal = count($permissionLabels);
 @endphp
