@@ -51,9 +51,24 @@
             if (!menu) return;
             item.classList.remove('opens-left');
             var itemRect = item.getBoundingClientRect();
+            if (window.innerWidth <= 720) {
+                menu.style.position = '';
+                menu.style.top = '';
+                menu.style.left = '';
+                menu.style.right = '';
+                return;
+            }
             var menuWidth = Math.min(menu.scrollWidth || 230, 320);
+            menu.style.position = 'fixed';
+            menu.style.top = Math.max(8, itemRect.top - 7) + 'px';
+            menu.style.bottom = 'auto';
             if (itemRect.right + menuWidth > window.innerWidth - 8 && itemRect.left - menuWidth >= 8) {
                 item.classList.add('opens-left');
+                menu.style.left = 'auto';
+                menu.style.right = Math.max(8, window.innerWidth - itemRect.left) + 'px';
+            } else {
+                menu.style.right = 'auto';
+                menu.style.left = Math.min(window.innerWidth - menuWidth - 8, itemRect.right) + 'px';
             }
         }
 

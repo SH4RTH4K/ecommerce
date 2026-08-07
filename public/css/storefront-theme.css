@@ -667,8 +667,7 @@ body{max-width:100%;overflow-x:hidden}
     min-width:min(280px,calc(100vw - 24px));
     max-width:calc(100vw - 24px);
     max-height:min(70vh,560px);
-    overflow-x:hidden;
-    overflow-y:auto;
+    overflow:visible;
     text-align:left;
     overscroll-behavior:contain;
   }
