@@ -435,14 +435,16 @@ a:focus{
 .lt-startech-menu .lt-subcategory-link{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:8px 14px;color:#111827;font-size:13px;line-height:1.35;white-space:normal}
 .lt-startech-menu .lt-subcategory-link i{color:#f6a167;font-size:11px}
 .lt-startech-menu .lt-subcategory-link:hover,.lt-startech-menu .lt-subcategory-link:focus{background:#fff6ef;color:var(--orange)}
-.lt-startech-menu .lt-subcategory-dropdown{position:absolute;top:-7px;left:calc(100% + 1px);z-index:60;display:none;min-width:230px;max-height:70vh;overflow:auto;padding:7px 0;background:#fff;border-top:3px solid var(--orange);box-shadow:0 16px 30px rgba(15,23,42,.2)}
+.lt-startech-menu .lt-subcategory-dropdown{position:absolute;top:-7px;left:100%;z-index:60;display:none;min-width:230px;max-height:70vh;overflow:auto;padding:7px 0;background:#fff;border-top:3px solid var(--orange);box-shadow:0 16px 30px rgba(15,23,42,.2)}
 .lt-startech-menu .lt-subcategory-item:hover>.lt-subcategory-dropdown,.lt-startech-menu .lt-subcategory-item:focus-within>.lt-subcategory-dropdown,.lt-startech-menu .lt-subcategory-item.is-active>.lt-subcategory-dropdown{display:block}
+.lt-startech-menu .lt-subcategory-item.is-nested-open>.lt-subcategory-dropdown{display:block}
+.lt-startech-menu .lt-subcategory-item.opens-left>.lt-subcategory-dropdown{left:auto;right:100%}
 .lt-startech-menu .lt-subcategory-dropdown a{display:block;padding:7px 14px;color:#111827;font-size:13px;white-space:normal}
 .lt-startech-menu .lt-subcategory-dropdown a:hover,.lt-startech-menu .lt-subcategory-dropdown a:focus{background:#fff6ef;color:var(--orange)}
 .lt-startech-menu .lt-subcategory-dropdown .lt-nested-title{color:var(--navy);font-weight:800}
 .lt-startech-menu .lt-category-dropdown .lt-view-all{margin-top:4px;padding:10px 14px;border-top:1px solid #edf2f7;color:var(--orange);font-weight:800}
 .lt-startech-menu .lt-category-item:nth-last-child(-n+3) .lt-category-dropdown{left:auto;right:0}
-.lt-startech-menu .lt-category-item:nth-last-child(-n+8) .lt-subcategory-dropdown{left:auto;right:calc(100% + 1px)}
+.lt-startech-menu .lt-category-item:nth-last-child(-n+8) .lt-subcategory-dropdown{left:auto;right:100%}
 @media(max-width:720px){.lt-startech-menu .lt-category-nav{overflow:auto}.lt-startech-menu .lt-category-dropdown{position:static;display:none;min-width:100%;max-width:none;max-height:none;box-shadow:none;border-top:1px solid #edf2f7}.lt-startech-menu .lt-category-item:focus-within>.lt-category-dropdown{display:block}.lt-startech-menu .lt-subcategory-dropdown{position:static;display:block;max-height:none;padding-left:12px;border-top:0;box-shadow:none}.lt-startech-menu .lt-category-item:nth-last-child(-n+3) .lt-category-dropdown,.lt-startech-menu .lt-category-item:nth-last-child(-n+4) .lt-subcategory-dropdown{left:auto;right:auto}}
 
 /* Final responsive storefront shell: keep navigation inside the viewport. */
@@ -644,7 +646,17 @@ body{max-width:100%;overflow-x:hidden}
   .lt-startech-menu.nav-mobile-dropdown{position:absolute;left:0;right:0;z-index:80}
   .lt-startech-menu.nav-mobile-dropdown.is-open{display:block}
   .lt-startech-menu.nav-width-equal-width .lt-category-item[data-navbar-item]{flex:0 0 100%;min-width:0}
-  .lt-startech-menu.nav-mobile-subcats-expanded .lt-category-item.has-children>.lt-category-dropdown{display:block!important}
+.lt-startech-menu.nav-mobile-subcats-expanded .lt-category-item.has-children>.lt-category-dropdown{display:block!important}
+}
+
+/* Product edit: a parent category selected from a subcategory is locked. */
+.mapped-parent-locked{
+  opacity:.72;
+  cursor:not-allowed!important;
+}
+.mapped-parent-locked .chosen-single{
+  cursor:not-allowed!important;
+  background:#f1f5f9!important;
 }
 
 /* Stable, readable category panels. The navbar alignment must not affect

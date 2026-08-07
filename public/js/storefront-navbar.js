@@ -25,6 +25,42 @@
         });
     });
 
+    // Keep nested brand menus reachable when the parent dropdown is close to
+    // the viewport edge. The class is visual only and never changes menu data.
+    nav.querySelectorAll('.lt-subcategory-item.has-nested').forEach(function (item) {
+        var link = item.querySelector(':scope > .lt-subcategory-link');
+        if (link) {
+            link.addEventListener('click', function (event) {
+                // First click opens the brand list; the next click follows
+                // the Router page. The explicit All Router link always works.
+                if (!item.classList.contains('is-nested-open')) {
+                    event.preventDefault();
+                    nav.querySelectorAll('.lt-subcategory-item.is-nested-open').forEach(function (other) {
+                        if (other !== item) other.classList.remove('is-nested-open');
+                    });
+                    item.classList.add('is-nested-open');
+                    link.setAttribute('aria-expanded', 'true');
+                }
+            });
+            link.setAttribute('aria-haspopup', 'true');
+            link.setAttribute('aria-expanded', 'false');
+        }
+
+        function placeNestedMenu() {
+            var menu = item.querySelector(':scope > .lt-subcategory-dropdown');
+            if (!menu) return;
+            item.classList.remove('opens-left');
+            var itemRect = item.getBoundingClientRect();
+            var menuWidth = Math.min(menu.scrollWidth || 230, 320);
+            if (itemRect.right + menuWidth > window.innerWidth - 8 && itemRect.left - menuWidth >= 8) {
+                item.classList.add('opens-left');
+            }
+        }
+
+        item.addEventListener('mouseenter', placeNestedMenu);
+        item.addEventListener('focusin', placeNestedMenu);
+    });
+
     var menu = document.getElementById('main-menu');
     var menuButton = document.querySelector('.lt-menu-toggle');
     document.addEventListener('click', function (event) {

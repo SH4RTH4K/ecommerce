@@ -832,6 +832,19 @@ class SuperAdminController extends Controller {
             'lots.*.manufactured_at' => 'nullable|date', 'lots.*.expires_at' => 'nullable|date|after_or_equal:lots.*.manufactured_at',
             'lots.*.quantity' => 'nullable|integer|min:0', 'lots.*.supplier_reference' => 'nullable|string|max:255',
         ]);
+
+        // A subcategory owns its parent category. This prevents stale legacy
+        // category values from being submitted when the UI is locked.
+        if ($request->filled('sub_category_id')) {
+            $parentCategoryId = DB::table('sub_category')
+                ->where('sub_category_id', (int) $request->sub_category_id)
+                ->value('category_id');
+
+            if ($parentCategoryId) {
+                $request->merge(['category_id' => (int) $parentCategoryId]);
+            }
+        }
+
         $this->validateVariantUniqueness($request, $id);
 
         $beforeProduct = Product::find($id);

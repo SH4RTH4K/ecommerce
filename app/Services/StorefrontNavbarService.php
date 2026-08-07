@@ -251,23 +251,49 @@ class StorefrontNavbarService
 
     private function attachManufacturers(Collection $items)
     {
-        $subCategoryIds = $items->flatMap(function ($item) {
-            return $item->category ? $item->category->navbarSubCategories->pluck('sub_category_id') : collect();
-        })->filter()->unique()->values();
+        $subCategories = $items->flatMap(function ($item) {
+            return $item->category ? $item->category->navbarSubCategories : collect();
+        })->filter()->unique('sub_category_id')->values();
+        $subCategoryIds = $subCategories->pluck('sub_category_id')->filter()->unique()->values();
 
         if ($subCategoryIds->isEmpty()) return;
+
+        // Older restored product data may still point to a standalone category
+        // such as ROUTER instead of the newer Router subcategory.
+        $legacyCategoryMap = DB::table('category')
+            ->whereIn('category_name', $subCategories->pluck('sub_category_name')->all())
+            ->get(['category_id', 'category_name'])
+            ->mapWithKeys(function ($category) use ($subCategories) {
+                $target = $subCategories->first(function ($subCategory) use ($category) {
+                    return strcasecmp((string) $subCategory->sub_category_name, (string) $category->category_name) === 0;
+                });
+
+                return $target ? [(int) $category->category_id => (int) $target->sub_category_id] : [];
+            });
 
         $manufacturersBySubCategory = DB::table('product as p')
             ->join('manufacturer as m', 'm.manufacturer_id', '=', 'p.manufacturer_id')
             ->whereNull('p.deleted_at')
             ->where('p.publication_status', 1)
             ->where('m.publication_status', 1)
-            ->whereIn('p.sub_category', $subCategoryIds->all())
-            ->select('p.sub_category as sub_category_id', 'm.manufacturer_id', 'm.manufacturer_name')
+            ->where(function ($query) use ($subCategoryIds, $legacyCategoryMap) {
+                $query->whereIn('p.sub_category', $subCategoryIds->all());
+                if ($legacyCategoryMap->isNotEmpty()) {
+                    $query->orWhereIn('p.category_id', $legacyCategoryMap->keys()->all());
+                }
+            })
+            ->select('p.sub_category', 'p.category_id', 'm.manufacturer_id', 'm.manufacturer_name')
             ->distinct()
             ->orderBy('m.manufacturer_name')
             ->get()
-            ->groupBy('sub_category_id');
+            ->map(function ($manufacturer) use ($subCategoryIds, $legacyCategoryMap) {
+                $manufacturer->menu_sub_category_id = $subCategoryIds->contains($manufacturer->sub_category)
+                    ? (int) $manufacturer->sub_category
+                    : ($legacyCategoryMap->get((int) $manufacturer->category_id));
+                return $manufacturer;
+            })
+            ->filter(fn ($manufacturer) => $manufacturer->menu_sub_category_id)
+            ->groupBy('menu_sub_category_id');
 
         $items->each(function ($item) use ($manufacturersBySubCategory) {
             if (! $item->category) return;

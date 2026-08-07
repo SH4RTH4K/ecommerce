@@ -120,7 +120,7 @@
                             <select id="selectSubCategory" name="sub_category_id" data-rel="chosen" data-placeholder="Search sub-categories...">
                                 <option value="">None</option>
                                 @foreach($sub_category as $vcategory)
-                                <option value="{{$vcategory->sub_category_id}}">{{$vcategory->sub_category_name}}</option>
+                                <option value="{{$vcategory->sub_category_id}}" data-parent-category="{{$vcategory->category_id}}">{{$vcategory->sub_category_name}}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -256,7 +256,52 @@
     document.forms['update_data'].elements['sub_category_id'].value='<?php echo isset($product_info->sub_category) ? $product_info->sub_category : ''?>';
     document.forms['update_data'].elements['manufacturer_id'].value='<?php echo $product_info->manufacturer_id?>';
 </script>
-<script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';if(window.jQuery)jQuery(series).trigger('liszt:updated');}category.addEventListener('change',showAttributes);brand.addEventListener('change',showSeries);showAttributes();showSeries();});</script>
+<script>document.addEventListener('DOMContentLoaded',function(){var form=document.forms['update_data'],category=document.getElementById('catId'),subCategory=document.getElementById('selectSubCategory'),brand=document.getElementById('brand_id'),series=document.getElementById('product_series_id');function refreshChosen(element){if(window.jQuery){jQuery(element).trigger('chosen:updated');jQuery(element).trigger('liszt:updated');}}function showAttributes(){document.querySelectorAll('.catalog-attribute-group').forEach(function(group){group.style.display=group.getAttribute('data-category')===category.value?'block':'none';});}function showSeries(){Array.prototype.forEach.call(series.options,function(option,index){if(!index)return;option.hidden=option.getAttribute('data-brand')!==brand.value;});if(series.selectedOptions.length&&series.selectedOptions[0].hidden)series.value='';refreshChosen(series);}function syncParentCategory(){var option=subCategory.options[subCategory.selectedIndex],parent=option&&option.getAttribute('data-parent-category');if(parent){category.value=parent;refreshChosen(category);category.disabled=true;category.setAttribute('title','Category is mapped automatically from the selected subcategory.');category.setAttribute('aria-readonly','true');}else{category.disabled=false;category.removeAttribute('title');category.removeAttribute('aria-readonly');}refreshChosen(category);showAttributes();}category.addEventListener('change',showAttributes);subCategory.addEventListener('change',syncParentCategory);brand.addEventListener('change',showSeries);form.addEventListener('submit',function(){category.disabled=false;});showAttributes();showSeries();syncParentCategory();setTimeout(syncParentCategory,0);});</script>
+<script>document.addEventListener('DOMContentLoaded',function(){var form=document.forms['update_data'],anchor=document.getElementById('product_series_id');if(!form||!anchor)return;var parent=anchor.closest('.control-group');['brand_id','selectSubCategory','catId'].forEach(function(id){var field=document.getElementById(id),group=field&&field.closest('.control-group');if(group&&parent)parent.parentNode.insertBefore(group,parent);});});</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var category = document.getElementById('catId');
+    var subCategory = document.getElementById('selectSubCategory');
+    if (!category || !subCategory) return;
+
+    function refreshCategoryState() {
+        var option = subCategory.options[subCategory.selectedIndex];
+        var parentId = option ? option.getAttribute('data-parent-category') : '';
+        var chosenContainer = category.nextElementSibling;
+
+        if (parentId) {
+            category.value = parentId;
+            category.setAttribute('data-mapped-parent', parentId);
+            category.disabled = true;
+            category.setAttribute('aria-disabled', 'true');
+            category.setAttribute('title', 'Automatically mapped from the selected subcategory');
+            if (chosenContainer && chosenContainer.classList.contains('chosen-container')) {
+                chosenContainer.classList.add('mapped-parent-locked');
+                chosenContainer.setAttribute('aria-disabled', 'true');
+            }
+        } else {
+            category.disabled = false;
+            category.removeAttribute('data-mapped-parent');
+            category.removeAttribute('aria-disabled');
+            category.removeAttribute('title');
+            if (chosenContainer && chosenContainer.classList.contains('chosen-container')) {
+                chosenContainer.classList.remove('mapped-parent-locked');
+                chosenContainer.removeAttribute('aria-disabled');
+            }
+        }
+
+        if (window.jQuery) {
+            jQuery(category).trigger('chosen:updated');
+            jQuery(category).trigger('liszt:updated');
+        }
+    }
+
+    subCategory.addEventListener('change', refreshCategoryState);
+    if (window.jQuery) jQuery(subCategory).on('change', refreshCategoryState);
+    window.setTimeout(refreshCategoryState, 50);
+    window.setTimeout(refreshCategoryState, 400);
+});
+</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var category=document.getElementById('catId'),templates=@json($specificationTemplates),field=document.getElementById('specifications'),button=document.getElementById('load-spec-template'),status=document.getElementById('spec-template-status');function refreshTemplate(){var template=templates[category.value];button.disabled=!template;status.textContent=template?template.name+' available':'No template configured';}category.addEventListener('change',refreshTemplate);button.addEventListener('click',function(){var template=templates[category.value];if(!template)return;if(field.value.trim()&&!confirm('Replace the current specifications with the category template?'))return;field.value=template.content;});refreshTemplate();});</script>
 <script>document.addEventListener('DOMContentLoaded',function(){var input=document.getElementById('gallery_images'),preview=document.getElementById('new-gallery-preview');if(input&&preview)input.addEventListener('change',function(){preview.innerHTML='';Array.prototype.slice.call(input.files,0,10).forEach(function(file){var image=document.createElement('img');image.src=URL.createObjectURL(file);image.alt=file.name;image.style.cssText='width:90px;height:90px;object-fit:cover;border:1px solid #ddd;border-radius:4px';image.onload=function(){URL.revokeObjectURL(image.src);};preview.appendChild(image);});});});</script>
 <script>

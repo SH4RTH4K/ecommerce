@@ -116,10 +116,27 @@ class WelcomeController extends Controller
             ->where('publication_status',1)
             ->first();
         abort_unless($search_by_sub_category_name,404);
-        $all_sub_product_by_category = Product::where('sub_category', $sub_category)
-                ->where('publication_status', 1)
-                ->latest()
-                ->get();
+
+        // Older catalog data may still use a standalone category such as
+        // "ROUTER" instead of the newer "Router" subcategory relationship.
+        // Keep those products visible without rewriting the product records.
+        $legacyCategoryIds = DB::table('category')
+            ->whereRaw('LOWER(category_name) = LOWER(?)', [$search_by_sub_category_name->sub_category_name])
+            ->pluck('category_id');
+
+        $all_sub_product_by_category = Product::whereNull('deleted_at')
+            ->where('publication_status', 1)
+            ->where(function ($query) use ($sub_category, $search_by_sub_category_name, $legacyCategoryIds) {
+                $query->where('sub_category', (string) $sub_category)
+                    ->orWhere('sub_category', $search_by_sub_category_name->sub_category_name);
+
+                if ($legacyCategoryIds->isNotEmpty()) {
+                    $query->orWhereIn('category_id', $legacyCategoryIds);
+                }
+            })
+            ->latest()
+            ->get();
+
         return view('front-end.pages.product-by-sub-category',compact('all_sub_product_by_category','search_by_sub_category_name'));
     }
     
