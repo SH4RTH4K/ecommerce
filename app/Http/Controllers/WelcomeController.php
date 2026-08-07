@@ -163,8 +163,65 @@ class WelcomeController extends Controller
                         ->orWhere('product_model','like','%'.$search_term.'%')
                         ->orWhere('sku','like','%'.$search_term.'%')
                         ->orWhereExists(function($attributeQuery) use($search_term){$attributeQuery->select(DB::raw(1))->from('product_attribute_values')->whereRaw('product_attribute_values.product_id = product.id')->where('value','like','%'.$search_term.'%');});
-                })->get();
+                })
+                ->select('product.*')
+                ->selectRaw(Product::sellingPriceSql().' as selling_price')
+                ->selectRaw('CASE WHEN offer_price IS NOT NULL AND offer_price < regular_price THEN 1 ELSE 0 END as has_offer')
+                ->get();
         return view('front-end.pages.search-product', compact('search_product', 'search_term'));
+    }
+
+    public function searchSuggestions(Request $request)
+    {
+        $term = trim((string) $request->query('q', ''));
+        if (mb_strlen($term) < 1) {
+            return response()->json(['products' => [], 'categories' => [], 'total' => 0]);
+        }
+
+        $like = '%'.$term.'%';
+        $products = Product::query()
+            ->whereNull('deleted_at')
+            ->where('publication_status', 1)
+            ->where(function ($query) use ($like) {
+                $query->where('product_name', 'like', $like)
+                    ->orWhere('product_model', 'like', $like)
+                    ->orWhere('sku', 'like', $like);
+            })
+            ->select(['id', 'product_name', 'product_model', 'sku', 'product_image', 'regular_price', 'offer_price', 'product_condition', 'stock_quantity', 'stock_tracking'])
+            ->selectRaw(Product::sellingPriceSql().' as selling_price')
+            ->orderBy('product_name')
+            ->limit(8)
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => (int) $product->id,
+                    'name' => $product->product_name,
+                    'model' => $product->product_model,
+                    'image' => $product->image_url,
+                    'price' => (float) $product->selling_price,
+                    'regular_price' => (float) $product->regular_price,
+                    'has_offer' => $product->offer_price !== null && (float) $product->offer_price < (float) $product->regular_price,
+                    'in_stock' => (bool) (($product->stock_tracking && (int) $product->stock_quantity > 0) || (!$product->stock_tracking && strcasecmp((string) $product->product_condition, 'Out Of Stock') !== 0)),
+                ];
+            })->values();
+
+        $categories = DB::table('category')
+            ->whereNull('deleted_at')
+            ->where('publication_status', 1)
+            ->where('category_name', 'like', $like)
+            ->select(['category_id as id', 'category_name as name'])
+            ->orderBy('category_name')
+            ->limit(8)
+            ->get()
+            ->map(fn ($category) => ['id' => (int) $category->id, 'name' => $category->name, 'url' => url('/product-by-category/'.$category->id)])
+            ->values();
+
+        return response()->json([
+            'products' => $products,
+            'categories' => $categories,
+            'total' => $products->count(),
+            'search_url' => url('/search-product'),
+        ]);
     }
     
     

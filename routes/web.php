@@ -17,6 +17,8 @@ Route::get('/sitemap.xml', 'SeoController@sitemap')->name('sitemap');
 Route::get('/product-by-category/{id}', "WelcomeController@productByCategory")->name('store.category.show');
 Route::get('/product-by-sub-category/{id}', "WelcomeController@productBySubCategory");
 Route::post('/search-product', "WelcomeController@searchProduct");
+Route::get('/search-product', "WelcomeController@searchProduct");
+Route::get('/search-suggestions', "WelcomeController@searchSuggestions")->name('store.search.suggestions');
 Route::get('/all-manufacturer-by-id/{id}', "WelcomeController@allManufacturerById");
 
 Route::get('/product-details/{id}', "WelcomeController@product_details")->name('store.product.show');

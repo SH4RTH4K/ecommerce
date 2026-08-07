@@ -21,11 +21,19 @@
             <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($resolvedHeaderLogo)<img src="{{ $resolvedHeaderLogo }}" alt="{{ $siteName }}" decoding="async">@else<span class="lt-brand-name {{ $siteNameIsBengali ? 'is-bengali' : '' }}" @if($siteNameIsBengali) lang="bn" @endif>{{ $siteName }}</span>@endif</a>
             @if($headerTagline)<span class="lt-brand-tagline {{ $headerTaglineIsBengali ? 'is-bengali' : '' }}" @if($headerTaglineIsBengali) lang="bn" @endif>{{ $headerTagline }}</span>@endif
         </div>
-        <form class="lt-search" action="{{ url('/search-product') }}" method="post" role="search">
+        <form class="lt-search" action="{{ url('/search-product') }}" method="post" role="search" data-live-search>
             {{ csrf_field() }}
             <label class="sr-only" for="site-search">Search products</label>
             <input id="site-search" name="search_text" type="search" placeholder="Search by product name or model" required>
             <button type="submit" aria-label="Search"><i class="fa fa-search"></i></button>
+            <div class="lt-search-panel" data-search-panel hidden>
+                <div class="lt-search-tabs" role="tablist">
+                    <button type="button" class="is-active" data-search-tab="products" role="tab" aria-selected="true">Products</button>
+                    <button type="button" data-search-tab="categories" role="tab" aria-selected="false">Categories</button>
+                </div>
+                <div class="lt-search-results" data-search-results></div>
+                <a class="lt-search-all" data-search-all href="#">See all results</a>
+            </div>
         </form>
         <nav class="lt-actions" aria-label="Account actions">
             <a href="{{ auth()->check() ? route('wishlist.index') : url('/login') }}"><i class="fa fa-heart-o"></i><span>Wishlist</span>@if($wishlistCount)<b>{{ $wishlistCount }}</b>@endif</a>
@@ -39,3 +47,4 @@
     @include('partials.mega-menu')
 </header>
 <script src="{{ asset('js/storefront-navbar.js') }}" defer></script>
+<script src="{{ asset('js/storefront-search.js') }}?v={{ filemtime(public_path('js/storefront-search.js')) }}" defer></script>

@@ -45,6 +45,23 @@ a:focus{
 .lt-header .lt-search button:focus{
   background:var(--theme-search-button-hover,var(--orange));
 }
+.lt-header .lt-search{position:relative;overflow:visible;z-index:90}
+.lt-search-panel{position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:120;overflow:hidden;border-radius:0 0 7px 7px;background:#fff;box-shadow:0 14px 32px rgba(15,23,42,.24);border:1px solid #e5eaf0;color:var(--ink)}
+.lt-search-tabs{display:flex;gap:5px;padding:10px 12px;background:#f5f6fb;border-bottom:1px solid #edf0f5}
+.lt-search-tabs button{border:0;border-radius:6px;padding:9px 16px;background:#fff;color:#111827;font-size:13px;font-weight:800;cursor:pointer}
+.lt-search-tabs button.is-active{background:#ef3518;color:#fff}
+.lt-search-results{max-height:410px;overflow-y:auto;background:#fff}
+.lt-search-product{display:flex;align-items:center;gap:16px;min-height:78px;padding:10px 22px;border-bottom:1px solid #f0f2f5}
+.lt-search-product:hover,.lt-search-product:focus,.lt-search-category:hover,.lt-search-category:focus{background:#fff8f6}
+.lt-search-product img{width:58px;height:58px;object-fit:contain;flex:0 0 58px}
+.lt-search-product-info{display:grid;gap:3px;min-width:0}
+.lt-search-product-info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:500}
+.lt-search-product-info small{font-size:14px;font-weight:700}.lt-search-product-info .is-stock{color:#159447}.lt-search-product-info .is-out{color:#f0442e}
+.lt-search-price{display:flex;align-items:center;gap:10px;color:var(--orange);font-size:15px}.lt-search-price strong{font-size:15px}.lt-search-price del{color:#777;font-size:12px}
+.lt-search-category{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid #f0f2f5;font-size:14px;font-weight:700}.lt-search-category i{color:var(--orange);font-size:20px}
+.lt-search-empty{padding:30px 20px;text-align:center;color:var(--muted);font-size:14px}
+.lt-search-all{display:block;padding:12px;text-align:center;background:#fffafa;color:#ef3518;font-size:14px;border-top:1px solid #f3eeee}
+@media(max-width:720px){.lt-search-panel{position:absolute;left:-10px;right:-10px;top:calc(100% + 5px)}.lt-search-product{padding:10px 14px;gap:10px}.lt-search-product-info b{white-space:normal}.lt-search-results{max-height:55vh}}
 
 .lt-header .lt-actions a{
   color:var(--theme-header-link,#fff);
