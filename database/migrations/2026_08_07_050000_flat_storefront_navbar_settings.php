@@ -10,24 +10,28 @@ class FlatStorefrontNavbarSettings extends Migration
     public function up()
     {
         if (Schema::hasTable('storefront_navbar_items')) {
-            if (! Schema::hasColumn('storefront_navbar_items', 'show_in_navbar')) {
+            $isAlreadyFlat = Schema::hasColumn('storefront_navbar_items', 'show_in_navbar');
+
+            if (! $isAlreadyFlat && ! Schema::hasColumn('storefront_navbar_items', 'show_in_navbar')) {
                 Schema::table('storefront_navbar_items', function (Blueprint $table) {
                     $table->boolean('show_in_navbar')->default(false)->after('category_id');
                 });
             }
 
-            foreach (DB::table('storefront_navbar_items')->get(['id', 'placement', 'is_active']) as $item) {
-                DB::table('storefront_navbar_items')->where('id', $item->id)->update([
-                    'show_in_navbar' => (bool) $item->is_active && strtoupper((string) $item->placement) !== 'HIDDEN',
-                    'updated_at' => now(),
-                ]);
-            }
+            if (! $isAlreadyFlat) {
+                foreach (DB::table('storefront_navbar_items')->get(['id', 'placement', 'is_active']) as $item) {
+                    DB::table('storefront_navbar_items')->where('id', $item->id)->update([
+                        'show_in_navbar' => (bool) $item->is_active && strtoupper((string) $item->placement) !== 'HIDDEN',
+                        'updated_at' => now(),
+                    ]);
+                }
 
-            Schema::table('storefront_navbar_items', function (Blueprint $table) {
-                $table->dropIndex(['placement', 'priority']);
-                $table->dropIndex(['is_active', 'placement']);
-                $table->dropColumn(['placement', 'is_active']);
-            });
+                Schema::table('storefront_navbar_items', function (Blueprint $table) {
+                    $table->dropIndex(['placement', 'priority']);
+                    $table->dropIndex(['is_active', 'placement']);
+                    $table->dropColumn(['placement', 'is_active']);
+                });
+            }
         }
 
         if (Schema::hasTable('sub_category')) {

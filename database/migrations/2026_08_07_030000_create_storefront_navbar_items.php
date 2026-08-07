@@ -9,6 +9,12 @@ class CreateStorefrontNavbarItems extends Migration
 {
     public function up()
     {
+        // Some production backups already contain the newer navbar table.
+        // Preserve that configuration instead of recreating the table.
+        if (Schema::hasTable('storefront_navbar_items')) {
+            return;
+        }
+
         Schema::create('storefront_navbar_items', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('category_id')->unique();

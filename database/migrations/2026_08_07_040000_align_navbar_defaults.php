@@ -8,7 +8,10 @@ class AlignNavbarDefaults extends Migration
 {
     public function up()
     {
-        if (! Schema::hasTable('storefront_navbar_items') || ! Schema::hasColumn('category', 'show_in_navigation')) {
+        if (! Schema::hasTable('storefront_navbar_items')
+            || ! Schema::hasColumn('category', 'show_in_navigation')
+            || ! Schema::hasColumn('storefront_navbar_items', 'placement')
+            || ! Schema::hasColumn('storefront_navbar_items', 'is_active')) {
             return;
         }
 

@@ -646,3 +646,49 @@ body{max-width:100%;overflow-x:hidden}
   .lt-startech-menu.nav-width-equal-width .lt-category-item[data-navbar-item]{flex:0 0 100%;min-width:0}
   .lt-startech-menu.nav-mobile-subcats-expanded .lt-category-item.has-children>.lt-category-dropdown{display:block!important}
 }
+
+/* Stable, readable category panels. The navbar alignment must not affect
+   the text alignment inside a dropdown. */
+@media(min-width:721px){
+  .lt-startech-menu .lt-category-dropdown{
+    width:min(320px,calc(100vw - 24px));
+    min-width:min(280px,calc(100vw - 24px));
+    max-width:calc(100vw - 24px);
+    max-height:min(70vh,560px);
+    overflow-x:hidden;
+    overflow-y:auto;
+    text-align:left;
+    overscroll-behavior:contain;
+  }
+
+  .lt-startech-menu .lt-category-dropdown a,
+  .lt-startech-menu .lt-subcategory-link{
+    text-align:left;
+  }
+
+  .lt-startech-menu .lt-menu-category-title,
+  .lt-startech-menu .lt-nested-title{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:var(--theme-dropdown-bg,#fff);
+  }
+
+  .lt-startech-menu .lt-category-item:nth-last-child(-n+4)>.lt-category-dropdown{
+    left:auto;
+    right:0;
+  }
+}
+
+@media(max-width:720px){
+  .lt-startech-menu .lt-category-dropdown{
+    text-align:left;
+    max-height:calc(100vh - 120px);
+    overflow-y:auto;
+  }
+
+  .lt-startech-menu .lt-category-dropdown a,
+  .lt-startech-menu .lt-subcategory-link{
+    text-align:left;
+  }
+}
