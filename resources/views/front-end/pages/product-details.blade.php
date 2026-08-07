@@ -103,14 +103,6 @@
                     <dt>SKU</dt>
                     <dd>{{ $product_details->sku ?: 'Not specified' }}</dd>
                 </div>
-                <div>
-                    <dt>Warranty</dt>
-                    <dd>{{ $product_details->warranty_display }}</dd>
-                </div>
-                <div>
-                    <dt>Delivery</dt>
-                    <dd>1-3 working days nationwide</dd>
-                </div>
             </dl>
 
             <div class="lt-buy-actions">
@@ -265,14 +257,9 @@
         <div class="lt-product-description">{!! product_description_html($product_details->product_description) !!}</div>
     </div>
 
-    <div class="lt-price-note">
-        <h2>What is the price of {{ $product_details->product_name }} in Bangladesh?</h2>
-        <p>The latest price of {{ $product_details->product_name }} in Bangladesh is &#2547;{{ number_format($product_details->selling_price) }}. You can buy it from our website or visit any of our showrooms.</p>
-    </div>
-
     <div class="lt-warranty">
-        <h2>Warranty &amp; After-sales Service</h2>
-        <p>{{ $warrantyText }} Accidental damage, unauthorized repair, improper installation, and misuse are not covered unless the manufacturer states otherwise.</p>
+        <h2>After-sales Service</h2>
+        <p>Our support team can help with product guidance, warranty claims, and service coordination. Accidental damage, unauthorized repair, improper installation, and misuse are not covered unless the manufacturer states otherwise.</p>
     </div>
 
     <div class="lt-feedback-grid">
