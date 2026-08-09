@@ -2892,24 +2892,92 @@ class SuperAdminController extends Controller {
     {
         $specifications = [];
         $section = null;
+        $pendingLabel = null;
+        $pendingValue = [];
+
+        $savePending = function () use (&$specifications, &$section, &$pendingLabel, &$pendingValue) {
+            if ($pendingLabel === null || $pendingValue === []) {
+                return;
+            }
+
+            $parsedValue = trim(implode("\n", $pendingValue));
+            if ($parsedValue === '') {
+                return;
+            }
+
+            if ($section !== null) {
+                $specifications[$section][$pendingLabel] = $parsedValue;
+            } else {
+                $specifications[$pendingLabel] = $parsedValue;
+            }
+        };
+
         foreach ($this->parseList($value) as $line) {
-            if (preg_match('/^\[(.+)\]$/', trim($line), $matches)) {
+            $line = trim($line);
+
+            if ($line === '') {
+                $savePending();
+                $pendingLabel = null;
+                $pendingValue = [];
+                continue;
+            }
+
+            if (preg_match('/^\[(.+)\]$/', $line, $matches)) {
+                $savePending();
+                $pendingLabel = null;
+                $pendingValue = [];
                 $section = trim($matches[1]);
                 if ($section !== '' && !isset($specifications[$section])) {
                     $specifications[$section] = [];
                 }
                 continue;
             }
+
             $parts = array_map('trim', explode(':', $line, 2));
+            if ($pendingLabel !== null) {
+                // A new title-case line after a value starts the next item. Other
+                // lines are values/continuations for the current item.
+                if ($pendingValue !== [] && count($parts) === 1 && $this->looksLikeSpecificationLabel($line)) {
+                    $savePending();
+                    $pendingLabel = $line;
+                    $pendingValue = [];
+                } else {
+                    // Pasted catalog specifications commonly use two lines per
+                    // item: "Data Rate" followed by one or more value lines.
+                    $pendingValue[] = $line;
+                }
+                continue;
+            }
+
             if (count($parts) === 2 && $parts[0] !== '') {
-                if ($section) {
+                if ($section !== null) {
                     $specifications[$section][$parts[0]] = $parts[1];
                 } else {
                     $specifications[$parts[0]] = $parts[1];
                 }
+                continue;
+            }
+
+            if ($this->looksLikeSpecificationLabel($line)) {
+                $pendingLabel = $line;
+                $pendingValue = [];
             }
         }
+
+        $savePending();
+
         return $specifications;
+    }
+
+    /**
+     * Detect the label line in the label/value format copied from product pages.
+     * A value such as "Microsoft Windows 10" or "2 × Internal Antennas" is
+     * intentionally not treated as a new label because it contains digits or
+     * punctuation.
+     */
+    private function looksLikeSpecificationLabel(string $line): bool
+    {
+        return preg_match('/^[A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,5}$/', $line) === 1;
     }
 
 }

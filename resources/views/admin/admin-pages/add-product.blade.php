@@ -160,7 +160,7 @@
                     </div>
                     <div class="control-group">
                         <label class="control-label" for="specifications">Specifications</label>
-                        <div class="controls"><textarea name="specifications" id="specifications" class="span6" rows="12" placeholder="[Basic Information]&#10;Processor: Intel Core i5&#10;Memory: 16GB"></textarea><p><button type="button" class="btn btn-small" id="load-spec-template"><i class="icon-list-alt"></i> Load category template</button> <span id="spec-template-status" class="help-inline"></span></p><p class="help-block">Use one Label: Value pair per line. Add a section heading as <strong>[Basic Information]</strong>.</p></div>
+                        <div class="controls"><textarea name="specifications" id="specifications" class="span6" rows="12" placeholder="[Basic Information]&#10;Processor: Intel Core i5&#10;Memory: 16GB"></textarea><p><button type="button" class="btn btn-small" id="load-spec-template"><i class="icon-list-alt"></i> Load category template</button> <span id="spec-template-status" class="help-inline"></span></p><p class="help-block">Use one Label: Value pair per line, or paste a label followed by its value on the next line. Add a section heading as <strong>[Basic Information]</strong>.</p></div>
                     </div>
                     <div class="control-group hidden-phone">
                         <label class="control-label" for="textarea2" >Product Description</label>
