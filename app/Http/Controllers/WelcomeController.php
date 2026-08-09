@@ -147,6 +147,9 @@ class WelcomeController extends Controller
                 ->whereNull('deleted_at')
                 ->where('manufacturer_id',$manufacturer_id)
                 ->where('publication_status',1)
+                ->select('product.*')
+                ->selectRaw(Product::sellingPriceSql().' as selling_price')
+                ->selectRaw('CASE WHEN offer_price IS NOT NULL AND offer_price < regular_price THEN 1 ELSE 0 END as has_offer')
                 ->latest()
                 ->get();
         return view('front-end.pages.manufacturer-by-id', compact('all_manufacturer_by_id', 'manufacturer'));
