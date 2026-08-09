@@ -21,9 +21,9 @@
             @endif
         </div>
         <div class="lt-card-actions">
-            <form action="{{ route('cart.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit"><i class="fa fa-shopping-cart"></i> Add to cart</button></form>
-            <form action="{{ route('compare.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Compare"><i class="fa fa-exchange"></i></button></form>
-            <form action="{{ route('wishlist.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Save to wishlist"><i class="fa fa-heart-o"></i></button></form>
+            <form action="{{ route('cart.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit"><i class="fa fa-shopping-cart" aria-hidden="true"></i><span>Add to cart</span></button></form>
+            <form action="{{ route('compare.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Compare"><i class="fa fa-exchange" aria-hidden="true"></i></button></form>
+            <form action="{{ route('wishlist.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Save to wishlist"><i class="fa fa-heart-o" aria-hidden="true"></i></button></form>
         </div>
         <a class="lt-view-product" href="{{ url('/product-details/'.$product->id) }}">View details <i class="fa fa-arrow-right"></i></a>
     </div>
