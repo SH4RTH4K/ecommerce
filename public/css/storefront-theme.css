@@ -277,6 +277,28 @@ a:focus{
   border:1px solid var(--theme-button-secondary-border,var(--theme-button-secondary-bg,#123f61));
 }
 
+/* Keep product actions usable in the narrow listing columns. */
+.lt-card-actions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 38px 38px;
+  gap:8px;
+  align-items:stretch;
+}
+.lt-card-actions form,
+.lt-card-actions button{
+  min-width:0;
+}
+.lt-card-actions form:first-child{flex:initial}
+.lt-card-actions button{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip;
+  padding-inline:6px;
+}
+.lt-card-actions form:first-child button{
+  padding-inline:8px;
+}
+
 .lt-pagination .active span{
   background:var(--theme-button-accent-bg,var(--orange));
   border-color:var(--theme-button-accent-bg,var(--orange));
