@@ -109,7 +109,7 @@ class WelcomeController extends Controller
         return view('front-end.pages.product-by-category', compact('category', 'products', 'manufacturers', 'attributeFilters'));
     }
     
-    public function productBySubCategory($sub_category)
+    public function productBySubCategory(Request $request, $sub_category)
     {
         $search_by_sub_category_name = DB::table('sub_category')
             ->where('sub_category_id',$sub_category)
@@ -124,7 +124,7 @@ class WelcomeController extends Controller
             ->whereRaw('LOWER(category_name) = LOWER(?)', [$search_by_sub_category_name->sub_category_name])
             ->pluck('category_id');
 
-        $all_sub_product_by_category = Product::whereNull('deleted_at')
+        $productQuery = Product::whereNull('deleted_at')
             ->where('publication_status', 1)
             ->where(function ($query) use ($sub_category, $search_by_sub_category_name, $legacyCategoryIds) {
                 $query->where('sub_category', (string) $sub_category)
@@ -133,11 +133,25 @@ class WelcomeController extends Controller
                 if ($legacyCategoryIds->isNotEmpty()) {
                     $query->orWhereIn('category_id', $legacyCategoryIds);
                 }
-            })
-            ->latest()
-            ->get();
+            });
 
-        return view('front-end.pages.product-by-sub-category',compact('all_sub_product_by_category','search_by_sub_category_name'));
+        if ($request->filled('manufacturer')) $productQuery->where('manufacturer_id', $request->manufacturer);
+        if ($request->filled('min_price')) $productQuery->whereRaw(Product::sellingPriceSql().' >= ?', [max(0, (float) $request->min_price)]);
+        if ($request->filled('max_price')) $productQuery->whereRaw(Product::sellingPriceSql().' <= ?', [max(0, (float) $request->max_price)]);
+        if ($request->input('availability') === 'in-stock') $productQuery->where('product_condition', 'In Stock');
+        if ($request->filled('q')) { $term = trim($request->q); $productQuery->where(function ($query) use ($term) { $query->where('product_name', 'like', '%'.$term.'%')->orWhere('product_model', 'like', '%'.$term.'%'); }); }
+        switch ($request->input('sort')) {
+            case 'price-asc': $productQuery->orderByRaw(Product::sellingPriceSql().' ASC'); break;
+            case 'price-desc': $productQuery->orderByRaw(Product::sellingPriceSql().' DESC'); break;
+            case 'name': $productQuery->orderBy('product_name'); break;
+            default: $productQuery->latest();
+        }
+        $manufacturerIds = (clone $productQuery)->reorder()->whereNotNull('manufacturer_id')->distinct()->pluck('manufacturer_id');
+        $manufacturers = Manufacturer::whereIn('manufacturer_id', $manufacturerIds)->orderBy('manufacturer_name')->get();
+        $perPage = in_array((int) $request->per_page, [12, 24, 48]) ? (int) $request->per_page : 12;
+        $products = $productQuery->paginate($perPage)->appends($request->query());
+
+        return view('front-end.pages.product-by-sub-category', compact('products', 'manufacturers', 'search_by_sub_category_name'));
     }
     
     public function allManufacturerById($manufacturer_id)
