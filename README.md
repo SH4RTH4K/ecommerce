@@ -307,7 +307,7 @@ Generate `APP_KEY` only for a new installation. Never replace an existing produc
 
 ### cPanel without Terminal
 
-If your cPanel plan does not include SSH or Terminal access, you cannot run Composer on the server. The easiest no-terminal path is to let GitHub Actions run `composer install --no-dev --optimize-autoloader` and deploy the result over FTP.
+If your cPanel plan does not include SSH or Terminal access, you can use GitHub Actions to deploy the application files over FTP. The workflow intentionally excludes `vendor/`; upload a compatible `vendor/` directory manually after the code deployment.
 
 To use the automated deploy workflow in `.github/workflows/deploy-cpanel.yml`, add these GitHub repository secrets:
 
@@ -316,7 +316,7 @@ To use the automated deploy workflow in `.github/workflows/deploy-cpanel.yml`, a
 - `CPANEL_FTP_PASSWORD`
 - `CPANEL_FTP_SERVER_DIR`
 
-If your host requires FTPS or a nonstandard port, edit the workflow and change the `protocol` and `port` values. This keeps `vendor/` out of Git and removes the need to zip and upload it by hand after the first setup.
+If your host requires FTPS or a nonstandard port, edit the workflow and change the `protocol` and `port` values. The workflow excludes `vendor/` to keep FTP uploads faster.
 
 If you prefer a manual fallback, run `composer install --no-dev --optimize-autoloader` locally with PHP 8.3+ - ideally in the same OS family as the host, such as WSL, Docker, or Linux - then upload the project including `vendor`. Import a prepared database using phpMyAdmin or ask the hosting provider to run migrations. Generate a new-installation key locally with `php artisan key:generate --show` and place it in the server `.env`.
 
