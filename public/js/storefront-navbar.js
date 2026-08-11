@@ -11,6 +11,11 @@
             var toggle = item.querySelector(':scope > [data-navbar-toggle]');
             if (toggle) toggle.setAttribute('aria-expanded', 'false');
         });
+        nav.querySelectorAll('.lt-subcategory-item.is-nested-open').forEach(function (item) {
+            item.classList.remove('is-nested-open');
+            var link = item.querySelector(':scope > .lt-subcategory-link');
+            if (link) link.setAttribute('aria-expanded', 'false');
+        });
     }
 
     nav.querySelectorAll('[data-navbar-toggle]').forEach(function (toggle) {

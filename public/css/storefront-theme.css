@@ -717,6 +717,107 @@ body{max-width:100%;overflow-x:hidden}
   background:#f1f5f9!important;
 }
 
+/* Mobile navbar fallback: keep the menu collapsed until the header toggle is
+   pressed, and let each category control its own dropdown. These rules are
+   intentionally last because the stylesheet also contains legacy navbar
+   layouts with different mobile defaults. */
+@media(max-width:720px){
+  .lt-header{overflow:visible}
+  .lt-header .lt-menu-toggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:9px 12px;
+    border:1px solid currentColor;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .lt-startech-menu{
+    display:none!important;
+    width:100%;
+    max-height:calc(100vh - 76px);
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  .lt-startech-menu.is-open{display:block!important}
+  .lt-startech-menu .lt-category-nav{
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    min-height:0;
+    padding:8px 12px!important;
+    overflow:visible!important;
+    white-space:normal!important;
+  }
+  .lt-startech-menu .lt-category-item{
+    display:flex!important;
+    flex-wrap:wrap;
+    width:100%!important;
+    min-width:0!important;
+  }
+  .lt-startech-menu .lt-category-link{
+    flex:1 1 auto;
+    width:auto!important;
+    min-width:0!important;
+    min-height:44px;
+    padding:10px 12px!important;
+    text-align:left!important;
+    white-space:normal;
+  }
+  .lt-startech-menu .lt-category-link span{
+    min-width:0!important;
+    overflow-wrap:anywhere;
+    white-space:normal!important;
+  }
+  .lt-startech-menu .lt-nav-submenu-toggle{
+    flex:0 0 44px;
+    width:44px;
+    min-height:44px;
+    padding:0;
+    border-bottom:1px solid var(--theme-nav-border,#edf2f7);
+  }
+  .lt-startech-menu .lt-category-item>.lt-category-dropdown{
+    position:static!important;
+    display:none!important;
+    flex:0 0 100%;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    max-height:none!important;
+    margin:0;
+    padding:4px 0 8px 12px!important;
+    border:0;
+    border-bottom:1px solid var(--theme-nav-border,#edf2f7);
+    border-radius:0;
+    box-shadow:none;
+    overflow:visible!important;
+  }
+  .lt-startech-menu .lt-category-item.is-open>.lt-category-dropdown{
+    display:block!important;
+  }
+  .lt-startech-menu .lt-category-dropdown a{
+    display:block;
+    padding:9px 12px;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .lt-startech-menu .lt-subcategory-dropdown{
+    position:static!important;
+    display:none!important;
+    max-height:none!important;
+    margin-left:10px;
+    padding-left:8px;
+    border-left:2px solid var(--theme-nav-active-bg,var(--orange));
+    border-top:0;
+    box-shadow:none;
+  }
+  .lt-startech-menu .lt-subcategory-item.is-nested-open>.lt-subcategory-dropdown,
+  .lt-startech-menu .lt-subcategory-item:focus-within>.lt-subcategory-dropdown{
+    display:block!important;
+  }
+}
+
 /* Stable, readable category panels. The navbar alignment must not affect
    the text alignment inside a dropdown. */
 @media(min-width:721px){

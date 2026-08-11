@@ -7,6 +7,11 @@
     if(!menuButton||!menu)return;
     menu.classList.remove('is-open');
     menuButton.setAttribute('aria-expanded','false');
+    menu.querySelectorAll('.lt-category-item.is-open').forEach(function(item){
+      item.classList.remove('is-open');
+      var toggle=item.querySelector(':scope > [data-navbar-toggle]');
+      if(toggle)toggle.setAttribute('aria-expanded','false');
+    });
   }
 
   if(menuButton&&menu){
@@ -38,7 +43,7 @@
   if(featureArea){
     var featureCards=Array.prototype.slice.call(featureArea.querySelectorAll('[data-feature-card]')),featureIndex=0,featureTimer;
     function showFeature(next){if(!featureCards.length)return;featureIndex=(next+featureCards.length)%featureCards.length;featureCards.forEach(function(card,i){card.classList.toggle('is-current',i===featureIndex);});}
-    if(featureArea.getAttribute('data-layout')==='SLIDER'&&featureCards.length){showFeature(0);if(featureArea.getAttribute('data-autoplay')==='1'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){featureTimer=setInterval(function(){showFeature(featureIndex+1);},Math.max(3000,parseInt(featureArea.getAttribute('data-interval'),10)*1000||5000);}if(featureArea.getAttribute('data-pause')==='1'){featureArea.addEventListener('mouseenter',function(){clearInterval(featureTimer)});featureArea.addEventListener('mouseleave',function(){if(featureCards.length>1)featureTimer=setInterval(function(){showFeature(featureIndex+1);},Math.max(3000,parseInt(featureArea.getAttribute('data-interval'),10)*1000||5000);});}}
+    if(featureArea.getAttribute('data-layout')==='SLIDER'&&featureCards.length){showFeature(0);if(featureArea.getAttribute('data-autoplay')==='1'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){featureTimer=setInterval(function(){showFeature(featureIndex+1);},Math.max(3000,parseInt(featureArea.getAttribute('data-interval'),10)*1000||5000));}if(featureArea.getAttribute('data-pause')==='1'){featureArea.addEventListener('mouseenter',function(){clearInterval(featureTimer)});featureArea.addEventListener('mouseleave',function(){if(featureCards.length>1)featureTimer=setInterval(function(){showFeature(featureIndex+1);},Math.max(3000,parseInt(featureArea.getAttribute('data-interval'),10)*1000||5000));});}}
   }
   var carousel=document.querySelector('[data-carousel]');
   if(!carousel)return;
