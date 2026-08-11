@@ -350,7 +350,7 @@ class MediaLifecycleService
         $ignoreKeys = array_values(array_filter((array) ($ignore['site_setting'] ?? [])));
         $query = DB::table('site_settings')
             ->where('setting_value', $path)
-            ->whereIn('setting_key', ['site_logo', 'favicon', 'default_og_image']);
+            ->whereIn('setting_key', ['site_logo', 'site_logo_tablet', 'site_logo_mobile', 'favicon', 'default_og_image']);
 
         if ($ignoreKeys !== []) {
             $query->whereNotIn('setting_key', $ignoreKeys);

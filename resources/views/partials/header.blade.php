@@ -6,6 +6,8 @@
 @php
     $siteName = $brandName;
     $siteLogo = $brandLogoHeader ?: $brandLogo;
+    $tabletLogo = $brandLogoTablet ?: $siteLogo;
+    $mobileLogo = $brandLogoMobile ?: $tabletLogo;
     $siteNameIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $siteName);
     $headerTagline = (string)$siteSettings->get('site_tagline', '');
     $headerTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $headerTagline);
@@ -14,11 +16,19 @@
     $headerLogoPath = $siteLogo ? parse_url($siteLogo, PHP_URL_PATH) : null;
     $headerLogoAvailable = $siteLogo && ($headerLogoIsRemote || ($headerLogoPath && file_exists(public_path(ltrim($headerLogoPath, '/')))));
     if (!$headerLogoAvailable) $resolvedHeaderLogo = null;
+    $resolveResponsiveLogo = function ($logo) {
+        if (!$logo) return null;
+        $isRemote = preg_match('#^https?://#i', $logo);
+        $path = parse_url($logo, PHP_URL_PATH);
+        return $isRemote || ($path && file_exists(public_path(ltrim($path, '/')))) ? ($isRemote ? $logo : asset($logo)) : null;
+    };
+    $resolvedTabletLogo = $resolveResponsiveLogo($tabletLogo);
+    $resolvedMobileLogo = $resolveResponsiveLogo($mobileLogo);
 @endphp
 <header class="lt-header">
     <div class="lt-container lt-header-main">
         <div class="lt-brand-lockup" style="--brand-name-font-size:{{ $brandNameFontSize }}px;--brand-tagline-font-size:{{ $brandTaglineFontSize }}px;--brand-logo-width:{{ $brandLogoDisplayWidth }}px;--brand-logo-height:{{ $brandLogoDisplayHeight }}px;--brand-logo-mobile-width:{{ $brandLogoMobileWidth }}px;--brand-logo-mobile-height:{{ $brandLogoMobileHeight }}px">
-            <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($resolvedHeaderLogo)<img src="{{ $resolvedHeaderLogo }}" alt="{{ $siteName }}" decoding="async">@else<span class="lt-brand-name {{ $siteNameIsBengali ? 'is-bengali' : '' }}" @if($siteNameIsBengali) lang="bn" @endif>{{ $siteName }}</span>@endif</a>
+            <a class="lt-logo" href="{{ url('/') }}" aria-label="{{ $siteName }} home">@if($resolvedHeaderLogo)<picture>@if($resolvedMobileLogo)<source media="(max-width: 720px)" srcset="{{ $resolvedMobileLogo }}">@endif @if($resolvedTabletLogo)<source media="(min-width: 721px) and (max-width: 1024px)" srcset="{{ $resolvedTabletLogo }}">@endif<img src="{{ $resolvedHeaderLogo }}" alt="{{ $siteName }}" decoding="async"></picture>@else<span class="lt-brand-name {{ $siteNameIsBengali ? 'is-bengali' : '' }}" @if($siteNameIsBengali) lang="bn" @endif>{{ $siteName }}</span>@endif</a>
             @if($headerTagline)<span class="lt-brand-tagline {{ $headerTaglineIsBengali ? 'is-bengali' : '' }}" @if($headerTaglineIsBengali) lang="bn" @endif>{{ $headerTagline }}</span>@endif
         </div>
         <form class="lt-search" action="{{ url('/search-product') }}" method="post" role="search" data-live-search>

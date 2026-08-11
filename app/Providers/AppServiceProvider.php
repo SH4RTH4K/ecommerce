@@ -51,6 +51,8 @@ class AppServiceProvider extends ServiceProvider
         View::share('siteSettings', $siteSettings);
         View::share('brandName', $brandName);
         View::share('brandLogo', $siteSettings->get('site_logo') ?: null);
+        View::share('brandLogoTablet', $siteSettings->get('site_logo_tablet') ?: null);
+        View::share('brandLogoMobile', $siteSettings->get('site_logo_mobile') ?: null);
         View::share('brandLogoHeader', $brandLogoHeader ?: ($siteSettings->get('site_logo') ?: null));
         View::share('brandFavicon', $siteSettings->get('favicon') ?: null);
         View::share('hasCustomBrandLogo', (bool)$siteSettings->get('site_logo'));

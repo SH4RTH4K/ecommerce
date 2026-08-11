@@ -148,6 +148,28 @@
                                 </div>
                             </div>
                             <div class="ws-field">
+                                <label for="brand-logo-tablet-upload">Tablet logo</label>
+                                <div class="ws-upload {{ $errors->has('logo_tablet') ? 'has-error' : '' }}">
+                                    <div data-asset-preview="logo_tablet">@if(!empty($settings['site_logo_tablet']))<img src="{{ asset($settings['site_logo_tablet']) }}" alt="Current tablet logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>Primary logo will be used</strong><small>Shown from 721px to 1024px wide.</small></div></div>@endif</div>
+                                    <input type="hidden" name="remove_logo_tablet" value="0" data-remove-input="logo_tablet">
+                                    @if(!empty($settings['site_logo_tablet']))<div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo_tablet"><i class="icon-trash"></i> Remove tablet logo</button></div>@endif
+                                    <input id="brand-logo-tablet-upload" type="file" name="logo_tablet" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" data-file-label data-file-asset="logo_tablet" data-file-types="png,jpg,jpeg,webp" data-file-max="5242880" data-no-uniform="true">
+                                    <span class="ws-file-name"></span><div class="ws-upload-specs"><strong>Recommended: 500 × 160 px</strong><br>Optional. Primary logo is used as fallback.</div>
+                                    <span class="ws-upload-error" role="alert">{{ $errors->first('logo_tablet') }}</span>
+                                </div>
+                            </div>
+                            <div class="ws-field">
+                                <label for="brand-logo-mobile-upload">Mobile logo</label>
+                                <div class="ws-upload {{ $errors->has('logo_mobile') ? 'has-error' : '' }}">
+                                    <div data-asset-preview="logo_mobile">@if(!empty($settings['site_logo_mobile']))<img src="{{ asset($settings['site_logo_mobile']) }}" alt="Current mobile logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>Primary logo will be used</strong><small>Shown up to 720px wide.</small></div></div>@endif</div>
+                                    <input type="hidden" name="remove_logo_mobile" value="0" data-remove-input="logo_mobile">
+                                    @if(!empty($settings['site_logo_mobile']))<div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo_mobile"><i class="icon-trash"></i> Remove mobile logo</button></div>@endif
+                                    <input id="brand-logo-mobile-upload" type="file" name="logo_mobile" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" data-file-label data-file-asset="logo_mobile" data-file-types="png,jpg,jpeg,webp" data-file-max="5242880" data-no-uniform="true">
+                                    <span class="ws-file-name"></span><div class="ws-upload-specs"><strong>Recommended: 360 × 120 px</strong><br>Optional. Primary logo is used as fallback.</div>
+                                    <span class="ws-upload-error" role="alert">{{ $errors->first('logo_mobile') }}</span>
+                                </div>
+                            </div>
+                            <div class="ws-field">
                                 <label for="brand-favicon-upload">Browser icon</label>
                                 <div class="ws-upload {{ $errors->hasAny(['favicon','remove_favicon','favicon_resize_width','favicon_resize_height']) ? 'has-error' : '' }} {{ $removeFaviconRequested ? 'is-removing' : '' }}">
                                     <div data-asset-preview="favicon" {{ $removeFaviconRequested ? 'hidden' : '' }}>@if(!empty($settings['favicon']))<img src="{{ asset($settings['favicon']) }}" alt="Current browser icon" style="width:48px;height:48px">@else<div class="ws-upload-missing"><i class="icon-star"></i><div><strong>No browser icon uploaded</strong><small>No icon link is added to the site until you upload one.</small></div></div>@endif</div>

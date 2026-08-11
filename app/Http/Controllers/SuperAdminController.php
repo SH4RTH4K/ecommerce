@@ -1229,6 +1229,8 @@ class SuperAdminController extends Controller {
                     }
                 },
             ],
+            'logo_tablet' => 'nullable|file|image|mimes:png,jpg,jpeg,webp|max:5120',
+            'logo_mobile' => 'nullable|file|image|mimes:png,jpg,jpeg,webp|max:5120',
             'remove_seo_image' => [
                 'nullable','boolean',
                 function ($attribute, $value, $fail) use ($request) {
@@ -1278,6 +1280,14 @@ class SuperAdminController extends Controller {
             'logo.image' => 'The logo must be a valid PNG, JPG, or WebP image.',
             'logo.mimes' => 'The logo must be a PNG, JPG, or WebP image.',
             'logo.max' => 'The logo may not be larger than 5 MB.',
+            'logo_tablet.uploaded' => 'The tablet logo could not be uploaded. Choose a PNG, JPG, or WebP image no larger than 5 MB.',
+            'logo_tablet.image' => 'The tablet logo must be a valid PNG, JPG, or WebP image.',
+            'logo_tablet.mimes' => 'The tablet logo must be a PNG, JPG, or WebP image.',
+            'logo_tablet.max' => 'The tablet logo may not be larger than 5 MB.',
+            'logo_mobile.uploaded' => 'The mobile logo could not be uploaded. Choose a PNG, JPG, or WebP image no larger than 5 MB.',
+            'logo_mobile.image' => 'The mobile logo must be a valid PNG, JPG, or WebP image.',
+            'logo_mobile.mimes' => 'The mobile logo must be a PNG, JPG, or WebP image.',
+            'logo_mobile.max' => 'The mobile logo may not be larger than 5 MB.',
             'favicon.uploaded' => 'The browser icon could not be uploaded. Choose an ICO, PNG, JPG, or WebP file no larger than 2 MB.',
             'favicon.mimes' => 'The browser icon must be an ICO, PNG, JPG, or WebP file.',
             'favicon.max' => 'The browser icon may not be larger than 2 MB.',
@@ -1416,6 +1426,8 @@ class SuperAdminController extends Controller {
         \View::share('siteSettings',$freshSettings);
         \View::share('brandName',$freshBrandName);
         \View::share('brandLogo',$freshSettings->get('site_logo') ?: null);
+        \View::share('brandLogoTablet',$freshSettings->get('site_logo_tablet') ?: null);
+        \View::share('brandLogoMobile',$freshSettings->get('site_logo_mobile') ?: null);
         \View::share('brandLogoHeader',$freshBrandLogoHeader ?: ($freshSettings->get('site_logo') ?: null));
         \View::share('brandFavicon',$freshSettings->get('favicon') ?: null);
         \View::share('hasCustomBrandLogo',(bool)$freshSettings->get('site_logo'));
@@ -2000,7 +2012,13 @@ class SuperAdminController extends Controller {
 
     private function siteCustomizationAssetKeys()
     {
-        return ['logo' => 'site_logo', 'favicon' => 'favicon', 'seo_image' => 'default_og_image'];
+        return [
+            'logo' => 'site_logo',
+            'logo_tablet' => 'site_logo_tablet',
+            'logo_mobile' => 'site_logo_mobile',
+            'favicon' => 'favicon',
+            'seo_image' => 'default_og_image',
+        ];
     }
 
     private function siteCustomizationSetup($settings)
