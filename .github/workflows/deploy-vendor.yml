@@ -1,0 +1,63 @@
+name: Deploy vendor to cPanel
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Deploy to cPanel
+    types:
+      - completed
+
+concurrency:
+  group: cpanel-vendor-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-vendor:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Get deployed code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install production Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Verify FTP settings
+        env:
+          CPANEL_FTP_SERVER: ${{ secrets.CPANEL_FTP_SERVER }}
+          CPANEL_FTP_USERNAME: ${{ secrets.CPANEL_FTP_USERNAME }}
+          CPANEL_FTP_PASSWORD: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          CPANEL_FTP_SERVER_DIR: ${{ secrets.CPANEL_FTP_SERVER_DIR }}
+        run: |
+          if [ -z "$CPANEL_FTP_SERVER" ] || [ -z "$CPANEL_FTP_USERNAME" ] || [ -z "$CPANEL_FTP_PASSWORD" ] || [ -z "$CPANEL_FTP_SERVER_DIR" ]; then
+            echo "Missing FTP secrets."
+            exit 1
+          fi
+
+      - name: Deploy vendor over FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./vendor/
+          server-dir: ${{ secrets.CPANEL_FTP_SERVER_DIR }}vendor/
+          timeout: 600000
+          log-level: standard
+          exclude: |
+            **/.git*
+            **/.git*/**
