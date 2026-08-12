@@ -280,7 +280,7 @@ a:focus{
 /* Keep product actions usable in the narrow listing columns. */
 .lt-card-actions{
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);
   gap:8px;
   align-items:stretch;
 }
@@ -305,7 +305,7 @@ a:focus{
   gap:6px;
 }
 .lt-card-actions form:first-child button i{flex:0 0 auto}
-.lt-card-actions form:first-child button span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.lt-card-actions form:first-child button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}
 .lt-card-actions form button{
   display:flex;
   flex-direction:column;
@@ -319,9 +319,13 @@ a:focus{
   font-size:12px;
 }
 .lt-card-actions form button i{font-size:16px}
-.lt-card-actions form button span{overflow-wrap:anywhere}
+.lt-card-actions form button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}
 @media(min-width:521px){
   .lt-card-actions form:first-child button{flex-direction:row;min-height:36px}
+}
+@media(min-width:901px){
+  .lt-card-actions form button{flex-direction:row;gap:4px;font-size:11px;white-space:nowrap}
+  .lt-card-actions form button i{font-size:14px}
 }
 
 .lt-pagination .active span{
