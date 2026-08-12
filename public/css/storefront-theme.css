@@ -568,6 +568,18 @@ body{max-width:100%;overflow-x:hidden}
   .lt-hero-side>div{min-height:150px;padding:18px}
 }
 
+/* Product-card actions stay icon-only on tablet and mobile. */
+@media(max-width:900px){
+  .lt-card-actions{grid-template-columns:minmax(0,1fr) 38px 38px}
+  .lt-card-actions form button,
+  .lt-card-actions form:first-child button{
+    flex-direction:row;
+    min-height:36px;
+    padding:8px 6px;
+  }
+  .lt-card-actions form button span{display:none}
+}
+
 @media(max-width:430px){
   .lt-container{width:calc(100% - 20px)}
   .lt-carousel{min-height:205px}
