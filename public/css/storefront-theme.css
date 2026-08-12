@@ -327,6 +327,13 @@ a:focus{
   .lt-card-actions form button{flex-direction:row;gap:4px;font-size:11px;white-space:nowrap}
   .lt-card-actions form button i{font-size:14px}
 }
+@media(max-width:600px){
+  .lt-card-actions{grid-template-columns:minmax(0,1fr) 42px 42px;gap:7px}
+  .lt-card-actions form button,
+  .lt-card-actions form:first-child button{justify-content:center;min-height:44px;padding:8px 6px}
+  .lt-card-actions form button span{display:none}
+  .lt-card-actions form button i{font-size:16px}
+}
 
 .lt-pagination .active span{
   background:var(--theme-button-accent-bg,var(--orange));

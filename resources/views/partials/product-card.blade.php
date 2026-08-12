@@ -21,9 +21,9 @@
             @endif
         </div>
         <div class="lt-card-actions">
-            <form action="{{ route('cart.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit"><i class="fa fa-shopping-cart" aria-hidden="true"></i><span>Add to cart</span></button></form>
-            <form action="{{ route('compare.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Compare"><i class="fa fa-exchange" aria-hidden="true"></i><span>Compare</span></button></form>
-            <form action="{{ route('wishlist.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Save to wishlist"><i class="fa fa-heart-o" aria-hidden="true"></i><span>Favorite</span></button></form>
+            <form action="{{ route('cart.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Add to cart" title="Add to cart"><i class="fa fa-shopping-cart" aria-hidden="true"></i><span>Add to cart</span></button></form>
+            <form action="{{ route('compare.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Compare" title="Compare"><i class="fa fa-exchange" aria-hidden="true"></i><span>Compare</span></button></form>
+            <form action="{{ route('wishlist.add', $product->id) }}" method="post">{{ csrf_field() }}<button type="submit" aria-label="Save to wishlist" title="Save to wishlist"><i class="fa fa-heart-o" aria-hidden="true"></i><span>Favorite</span></button></form>
         </div>
         <a class="lt-view-product" href="{{ url('/product-details/'.$product->id) }}">View details <i class="fa fa-arrow-right"></i></a>
     </div>
