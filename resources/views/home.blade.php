@@ -130,7 +130,7 @@
             </div>
         </section>
 
-        <section class="lt-section lt-brands-section"><div class="lt-container"><div class="lt-section-heading"><div><span>Shop trusted names</span><h2>Popular Brands</h2></div></div><div class="lt-brand-grid">@forelse($brands as $brand)<a href="{{ url('/all-manufacturer-by-id/'.$brand->manufacturer_id) }}"><span>{{ strtoupper(substr($brand->manufacturer_name, 0, 2)) }}</span>{{ $brand->manufacturer_name }}</a>@empty<div class="lt-empty">Published manufacturers will appear here.</div>@endforelse</div></div></section>
+        <section class="lt-section lt-brands-section"><div class="lt-container"><div class="lt-section-heading"><div><span>Shop trusted names</span><h2>Popular Brands</h2></div></div><div class="lt-brand-grid">@forelse($brands as $brand)<a href="{{ url('/all-manufacturer-by-id/'.$brand->manufacturer_id) }}"><span class="lt-brand-initials">{{ strtoupper(substr($brand->manufacturer_name, 0, 2)) }}</span><strong class="lt-brand-name">{{ $brand->manufacturer_name }}</strong></a>@empty<div class="lt-empty">Published manufacturers will appear here.</div>@endforelse</div></div></section>
     </main>
 
     @include('partials.footer')

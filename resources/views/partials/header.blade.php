@@ -48,8 +48,8 @@
         <nav class="lt-actions" aria-label="Account actions">
             <a href="{{ auth()->check() ? route('wishlist.index') : url('/login') }}"><i class="fa fa-heart-o"></i><span>Wishlist</span>@if($wishlistCount)<b>{{ $wishlistCount }}</b>@endif</a>
             <a href="{{ auth()->check() ? route('account.orders') : url('/login') }}"><i class="fa fa-user"></i><span>{{ auth()->check() ? 'My Orders' : 'Account' }}</span></a>
-            <a href="{{ route('compare.index') }}"><i class="fa fa-exchange"></i><span>Compare</span><b>{{ $compareCount }}</b></a>
-            <a href="{{ route('cart.index') }}"><i class="fa fa-shopping-cart"></i><span>Cart</span><b>{{ $cartCount }}</b></a>
+            <a href="{{ route('compare.index') }}"><i class="fa fa-exchange"></i><span>Compare</span>@if($compareCount)<b>{{ $compareCount }}</b>@endif</a>
+            <a href="{{ route('cart.index') }}"><i class="fa fa-shopping-cart"></i><span>Cart</span>@if($cartCount)<b>{{ $cartCount }}</b>@endif</a>
             <a class="lt-nav-cta" href="{{ route('pc-builder.index') }}"><i class="fa fa-wrench"></i><span>PC Builder</span></a>
         </nav>
         <button class="lt-menu-toggle" type="button" aria-expanded="false" aria-controls="main-menu"><i class="fa fa-bars"></i><span>Menu</span></button>

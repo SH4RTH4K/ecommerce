@@ -892,6 +892,8 @@ img,iframe,video{max-width:100%}
 .lt-product-grid>*{min-width:0}
 .lt-product-body h3 a,.lt-model{overflow-wrap:anywhere}
 .lt-table-wrap{max-width:100%;-webkit-overflow-scrolling:touch}
+.lt-brand-grid>a{min-width:0;overflow:hidden}
+.lt-brand-grid .lt-brand-name{min-width:0;overflow-wrap:anywhere;line-height:1.25}
 
 @media (min-width:1201px){
   .lt-product-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
@@ -971,6 +973,15 @@ img,iframe,video{max-width:100%}
   .lt-cart-summary{align-items:stretch;gap:14px}
   .lt-cart-summary strong{font-size:22px;margin-left:7px}
   .lt-table-wrap{margin-inline:-2px}
+  .lt-brand-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .lt-brand-grid>a{min-height:96px;padding:10px;gap:7px;justify-content:center;flex-direction:column;text-align:center}
+  .lt-brand-grid .lt-brand-initials{width:36px;height:36px;flex:0 0 36px}
+  .lt-brand-grid .lt-brand-name{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;font-size:15px}
+}
+
+@media (min-width:601px) and (max-width:900px){
+  .lt-brand-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .lt-brand-grid>a{min-height:88px;padding:12px;gap:9px}
 }
 
 @media (max-width:380px){
@@ -989,11 +1000,12 @@ img,iframe,video{max-width:100%}
     grid-column:1/-1;
     grid-row:3;
     justify-content:space-between;
+    flex-wrap:wrap;
     gap:4px;
     width:100%;
     margin:0;
     padding:5px 0 2px;
-    overflow-x:auto;
+    overflow:visible;
     scrollbar-width:none;
   }
   .lt-header .lt-actions::-webkit-scrollbar{display:none}
@@ -1007,7 +1019,12 @@ img,iframe,video{max-width:100%}
   }
   .lt-header .lt-actions a span{display:block}
   .lt-header .lt-actions a i{font-size:17px}
-  .lt-header .lt-actions b{top:-2px;right:5px;width:16px;height:16px;font-size:10px;line-height:16px}
-  .lt-header .lt-actions .lt-nav-cta{display:none}
+  .lt-header .lt-actions b{top:-2px;right:4px;width:16px;height:16px;font-size:10px;line-height:16px}
+  .lt-header .lt-actions .lt-nav-cta{
+    display:flex;
+    flex:0 0 100%;
+    justify-content:center;
+    padding:4px 5px;
+  }
   .lt-header .lt-menu-toggle{grid-column:1/-1;grid-row:4;justify-self:start}
 }
