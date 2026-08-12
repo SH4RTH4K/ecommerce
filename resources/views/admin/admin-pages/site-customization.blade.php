@@ -19,6 +19,16 @@
         'development_mode_login_button_text' => 'Admin Login',
     ];
     $setting = function ($key, $default = '') use ($settings) { return old($key, isset($settings[$key]) ? $settings[$key] : $default); };
+    $assetUrl = function ($path) {
+        if (!$path) return null;
+        if (preg_match('#^https?://#i', (string)$path)) return $path;
+        $relativePath = ltrim((string)(parse_url($path, PHP_URL_PATH) ?: $path), '/');
+        $relativePath = preg_replace('#^public/#i', '', $relativePath);
+        return file_exists(public_path($relativePath)) ? asset($relativePath) : null;
+    };
+    $logoUrl = $assetUrl($settings['site_logo'] ?? null);
+    $tabletLogoUrl = $assetUrl($settings['site_logo_tablet'] ?? null);
+    $mobileLogoUrl = $assetUrl($settings['site_logo_mobile'] ?? null);
     $siteNameValue = trim((string)$setting('site_name', $defaults['site_name']));
     $siteTaglineValue = trim((string)$setting('site_tagline'));
     $siteNameFontSize = (int)$setting('site_name_font_size', $defaults['site_name_font_size']);
@@ -120,9 +130,9 @@
                             <div class="ws-field">
                                 <label for="brand-logo-upload">Primary logo</label>
                                 <div class="ws-upload {{ $errors->hasAny(['logo','remove_logo','logo_resize_width','logo_resize_height']) ? 'has-error' : '' }} {{ $removeLogoRequested ? 'is-removing' : '' }}">
-                                    <div data-asset-preview="logo" {{ $removeLogoRequested ? 'hidden' : '' }}>@if(!empty($settings['site_logo']))<img src="{{ asset($settings['site_logo']) }}" alt="Current website logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>No brand logo uploaded</strong><small>Your Website name is shown whenever no logo is uploaded.</small></div></div>@endif</div>
+                                    <div data-asset-preview="logo" {{ $removeLogoRequested ? 'hidden' : '' }}>@if($logoUrl)<img src="{{ $logoUrl }}" alt="Current website logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>No usable brand logo found</strong><small>Upload a new logo to replace the missing image.</small></div></div>@endif</div>
                                     <input id="remove-logo" type="hidden" name="remove_logo" value="{{ $removeLogoRequested ? '1' : '0' }}" data-remove-input="logo">
-                                    @if(!empty($settings['site_logo']))
+                                    @if($logoUrl)
                                         <div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo" aria-pressed="{{ $removeLogoRequested ? 'true' : 'false' }}"><i class="icon-trash"></i> <span>{{ $removeLogoRequested ? 'Undo logo removal' : 'Remove current logo' }}</span></button></div>
                                         <div class="ws-removal-state" data-removal-state="logo" role="status" {{ $removeLogoRequested ? '' : 'hidden' }}><strong>Logo marked for removal.</strong> Saving will delete the managed upload file and show the Website name instead.</div>
                                     @endif
@@ -150,9 +160,9 @@
                             <div class="ws-field">
                                 <label for="brand-logo-tablet-upload">Tablet logo</label>
                                 <div class="ws-upload {{ $errors->has('logo_tablet') ? 'has-error' : '' }}">
-                                    <div data-asset-preview="logo_tablet">@if(!empty($settings['site_logo_tablet']))<img src="{{ asset($settings['site_logo_tablet']) }}" alt="Current tablet logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>Primary logo will be used</strong><small>Shown from 721px to 1024px wide.</small></div></div>@endif</div>
+                                    <div data-asset-preview="logo_tablet">@if($tabletLogoUrl)<img src="{{ $tabletLogoUrl }}" alt="Current tablet logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>Primary logo will be used</strong><small>Shown from 721px to 1024px wide.</small></div></div>@endif</div>
                                     <input type="hidden" name="remove_logo_tablet" value="0" data-remove-input="logo_tablet">
-                                    @if(!empty($settings['site_logo_tablet']))<div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo_tablet"><i class="icon-trash"></i> Remove tablet logo</button></div>@endif
+                                    @if($tabletLogoUrl)<div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo_tablet"><i class="icon-trash"></i> Remove tablet logo</button></div>@endif
                                     <input id="brand-logo-tablet-upload" type="file" name="logo_tablet" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" data-file-label data-file-asset="logo_tablet" data-file-types="png,jpg,jpeg,webp" data-file-max="5242880" data-no-uniform="true">
                                     <span class="ws-file-name"></span><div class="ws-upload-specs"><strong>Recommended: 500 × 160 px</strong><br>Optional. Primary logo is used as fallback.</div>
                                     <span class="ws-upload-error" role="alert">{{ $errors->first('logo_tablet') }}</span>
@@ -161,9 +171,9 @@
                             <div class="ws-field">
                                 <label for="brand-logo-mobile-upload">Mobile logo</label>
                                 <div class="ws-upload {{ $errors->has('logo_mobile') ? 'has-error' : '' }}">
-                                    <div data-asset-preview="logo_mobile">@if(!empty($settings['site_logo_mobile']))<img src="{{ asset($settings['site_logo_mobile']) }}" alt="Current mobile logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>Primary logo will be used</strong><small>Shown up to 720px wide.</small></div></div>@endif</div>
+                                    <div data-asset-preview="logo_mobile">@if($mobileLogoUrl)<img src="{{ $mobileLogoUrl }}" alt="Current mobile logo">@else<div class="ws-upload-missing"><i class="icon-picture"></i><div><strong>Primary logo will be used</strong><small>Shown up to 720px wide.</small></div></div>@endif</div>
                                     <input type="hidden" name="remove_logo_mobile" value="0" data-remove-input="logo_mobile">
-                                    @if(!empty($settings['site_logo_mobile']))<div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo_mobile"><i class="icon-trash"></i> Remove mobile logo</button></div>@endif
+                                    @if($mobileLogoUrl)<div class="ws-asset-actions"><button type="button" class="btn btn-danger ws-remove-asset" data-remove-asset="logo_mobile"><i class="icon-trash"></i> Remove mobile logo</button></div>@endif
                                     <input id="brand-logo-mobile-upload" type="file" name="logo_mobile" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" data-file-label data-file-asset="logo_mobile" data-file-types="png,jpg,jpeg,webp" data-file-max="5242880" data-no-uniform="true">
                                     <span class="ws-file-name"></span><div class="ws-upload-specs"><strong>Recommended: 360 × 120 px</strong><br>Optional. Primary logo is used as fallback.</div>
                                     <span class="ws-upload-error" role="alert">{{ $errors->first('logo_mobile') }}</span>
@@ -448,6 +458,20 @@
 </div>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
+    function showMissingAsset(image){
+        if(!image)return;
+        image.hidden=true;
+        var preview=image.closest('[data-asset-preview]');
+        if(!preview||preview.querySelector('.ws-upload-missing'))return;
+        var missing=document.createElement('div');
+        missing.className='ws-upload-missing';
+        missing.innerHTML='<i class="icon-picture"></i><div><strong>Branding file could not be loaded</strong><small>Upload the file again or check the public asset path.</small></div>';
+        preview.appendChild(missing);
+    }
+    document.querySelectorAll('[data-asset-preview] img').forEach(function(image){
+        image.addEventListener('error',function(){showMissingAsset(image)});
+        if(image.complete&&image.naturalWidth===0)showMissingAsset(image);
+    });
     var buttons=document.querySelectorAll('[data-settings-tab]'),panels=document.querySelectorAll('[data-settings-panel]');
     function openTab(name){buttons.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-settings-tab')===name)});panels.forEach(function(p){p.classList.toggle('active',p.getAttribute('data-settings-panel')===name)});if(history.replaceState)history.replaceState(null,'','#'+name)}
     buttons.forEach(function(button){button.addEventListener('click',function(){openTab(this.getAttribute('data-settings-tab'))})});
