@@ -1175,6 +1175,25 @@ class SuperAdminController extends Controller {
         $previousDevelopmentMode = $currentSettings->get('development_mode_enabled');
         $themeRules = $themeService->validationRules();
         $themeMessages = $themeService->validationMessages();
+        foreach (['logo', 'logo_tablet', 'logo_mobile', 'favicon', 'seo_image'] as $uploadKey) {
+            $upload = $_FILES[$uploadKey] ?? null;
+            $uploadError = is_array($upload) ? (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+            if ($uploadError === UPLOAD_ERR_NO_FILE) continue;
+            if ($uploadError !== UPLOAD_ERR_OK) {
+                $limit = ini_get('upload_max_filesize') ?: 'unknown';
+                $postLimit = ini_get('post_max_size') ?: 'unknown';
+                $message = match ($uploadError) {
+                    UPLOAD_ERR_INI_SIZE => "PHP rejected this file because upload_max_filesize is too small (currently {$limit}). Increase it to at least 10M.",
+                    UPLOAD_ERR_FORM_SIZE => 'The submitted form is larger than the server allows. Increase post_max_size.',
+                    UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please try again or check the server connection timeout.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'PHP has no temporary upload directory. Check upload_tmp_dir and its permissions.',
+                    UPLOAD_ERR_CANT_WRITE => 'PHP could not write the uploaded file. Check the temporary directory permissions.',
+                    UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the upload. Check the server PHP upload/security configuration.',
+                    default => "The server rejected the upload. Check upload_max_filesize ({$limit}) and post_max_size ({$postLimit}).",
+                };
+                return Redirect::to('/site-customization#identity')->withInput()->withErrors([$uploadKey => $message]);
+            }
+        }
         $this->validate($request, array_merge([
             'site_name' => 'required|string|max:120',
             'site_name_font_size' => 'nullable|integer|min:14|max:32',
