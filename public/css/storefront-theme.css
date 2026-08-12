@@ -1062,3 +1062,19 @@ img,iframe,video{max-width:100%}
   .lt-header .lt-actions b{top:4px;right:8px}
   .lt-header .lt-actions .lt-nav-cta{grid-column:1;justify-content:center;margin-top:2px}
 }
+
+/* Final product-card mobile override: prevent labels from being clipped in narrow cards. */
+@media(max-width:900px){
+  .lt-card-actions{grid-template-columns:minmax(0,1fr) 42px 42px!important;gap:7px}
+  .lt-card-actions form button span{display:none!important}
+  .lt-card-actions form button,
+  .lt-card-actions form:first-child button{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:8px 6px;
+    white-space:nowrap;
+  }
+  .lt-card-actions form button i{font-size:16px}
+}
