@@ -56,5 +56,5 @@
     </div>
     @include('partials.mega-menu')
 </header>
-<script src="{{ asset('js/storefront-navbar.js') }}" defer></script>
+<script src="{{ asset('js/storefront-navbar.js') }}?v={{ filemtime(public_path('js/storefront-navbar.js')) }}" defer></script>
 <script src="{{ asset('js/storefront-search.js') }}?v={{ filemtime(public_path('js/storefront-search.js')) }}" defer></script>
