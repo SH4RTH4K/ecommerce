@@ -32,13 +32,10 @@
         });
     });
 
-    // On mobile, the category link also acts as the submenu trigger now that
-    // the separate arrow button has been removed. The first tap opens the
-    // submenu; a second tap follows the category link normally.
+    // Category links with children act as submenu triggers. The first click
+    // opens the submenu; a second click follows the category link normally.
     nav.querySelectorAll('.lt-category-item.has-children > .lt-category-link').forEach(function (link) {
         link.addEventListener('click', function (event) {
-            if (window.innerWidth > 720) return;
-
             var item = link.parentElement;
             if (item.classList.contains('is-open')) return;
 
