@@ -40,6 +40,7 @@
             if (item.classList.contains('is-open')) return;
 
             event.preventDefault();
+            event.stopPropagation();
             closeSubmenus(item);
             item.classList.add('is-open');
             link.setAttribute('aria-expanded', 'true');
