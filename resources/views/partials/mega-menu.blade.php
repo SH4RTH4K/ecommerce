@@ -41,7 +41,6 @@
                         <span>{{ $item->label() }}</span>
                     </a>
                     @if($subCategories->isNotEmpty())
-                        <button class="lt-nav-submenu-toggle" type="button" data-navbar-toggle aria-expanded="false" aria-haspopup="true" aria-label="Show {{ $item->label() }} subcategories"><i class="fa fa-angle-down" aria-hidden="true"></i></button>
                         <div class="lt-category-dropdown" aria-label="{{ $item->label() }} subcategories">
                             <a class="lt-menu-category-title" href="{{ url('/product-by-category/'.$categoryId) }}">All {{ $item->label() }}</a>
                             @foreach($subCategories as $subCategory)

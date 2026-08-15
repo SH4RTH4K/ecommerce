@@ -614,7 +614,7 @@ body{max-width:100%;overflow-x:hidden}
 .lt-startech-menu .lt-category-dropdown{background:var(--theme-dropdown-bg,#fff);color:var(--theme-dropdown-text,var(--ink));border-top-color:var(--theme-nav-border,var(--orange))}
 .lt-startech-menu .lt-category-dropdown a{color:var(--theme-dropdown-text,var(--ink))}
 .lt-startech-menu .lt-category-dropdown a:hover,
-.lt-startech-menu .lt-category-dropdown a:focus{background:var(--theme-dropdown-hover,#f7f8fa);color:var(--theme-nav-active-bg,var(--orange))}
+.lt-startech-menu .lt-category-dropdown a:focus{background:#fff;color:var(--theme-nav-active-bg,var(--orange))}
 .lt-startech-menu .lt-nav-submenu-toggle{display:flex;align-items:center;justify-content:center;width:25px;padding:0 7px;border:0;background:transparent;color:inherit;cursor:pointer}
 .lt-startech-menu .lt-nav-submenu-toggle:hover,
 .lt-startech-menu .lt-nav-submenu-toggle:focus{background:var(--theme-nav-hover-bg,rgba(255,255,255,.08));color:var(--theme-nav-hover-text,var(--orange));outline:2px solid currentColor;outline-offset:-2px}
@@ -709,7 +709,7 @@ body{max-width:100%;overflow-x:hidden}
    desktop dropdowns visible; tablet retains its compact scroll behavior. */
 @media(min-width:1201px){
   .lt-startech-menu.nav-row-single-row .lt-category-nav{overflow:visible}
-  .lt-startech-menu .lt-category-dropdown{overflow:visible}
+  .lt-startech-menu .lt-category-dropdown{max-height:none;overflow:visible}
   .lt-startech-menu .lt-subcategory-dropdown{max-height:min(70vh,520px);overflow:auto}
 }
 
@@ -854,7 +854,7 @@ body{max-width:100%;overflow-x:hidden}
     width:min(320px,calc(100vw - 24px));
     min-width:min(280px,calc(100vw - 24px));
     max-width:calc(100vw - 24px);
-    max-height:min(70vh,560px);
+    max-height:none;
     overflow:visible;
     text-align:left;
     overscroll-behavior:contain;
