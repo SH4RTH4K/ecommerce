@@ -10,6 +10,8 @@
             item.classList.remove('is-open');
             var toggle = item.querySelector(':scope > [data-navbar-toggle]');
             if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            var categoryLink = item.querySelector(':scope > .lt-category-link');
+            if (categoryLink) categoryLink.setAttribute('aria-expanded', 'false');
         });
         nav.querySelectorAll('.lt-subcategory-item.is-nested-open').forEach(function (item) {
             item.classList.remove('is-nested-open');
@@ -28,6 +30,25 @@
             item.classList.toggle('is-open', open);
             toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
         });
+    });
+
+    // On mobile, the category link also acts as the submenu trigger now that
+    // the separate arrow button has been removed. The first tap opens the
+    // submenu; a second tap follows the category link normally.
+    nav.querySelectorAll('.lt-category-item.has-children > .lt-category-link').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            if (window.innerWidth > 720) return;
+
+            var item = link.parentElement;
+            if (item.classList.contains('is-open')) return;
+
+            event.preventDefault();
+            closeSubmenus(item);
+            item.classList.add('is-open');
+            link.setAttribute('aria-expanded', 'true');
+        });
+        link.setAttribute('aria-haspopup', 'true');
+        link.setAttribute('aria-expanded', 'false');
     });
 
     // Keep nested brand menus reachable when the parent dropdown is close to
