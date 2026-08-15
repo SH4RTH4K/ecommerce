@@ -48,6 +48,24 @@
         link.setAttribute('aria-expanded', 'false');
     });
 
+    // Desktop hover opens the submenu while closing any previously hovered
+    // category, preventing overlapping dropdown panels.
+    nav.querySelectorAll('.lt-category-item').forEach(function (item) {
+        item.addEventListener('mouseenter', function () {
+            if (window.innerWidth <= 720) return;
+            var focused = nav.querySelector(':focus');
+            if (focused && !item.contains(focused) && focused.blur) focused.blur();
+            closeSubmenus(item);
+            nav.querySelectorAll('.lt-category-item.is-hover').forEach(function (other) {
+                if (other !== item) other.classList.remove('is-hover');
+            });
+            if (item.querySelector(':scope > .lt-category-dropdown')) item.classList.add('is-hover');
+        });
+        item.addEventListener('mouseleave', function () {
+            item.classList.remove('is-hover');
+        });
+    });
+
     // Keep nested brand menus reachable when the parent dropdown is close to
     // the viewport edge. The class is visual only and never changes menu data.
     nav.querySelectorAll('.lt-subcategory-item.has-nested').forEach(function (item) {

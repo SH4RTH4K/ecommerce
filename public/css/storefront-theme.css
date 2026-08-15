@@ -565,8 +565,9 @@ body{max-width:100%;overflow-x:hidden}
   .lt-startech-menu .lt-category-item>a{display:flex;width:100%;max-width:none;min-height:44px;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #edf2f7;font-size:14px}
   .lt-startech-menu .lt-category-item>a span{overflow:visible}
   .lt-startech-menu .lt-category-dropdown,
-  .lt-startech-menu .lt-category-item:hover>.lt-category-dropdown,
-  .lt-startech-menu .lt-category-item:focus-within>.lt-category-dropdown{position:static;display:block!important;width:100%;min-width:0;max-width:none;max-height:none;padding:4px 0 8px 12px;border-top:0;border-bottom:1px solid #edf2f7;border-radius:0;box-shadow:none;overflow:visible;background:#fff}
+  .lt-startech-menu .lt-category-item:hover>.lt-category-dropdown{position:static;display:none!important;width:100%;min-width:0;max-width:none;max-height:none;padding:4px 0 8px 12px;border-top:0;border-bottom:1px solid #edf2f7;border-radius:0;box-shadow:none;overflow:visible;background:#fff}
+  .lt-startech-menu .lt-category-item.is-open>.lt-category-dropdown,
+  .lt-startech-menu .lt-category-item:focus-within>.lt-category-dropdown{display:block!important}
   .lt-startech-menu .lt-category-dropdown a{padding:8px 12px;font-size:13px}
   .lt-startech-menu .lt-category-dropdown .lt-menu-category-title,
   .lt-startech-menu .lt-category-dropdown .lt-view-all{padding-left:12px}
@@ -619,8 +620,8 @@ body{max-width:100%;overflow-x:hidden}
 .lt-startech-menu .lt-nav-submenu-toggle:hover,
 .lt-startech-menu .lt-nav-submenu-toggle:focus{background:var(--theme-nav-hover-bg,rgba(255,255,255,.08));color:var(--theme-nav-hover-text,var(--orange));outline:2px solid currentColor;outline-offset:-2px}
 .lt-startech-menu .lt-category-item:focus-within>.lt-category-dropdown,
-.lt-startech-menu .lt-category-item:hover>.lt-category-dropdown,
-.lt-startech-menu .lt-category-item.is-open>.lt-category-dropdown{display:block}
+.lt-startech-menu .lt-category-item.is-open>.lt-category-dropdown,
+.lt-startech-menu .lt-category-item.is-hover>.lt-category-dropdown{display:block}
 .lt-startech-menu .lt-category-item.has-children>.lt-category-dropdown{left:0}
 .lt-startech-menu .lt-category-item[data-navbar-item]{flex:0 1 auto}
 
