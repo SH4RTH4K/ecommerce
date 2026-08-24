@@ -487,11 +487,16 @@ class SuperAdminController extends Controller {
                 ->where('setting_key', 'homepage_featured_brand_icons')
                 ->value('setting_value');
         $featuredBrandIcons = json_decode($featuredBrandIconSetting ?: '{}', true) ?: [];
+        $featuredBrandImageSetting = DB::table('site_settings')
+                ->where('setting_key', 'homepage_featured_brand_images')
+                ->value('setting_value');
+        $featuredBrandImages = json_decode($featuredBrandImageSetting ?: '{}', true) ?: [];
         $manage_manufacturer = view('admin.admin-pages.manage-manufacturer')
                 ->with('all_manufacturer', $all_manufacturer)
                 ->with('manufacturerOptions', $manufacturerOptions)
                 ->with('featuredBrandIds', $featuredBrandIds)
-                ->with('featuredBrandIcons', $featuredBrandIcons);
+                ->with('featuredBrandIcons', $featuredBrandIcons)
+                ->with('featuredBrandImages', $featuredBrandImages);
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_manufacturer);
     }
@@ -499,6 +504,7 @@ class SuperAdminController extends Controller {
     public function updateFeaturedBrands(Request $request)
     {
         $this->authCheck();
+        $this->validate($request, ['featured_brand_images.*' => 'nullable|image|max:2048']);
 
         $selectedIds = collect((array) $request->input('featured_brand_ids', []))
             ->map(fn ($id) => (int) $id)
@@ -517,6 +523,18 @@ class SuperAdminController extends Controller {
             })
             ->only($publishedIds->map(fn ($id) => (int) $id)->all())
             ->all();
+        $imageSetting = DB::table('site_settings')->where('setting_key', 'homepage_featured_brand_images')->value('setting_value');
+        $images = json_decode($imageSetting ?: '{}', true) ?: [];
+        foreach ($selectedIds as $brandId) {
+            $brandId = (int) $brandId;
+            if (in_array((string) $brandId, (array) $request->input('remove_featured_brand_images', []), true)) {
+                unset($images[(string) $brandId]);
+            }
+            $image = $request->file('featured_brand_images', [])[$brandId] ?? null;
+            if ($image) {
+                $images[(string) $brandId] = \App\Support\PublicUpload::store($image, 'asset/front-end/img/featured-brands/', 'brand-'.$brandId.'-', ['jpg', 'jpeg', 'png', 'webp']);
+            }
+        }
 
         DB::table('site_settings')->updateOrInsert(
             ['setting_key' => 'homepage_featured_brands'],
@@ -525,6 +543,10 @@ class SuperAdminController extends Controller {
         DB::table('site_settings')->updateOrInsert(
             ['setting_key' => 'homepage_featured_brand_icons'],
             ['setting_value' => json_encode($icons), 'created_at' => now(), 'updated_at' => now()]
+        );
+        DB::table('site_settings')->updateOrInsert(
+            ['setting_key' => 'homepage_featured_brand_images'],
+            ['setting_value' => json_encode($images), 'created_at' => now(), 'updated_at' => now()]
         );
 
         return Redirect::to('/manage-manufacturer')

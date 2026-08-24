@@ -46,7 +46,7 @@
         </div>
         <div class="box-content">
             <p class="muted">Choose the published brands that appear in the homepage “Popular Brands” section. The display order follows the brand name.</p>
-            <form method="post" action="{{ url('/manage-manufacturer/featured') }}" id="featured-brand-form">
+            <form method="post" action="{{ url('/manage-manufacturer/featured') }}" id="featured-brand-form" enctype="multipart/form-data">
                 {{ csrf_field() }}
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
                     <input type="search" id="featured-brand-search" placeholder="Search brands..." style="margin:0;max-width:280px">
@@ -60,11 +60,13 @@
                         <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="display:flex;align-items:center;gap:7px;border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
                             <input type="checkbox" name="featured_brand_ids[]" value="{{ $brand->manufacturer_id }}" {{ in_array((int) $brand->manufacturer_id, $featuredBrandIds, true) ? 'checked' : '' }}>
                             <span style="flex:1">{{ $brand->manufacturer_name }}</span>
-                            <select name="featured_brand_icons[{{ $brand->manufacturer_id }}]" title="Icon for {{ $brand->manufacturer_name }}" style="width:42px;margin:0;padding:2px" onclick="event.stopPropagation()">
+                            <input type="file" name="featured_brand_images[{{ $brand->manufacturer_id }}]" accept="image/png,image/jpeg,image/webp" title="Upload image icon for {{ $brand->manufacturer_name }}" style="width:125px;margin:0;padding:2px" onclick="event.stopPropagation()">
+                            <select name="featured_brand_icons[{{ $brand->manufacturer_id }}]" title="Fallback icon for {{ $brand->manufacturer_name }}" style="width:42px;margin:0;padding:2px" onclick="event.stopPropagation()">
                                 @foreach(['' => 'Initials', 'fa-building' => 'Building', 'fa-laptop' => 'Laptop', 'fa-desktop' => 'Desktop', 'fa-mobile-phone' => 'Phone', 'fa-camera' => 'Camera', 'fa-shield' => 'Shield', 'fa-bolt' => 'Power', 'fa-cog' => 'Gear', 'fa-star' => 'Star', 'fa-tag' => 'Tag', 'fa-certificate' => 'Certificate', 'fa-cube' => 'Cube', 'fa-hdd-o' => 'Storage', 'fa-print' => 'Printer'] as $icon => $label)
                                     <option value="{{ $icon }}" {{ ($featuredBrandIcons[(string) $brand->manufacturer_id] ?? '') === $icon ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
+                            @if(!empty($featuredBrandImages[(string) $brand->manufacturer_id]))<label style="font-size:11px;margin:0" title="Remove uploaded image"><input type="checkbox" name="remove_featured_brand_images[]" value="{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()"> Remove</label>@endif
                         </label>
                     @endforeach
                 </div>
