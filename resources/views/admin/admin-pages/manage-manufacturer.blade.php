@@ -60,7 +60,10 @@
                         <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="display:flex;align-items:center;gap:7px;border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
                             <input type="checkbox" name="featured_brand_ids[]" value="{{ $brand->manufacturer_id }}" {{ in_array((int) $brand->manufacturer_id, $featuredBrandIds, true) ? 'checked' : '' }}>
                             <span style="flex:1">{{ $brand->manufacturer_name }}</span>
-                            <input type="file" name="featured_brand_images[{{ $brand->manufacturer_id }}]" accept="image/png,image/jpeg,image/webp" title="Upload image icon for {{ $brand->manufacturer_name }}" style="width:125px;margin:0;padding:2px" onclick="event.stopPropagation()">
+                            <span class="featured-brand-image-preview" style="width:30px;height:30px;display:inline-grid;place-items:center;flex:0 0 30px;border-radius:50%;background:#f1f5f8;overflow:hidden" title="Image preview">
+                                @if(!empty($featuredBrandImages[(string) $brand->manufacturer_id]))<img src="{{ asset($featuredBrandImages[(string) $brand->manufacturer_id]) }}" alt="" style="width:100%;height:100%;object-fit:contain">@endif
+                            </span>
+                            <input type="file" name="featured_brand_images[{{ $brand->manufacturer_id }}]" accept="image/png,image/jpeg,image/webp" title="Upload image icon for {{ $brand->manufacturer_name }}" style="width:125px;margin:0;padding:2px" data-preview-target="featured-brand-preview-{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()">
                             <select name="featured_brand_icons[{{ $brand->manufacturer_id }}]" title="Fallback icon for {{ $brand->manufacturer_name }}" style="width:42px;margin:0;padding:2px" onclick="event.stopPropagation()">
                                 @foreach(['' => 'Initials', 'fa-building' => 'Building', 'fa-laptop' => 'Laptop', 'fa-desktop' => 'Desktop', 'fa-mobile-phone' => 'Phone', 'fa-camera' => 'Camera', 'fa-shield' => 'Shield', 'fa-bolt' => 'Power', 'fa-cog' => 'Gear', 'fa-star' => 'Star', 'fa-tag' => 'Tag', 'fa-certificate' => 'Certificate', 'fa-cube' => 'Cube', 'fa-hdd-o' => 'Storage', 'fa-print' => 'Printer'] as $icon => $label)
                                     <option value="{{ $icon }}" {{ ($featuredBrandIcons[(string) $brand->manufacturer_id] ?? '') === $icon ? 'selected' : '' }}>{{ $label }}</option>
@@ -91,6 +94,16 @@
         document.getElementById('featured-brand-select-visible').addEventListener('click', function () { visible().forEach(function (option) { setChecked(option, true); }); refresh(); });
         document.getElementById('featured-brand-clear').addEventListener('click', function () { options.forEach(function (option) { setChecked(option, false); }); refresh(); });
         options.forEach(function (option) { option.querySelector('input').addEventListener('change', refresh); });
+        document.querySelectorAll('input[type="file"][data-preview-target]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                var preview = input.parentElement.querySelector('.featured-brand-image-preview');
+                var file = input.files && input.files[0];
+                if (!file || !file.type.match(/^image\/(png|jpe?g|webp)$/i)) return;
+                var reader = new FileReader();
+                reader.onload = function (event) { preview.innerHTML = '<img src="' + event.target.result + '" alt="" style="width:100%;height:100%;object-fit:contain">'; };
+                reader.readAsDataURL(file);
+            });
+        });
     }());
     </script>
 
