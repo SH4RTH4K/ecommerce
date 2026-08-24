@@ -1,9 +1,8 @@
 ---
 deployment:
   tasks:
-    - export APPROOT=/home/lucenttechbd/public_html
-    - /usr/local/bin/ea-php82 $APPROOT/artisan migrate --force
-    - /usr/local/bin/ea-php82 $APPROOT/artisan optimize:clear
-    - /usr/local/bin/ea-php82 $APPROOT/artisan route:cache
-    - /usr/local/bin/ea-php82 $APPROOT/artisan view:cache
-    - /usr/local/bin/ea-php82 $APPROOT/artisan storage:link
+    - export DEPLOYPATH=/home/lucenttechbd/public_html/
+    - /usr/local/bin/ea-php82 $DEPLOYPATH/artisan optimize:clear
+    - /usr/local/bin/ea-php82 $DEPLOYPATH/artisan route:cache
+    - /usr/local/bin/ea-php82 $DEPLOYPATH/artisan view:cache
+    - /usr/local/bin/ea-php82 $DEPLOYPATH/artisan storage:link
