@@ -9,6 +9,7 @@ use App\Manufacturer;
 use App\PaymentMethod;
 use App\Product;
 use App\ProductSeries;
+use App\ProductCodeConfiguration;
 use App\SiteContactItem;
 use App\TopAnnouncement;
 use App\SubCategory;
@@ -35,6 +36,7 @@ class RecycleBinService
             'manufacturer' => 'Brands',
             'company' => 'Companies',
             'product_series' => 'Series',
+            'product_code_configuration' => 'Product code configurations',
             'banner' => 'Banners',
             'payment_method' => 'Payment methods',
             'top_announcement' => 'Top announcements',
@@ -310,6 +312,26 @@ class RecycleBinService
                 'key' => 'id',
                 'name' => static fn (ProductSeries $series): string => trim((string) ($series->name ?: ('Series #'.$series->id))),
                 'reference' => static fn (ProductSeries $series): string => trim((string) ($series->series_code ?: $series->id)),
+            ],
+            'product_code_configuration' => [
+                'label' => 'Product code configuration',
+                'model' => ProductCodeConfiguration::class,
+                'key' => 'id',
+                'name' => static fn (ProductCodeConfiguration $configuration): string => trim((string) ($configuration->name ?: ('Configuration #'.$configuration->id))),
+                'reference' => static fn (ProductCodeConfiguration $configuration): string => trim((string) ($configuration->code_type ?: $configuration->id)),
+                'purge' => function (ProductCodeConfiguration $configuration) {
+                    DB::transaction(function () use ($configuration) {
+                        foreach (['product_code_components', 'product_code_sequences', 'product_code_configuration_histories'] as $table) {
+                            if (Schema::hasTable($table)) {
+                                DB::table($table)->where('configuration_id', $configuration->id)->delete();
+                            }
+                        }
+                        if (Schema::hasTable('product_code_histories')) {
+                            DB::table('product_code_histories')->where('configuration_id', $configuration->id)->update(['configuration_id' => null]);
+                        }
+                        $configuration->forceDelete();
+                    });
+                },
             ],
             'banner' => [
                 'label' => 'Banner',

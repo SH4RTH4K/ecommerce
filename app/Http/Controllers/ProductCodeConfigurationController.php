@@ -9,6 +9,7 @@ use App\ProductCodeConfigurationHistory;
 use App\ProductCodeHistory;
 use App\ProductCodeSequence;
 use App\Services\ProductCodeGenerator;
+use App\Services\RecycleBinService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,21 @@ use Illuminate\Validation\Rule;
 
 class ProductCodeConfigurationController extends Controller
 {
+    public function destroy(int $id, RecycleBinService $recycleBin)
+    {
+        $this->requireAdminPermission('change_product_code_configuration');
+        $configuration = ProductCodeConfiguration::findOrFail($id);
+        $configuration->forceFill([
+            'is_active' => 0,
+            'deleted_by' => session('admin_id'),
+            'delete_reason' => 'Product code configuration deleted by administrator.',
+        ])->save();
+        $recycleBin->softDelete('product_code_configuration', $id, session('admin_id'), 'Product code configuration moved to Recycle Bin.');
+
+        return redirect()->route('product-code-configuration.index', ['code_type' => $configuration->code_type])
+            ->with('message', 'Product code configuration moved to the Recycle Bin.');
+    }
+
     public function index(Request $request, ProductCodeGenerator $generator)
     {
         $this->requireAdminPermission('view_product_code_configuration');

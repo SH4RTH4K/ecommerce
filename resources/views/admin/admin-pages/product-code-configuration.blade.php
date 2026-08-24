@@ -361,9 +361,15 @@
                         <button type="submit" class="btn btn-primary"><i class="icon-save"></i> Save Configuration</button>
                         <button type="button" class="btn btn-warning" id="pcc-preview-button"><i class="icon-play"></i> Test Generator</button>
                         <button type="reset" class="btn">Reset</button>
+                        @if($selectedConfigurationId)
+                            <button type="submit" class="btn btn-danger" form="delete-product-code-configuration" onclick="return confirm('Move this product code configuration to the Recycle Bin?')"><i class="icon-trash"></i> Delete Configuration</button>
+                        @endif
                     </div>
                     <div class="pcc-help">Use <strong>Test Generator</strong> to preview the current draft without consuming a sequence number.</div>
                 </form>
+                @if($selectedConfigurationId)
+                    <form id="delete-product-code-configuration" method="post" action="{{ route('product-code-configuration.destroy', $selectedConfigurationId) }}" style="display:none">@csrf @method('DELETE')</form>
+                @endif
             </div>
         </section>
 

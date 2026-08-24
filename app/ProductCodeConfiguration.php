@@ -3,9 +3,11 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductCodeConfiguration extends Model
 {
+    use SoftDeletes;
     protected $table = 'product_code_configurations';
 
     protected $guarded = [];

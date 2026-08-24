@@ -172,6 +172,7 @@ Route::post('/product-code-configuration', 'ProductCodeConfigurationController@s
 Route::post('/product-code-configuration/preview', 'ProductCodeConfigurationController@preview')->name('product-code-configuration.preview');
 Route::get('/product-code-configuration/configuration', 'ProductCodeConfigurationController@configuration')->name('product-code-configuration.configuration');
 Route::post('/product-code-configuration/{id}/reset-sequence', 'ProductCodeConfigurationController@resetSequence')->name('product-code-configuration.reset-sequence');
+Route::delete('/product-code-configuration/{id}', 'ProductCodeConfigurationController@destroy')->name('product-code-configuration.destroy');
  Route::get('/site-customization', 'SuperAdminController@siteCustomization');
  Route::get('/homepage-feature-cards', 'SuperAdminController@homepageFeatureCards')->name('admin.homepage-feature-cards');
  Route::post('/homepage-feature-cards', 'SuperAdminController@updateHomepageFeatureCards')->name('admin.homepage-feature-cards.update');
