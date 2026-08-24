@@ -193,6 +193,16 @@
                         <div class="controls"><label class="checkbox inline"><input type="checkbox" name="top_product" value="1" {{$product_info->top_product ? 'checked' : ''}}> Featured product</label><label class="checkbox inline"><input type="checkbox" name="is_new_arrival" value="1" {{$product_info->is_new_arrival ? 'checked' : ''}}> New arrival</label></div>
                     </div>
                     <div class="control-group">
+                        <label class="control-label" for="publication_status">Product Visibility</label>
+                        <div class="controls">
+                            <select id="publication_status" name="publication_status" class="span6">
+                                <option value="1" {{ old('publication_status', (int) $product_info->publication_status) == 1 ? 'selected' : '' }}>Published — visible on storefront</option>
+                                <option value="0" {{ old('publication_status', (int) $product_info->publication_status) == 0 ? 'selected' : '' }}>Unpublished — hidden from storefront</option>
+                            </select>
+                            <p class="help-block">Unpublished products remain in admin and can be published again later.</p>
+                        </div>
+                    </div>
+                    <div class="control-group">
                         <label class="control-label" for="selectError3">Product Condition</label>
                         <div class="controls">
                             <select id="selectError3" name="product_condition">

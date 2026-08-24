@@ -729,6 +729,7 @@ class SuperAdminController extends Controller {
             'branch_id' => 'nullable|integer|exists:inventory_locations,id',
             'product_code' => 'nullable|string|max:100',
             'product_id' => 'nullable|string|max:255',
+            'publication_status' => 'required|boolean',
             'category_id' => 'required|integer|exists:category,category_id',
             'sub_category_id' => 'nullable|integer|exists:sub_category,sub_category_id',
             'regular_price' => 'required|numeric|min:0',
@@ -825,6 +826,7 @@ class SuperAdminController extends Controller {
         $this->setIndustryData($data, $request);
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
+        $data['publication_status'] = (int) $request->publication_status;
         $data['product_description'] = $request->product_description;
         $data['short_description'] = $request->short_description;
         $data['key_features'] = json_encode($this->parseList($request->key_features));
