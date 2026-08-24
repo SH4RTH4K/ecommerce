@@ -31,6 +31,7 @@ Route::post('/cart/recovery-email', 'CartRecoveryController@saveEmail')->name('c
 Route::get('/recover-cart/{token}', 'CartRecoveryController@restore')->name('cart.restore');
 Route::get('/compare', 'ShopController@compare')->name('compare.index');
 Route::get('/pc-builder', 'PcBuilderController@index')->name('pc-builder.index');
+Route::get('/pc-builder/choose/{slot}', 'PcBuilderController@choose')->name('pc-builder.choose');
 Route::post('/pc-builder/select', 'PcBuilderController@select')->name('pc-builder.select');
 Route::post('/pc-builder/remove/{slot}', 'PcBuilderController@remove')->name('pc-builder.remove');
 Route::post('/pc-builder/add-to-cart', 'PcBuilderController@addToCart')->name('pc-builder.cart');
@@ -155,6 +156,8 @@ Route::post('/update-manufacturer/', "SuperAdminController@updateManufacturer");
 Route::get('/add-product', "SuperAdminController@addProduct");
 Route::post('/save-product', "SuperAdminController@saveProduct");
 Route::get('/manage-product', "SuperAdminController@manageProduct");
+Route::get('/pc-builder-settings', "SuperAdminController@pcBuilderSettings");
+Route::post('/pc-builder-settings', "SuperAdminController@updatePcBuilderSettings");
 Route::post('/manage-product/bulk-delete', "SuperAdminController@bulkDeleteProducts");
 Route::post('/unpublished-product/{id}', "SuperAdminController@unpublishedProduct");
 Route::post('/published-product/{id}', "SuperAdminController@publishedProduct");

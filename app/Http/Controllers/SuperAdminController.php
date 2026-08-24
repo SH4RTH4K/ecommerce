@@ -1071,6 +1071,49 @@ class SuperAdminController extends Controller {
                         ->with('admin_main_content', $manage_product);
     }
 
+    public function pcBuilderSettings()
+    {
+        $this->authCheck();
+        $configuration = app(\App\Services\PcBuilderConfigurationService::class);
+        $slots = $configuration->slots();
+        $categories = Category::where('publication_status', 1)->orderBy('category_name')->get(['category_id','category_name']);
+        $subcategories = DB::table('sub_category')->where('publication_status',1)->whereNull('deleted_at')->orderBy('sub_category_name')->get(['sub_category_id','category_id','sub_category_name']);
+        foreach($slots as &$slot){$categoryId=(int)($slot['category_id']??0);$subId=(int)($slot['sub_category_id']??0);$slot['available_count']=Product::whereNull('deleted_at')->where('publication_status',1)->where('product_condition','In Stock')->when($categoryId,fn($q)=>$q->where('category_id',$categoryId))->when($subId,fn($q)=>$q->where('sub_category',(string)$subId))->count();} unset($slot);
+        return view('admin.admin-pages.pc-builder-settings', ['slots'=>$slots, 'rules'=>$configuration->rules(), 'categories'=>$categories, 'subcategories'=>$subcategories]);
+    }
+
+    public function updatePcBuilderSettings(Request $request)
+    {
+        $this->authCheck();
+        $this->validate($request, ['slots'=>'required|array', 'rules'=>'nullable|array']);
+        $allowedIcons = ['cog','sitemap','list','picture-o','hdd-o','bolt','archive','refresh','desktop','cogs','folder-open','wrench'];
+        $defaults = app(\App\Services\PcBuilderConfigurationService::class)->defaultSlots();
+        $slots = [];
+        foreach ($defaults as $default) {
+            $input = (array) $request->input('slots.'.$default['key'], []);
+            $subCategory = DB::table('sub_category')->where('sub_category_id',(int)($input['sub_category_id']??0))->where('publication_status',1)->whereNull('deleted_at')->first();
+            $category = $subCategory ? Category::where('category_id',$subCategory->category_id)->where('publication_status',1)->first() : Category::where('category_id', (int) ($input['category_id'] ?? 0))->where('publication_status', 1)->first();
+            $slots[] = array_merge($default, [
+                'label' => trim((string) ($input['label'] ?? $default['label'])) ?: $default['label'],
+                'category' => $category ? strtolower($category->category_name) : $default['category'],
+                'category_id' => $category ? (int) $category->category_id : null,
+                'sub_category_id' => $subCategory ? (int) $subCategory->sub_category_id : null,
+                'required' => !empty($input['required']),
+                'icon' => in_array($input['icon'] ?? '', $allowedIcons, true) ? $input['icon'] : $default['icon'],
+            ]);
+        }
+        $slotKeys = collect($slots)->pluck('key')->all();
+        $rules = [];
+        foreach ((array) $request->input('rules', []) as $input) {
+            $input = (array) $input;
+            if (trim((string) ($input['left_attribute'] ?? '')) === '' || trim((string) ($input['right_attribute'] ?? '')) === '') continue;
+            if (!in_array($input['left_slot'] ?? '', $slotKeys, true) || !in_array($input['right_slot'] ?? '', $slotKeys, true)) continue;
+            $rules[] = ['name'=>trim((string) ($input['name'] ?? 'Compatibility rule')), 'left_slot'=>$input['left_slot'], 'left_attribute'=>trim((string)$input['left_attribute']), 'right_slot'=>$input['right_slot'], 'right_attribute'=>trim((string)$input['right_attribute']), 'message'=>trim((string)($input['message'] ?? 'Selected components are not compatible.')), 'enabled'=>!empty($input['enabled'])];
+        }
+        app(\App\Services\PcBuilderConfigurationService::class)->save($slots, $rules);
+        return Redirect::to('/pc-builder-settings')->with('message', 'PC Builder settings saved.');
+    }
+
     public function unpublishedProduct($id) {
         DB::table('product')
                 ->where('id', $id)
