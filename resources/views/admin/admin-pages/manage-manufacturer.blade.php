@@ -76,9 +76,13 @@
         function refresh() { count.textContent = document.querySelectorAll('#featured-brand-options input:checked').length; }
         function visible() { var term = (search.value || '').toLowerCase().trim(); return options.filter(function (option) { return !option.hidden && (!term || option.dataset.name.indexOf(term) !== -1); }); }
         search.addEventListener('input', function () { options.forEach(function (option) { option.hidden = !!search.value.trim() && option.dataset.name.indexOf(search.value.toLowerCase().trim()) === -1; }); });
-        document.getElementById('featured-brand-select-all').addEventListener('click', function () { options.forEach(function (option) { option.querySelector('input').checked = true; }); refresh(); });
-        document.getElementById('featured-brand-select-visible').addEventListener('click', function () { visible().forEach(function (option) { option.querySelector('input').checked = true; }); refresh(); });
-        document.getElementById('featured-brand-clear').addEventListener('click', function () { options.forEach(function (option) { option.querySelector('input').checked = false; }); refresh(); });
+        function setChecked(option, checked) {
+            var input = option.querySelector('input');
+            if (input.checked !== checked) input.click();
+        }
+        document.getElementById('featured-brand-select-all').addEventListener('click', function () { options.forEach(function (option) { setChecked(option, true); }); refresh(); });
+        document.getElementById('featured-brand-select-visible').addEventListener('click', function () { visible().forEach(function (option) { setChecked(option, true); }); refresh(); });
+        document.getElementById('featured-brand-clear').addEventListener('click', function () { options.forEach(function (option) { setChecked(option, false); }); refresh(); });
         options.forEach(function (option) { option.querySelector('input').addEventListener('change', refresh); });
     }());
     </script>
