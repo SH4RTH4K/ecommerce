@@ -50,6 +50,7 @@
                 {{ csrf_field() }}
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
                     <input type="search" id="featured-brand-search" placeholder="Search brands..." style="margin:0;max-width:280px">
+                    <button type="button" class="btn" id="featured-brand-select-all">Select all</button>
                     <button type="button" class="btn" id="featured-brand-select-visible">Select visible</button>
                     <button type="button" class="btn" id="featured-brand-clear">Clear all</button>
                     <span class="muted"><strong id="featured-brand-count">{{ count($featuredBrandIds) }}</strong> selected</span>
@@ -75,6 +76,7 @@
         function refresh() { count.textContent = document.querySelectorAll('#featured-brand-options input:checked').length; }
         function visible() { var term = (search.value || '').toLowerCase().trim(); return options.filter(function (option) { return !option.hidden && (!term || option.dataset.name.indexOf(term) !== -1); }); }
         search.addEventListener('input', function () { options.forEach(function (option) { option.hidden = !!search.value.trim() && option.dataset.name.indexOf(search.value.toLowerCase().trim()) === -1; }); });
+        document.getElementById('featured-brand-select-all').addEventListener('click', function () { options.forEach(function (option) { option.querySelector('input').checked = true; }); refresh(); });
         document.getElementById('featured-brand-select-visible').addEventListener('click', function () { visible().forEach(function (option) { option.querySelector('input').checked = true; }); refresh(); });
         document.getElementById('featured-brand-clear').addEventListener('click', function () { options.forEach(function (option) { option.querySelector('input').checked = false; }); refresh(); });
         options.forEach(function (option) { option.querySelector('input').addEventListener('change', refresh); });
