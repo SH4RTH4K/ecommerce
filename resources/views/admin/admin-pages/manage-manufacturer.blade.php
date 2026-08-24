@@ -55,15 +55,15 @@
                     <button type="button" class="btn" id="featured-brand-clear">Clear all</button>
                     <span class="muted"><strong id="featured-brand-count">{{ count($featuredBrandIds) }}</strong> selected</span>
                 </div>
-                <div id="featured-brand-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:300px;overflow:auto;padding:4px">
+                <div id="featured-brand-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;max-height:460px;overflow:auto;padding:4px">
                     @foreach($manufacturerOptions->where('publication_status', 1) as $brand)
-                        <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="display:flex;align-items:center;gap:7px;border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
+                        <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-width:0;border:1px solid #d9e2e8;border-radius:6px;padding:10px;background:#fff;cursor:pointer">
                             <input type="checkbox" name="featured_brand_ids[]" value="{{ $brand->manufacturer_id }}" {{ in_array((int) $brand->manufacturer_id, $featuredBrandIds, true) ? 'checked' : '' }}>
-                            <span style="flex:1">{{ $brand->manufacturer_name }}</span>
+                            <span style="flex:1;min-width:80px;font-weight:600">{{ $brand->manufacturer_name }}</span>
                             <span class="featured-brand-image-preview" style="width:30px;height:30px;display:inline-grid;place-items:center;flex:0 0 30px;border-radius:50%;background:#f1f5f8;overflow:hidden" title="{{ $brand->manufacturer_name }} image preview">
                                 @if(!empty($featuredBrandImages[(string) $brand->manufacturer_id]))<img src="{{ asset($featuredBrandImages[(string) $brand->manufacturer_id]) }}" alt="" style="width:100%;height:100%;object-fit:contain">@endif
                             </span>
-                            <input type="file" name="featured_brand_images[{{ $brand->manufacturer_id }}]" accept="image/png,image/jpeg,image/webp" title="Upload image icon for {{ $brand->manufacturer_name }}" style="width:125px;margin:0;padding:2px" data-preview-target="featured-brand-preview-{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()">
+                            <input type="file" name="featured_brand_images[{{ $brand->manufacturer_id }}]" accept="image/png,image/jpeg,image/webp" title="Upload image icon for {{ $brand->manufacturer_name }}" style="width:145px;max-width:100%;margin:0;padding:2px" data-preview-target="featured-brand-preview-{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()">
                             <select name="featured_brand_icons[{{ $brand->manufacturer_id }}]" title="Fallback icon for {{ $brand->manufacturer_name }}" style="width:42px;margin:0;padding:2px" onclick="event.stopPropagation()">
                                 @foreach(['' => 'Initials', 'fa-building' => 'Building', 'fa-laptop' => 'Laptop', 'fa-desktop' => 'Desktop', 'fa-mobile-phone' => 'Phone', 'fa-camera' => 'Camera', 'fa-shield' => 'Shield', 'fa-bolt' => 'Power', 'fa-cog' => 'Gear', 'fa-star' => 'Star', 'fa-tag' => 'Tag', 'fa-certificate' => 'Certificate', 'fa-cube' => 'Cube', 'fa-hdd-o' => 'Storage', 'fa-print' => 'Printer'] as $icon => $label)
                                     <option value="{{ $icon }}" {{ ($featuredBrandIcons[(string) $brand->manufacturer_id] ?? '') === $icon ? 'selected' : '' }}>{{ $label }}</option>
