@@ -51,7 +51,12 @@
             </div>
             <div class="box-content">
                 <form id="bulk-product-form" method="post" action="{{ url('/manage-product/bulk-delete') }}">{{ csrf_field() }}
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="bulk-product-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button><span id="bulk-product-count" class="muted">0 selected</span></div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                    <button id="bulk-product-publish" type="submit" class="btn btn-success" formaction="{{ url('/manage-product/bulk-publication') }}" name="publication_status" value="1" disabled><i class="halflings-icon white thumbs-up"></i> Publish selected</button>
+                    <button id="bulk-product-unpublish" type="submit" class="btn btn-warning" formaction="{{ url('/manage-product/bulk-publication') }}" name="publication_status" value="0" disabled><i class="halflings-icon white thumbs-down"></i> Unpublish selected</button>
+                    <button id="bulk-product-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button>
+                    <span id="bulk-product-count" class="muted">0 selected</span>
+                </div>
                 <table class="table table-striped table-bordered bootstrap-datatable datatable">
                     <thead>
                         <tr>
@@ -134,4 +139,20 @@
     </div><!--/row-->
 </div><!--/.fluid-container-->
 @include('admin.components.bulk-delete-script',['formId'=>'bulk-product-form','selectAllId'=>'select-all-products','buttonId'=>'bulk-product-button','counterId'=>'bulk-product-count','itemLabel'=>'products'])
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('bulk-product-form');
+    var publish = document.getElementById('bulk-product-publish');
+    var unpublish = document.getElementById('bulk-product-unpublish');
+    function syncPublicationButtons() {
+        var hasSelection = form.querySelectorAll('.bulk-row-checkbox:checked').length > 0;
+        publish.disabled = !hasSelection;
+        unpublish.disabled = !hasSelection;
+    }
+    form.querySelectorAll('.bulk-row-checkbox').forEach(function (checkbox) { checkbox.addEventListener('change', syncPublicationButtons); });
+    var selectAll = document.getElementById('select-all-products');
+    if (selectAll) selectAll.addEventListener('change', function () { setTimeout(syncPublicationButtons, 0); });
+    syncPublicationButtons();
+});
+</script>
 @endsection

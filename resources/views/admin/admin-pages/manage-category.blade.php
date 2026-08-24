@@ -31,6 +31,37 @@
     ])
     @include('admin.components.data-transfer',['resource'=>'categories'])
 
+    @php
+        $featuredCategoryIds = $all_category_info->where('is_featured', 1)->pluck('category_id')->map(fn ($id) => (int) $id)->all();
+    @endphp
+    <div class="box" style="margin-bottom:20px">
+        <div class="box-header" data-original-title>
+            <h2><i class="halflings-icon star"></i><span class="break"></span>Featured Categories</h2>
+        </div>
+        <div class="box-content">
+            <p class="muted">Choose multiple published categories for the homepage. The order below follows the category display order.</p>
+            <form method="post" action="{{ url('/manage-category/featured') }}" id="featured-category-form">
+                {{ csrf_field() }}
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                    <input type="search" id="featured-category-search" placeholder="Search categories..." style="margin:0;max-width:280px">
+                    <button type="button" class="btn" id="featured-select-visible">Select visible</button>
+                    <button type="button" class="btn" id="featured-clear">Clear all</button>
+                    <span class="muted"><strong id="featured-count">{{ count($featuredCategoryIds) }}</strong> selected</span>
+                </div>
+                <div id="featured-category-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:300px;overflow:auto;padding:4px">
+                    @foreach($all_category_info->where('publication_status', 1) as $category)
+                        <label class="featured-category-option" data-name="{{ strtolower($category->category_name) }}" style="border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
+                            <input type="checkbox" name="featured_category_ids[]" value="{{ $category->category_id }}" {{ in_array((int) $category->category_id, $featuredCategoryIds, true) ? 'checked' : '' }}>
+                            <i class="fa {{ $category->icon_class ?: 'fa-folder-open' }}"></i>
+                            {{ $category->category_name }}
+                        </label>
+                    @endforeach
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top:14px"><i class="halflings-icon white ok"></i> Save featured categories</button>
+            </form>
+        </div>
+    </div>
+
     <div class="row-fluid sortable">		
         <div class="box span12">
             <div class="box-header" data-original-title>
@@ -117,4 +148,26 @@
     </div><!--/row-->
 </div><!--/.fluid-container-->
 @include('admin.components.bulk-delete-script',['formId'=>'bulk-category-form','selectAllId'=>'select-all-categories','buttonId'=>'bulk-category-button','counterId'=>'bulk-category-count','itemLabel'=>'categories'])
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var search = document.getElementById('featured-category-search');
+    var options = Array.prototype.slice.call(document.querySelectorAll('.featured-category-option'));
+    var count = document.getElementById('featured-count');
+    function updateCount() { count.textContent = document.querySelectorAll('#featured-category-options input:checked').length; }
+    function filter() {
+        var term = search.value.toLowerCase().trim();
+        options.forEach(function (option) { option.style.display = !term || option.dataset.name.indexOf(term) !== -1 ? '' : 'none'; });
+    }
+    search.addEventListener('input', filter);
+    document.getElementById('featured-select-visible').addEventListener('click', function () {
+        options.forEach(function (option) { if (option.style.display !== 'none') option.querySelector('input').checked = true; });
+        updateCount();
+    });
+    document.getElementById('featured-clear').addEventListener('click', function () {
+        document.querySelectorAll('#featured-category-options input').forEach(function (input) { input.checked = false; });
+        updateCount();
+    });
+    document.querySelectorAll('#featured-category-options input').forEach(function (input) { input.addEventListener('change', updateCount); });
+});
+</script>
 @endsection

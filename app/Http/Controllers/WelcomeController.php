@@ -46,7 +46,7 @@ class WelcomeController extends Controller
         $featuredCategories = $categoryTree->where('is_featured', 1)
             ->sortBy(function ($category) {
                 return sprintf('%05d-%s', $category->display_order, $category->category_name);
-            })->take(10);
+            })->values();
 
         $banners = Banner::with(['product', 'category'])
             ->visible()

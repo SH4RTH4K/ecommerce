@@ -107,6 +107,7 @@ Route::post('/admin-data/{resource}/import', 'AdminDataTransferController@import
 
 Route::get('/add-category', "SuperAdminController@addCategory");
 Route::get('/manage-category', "SuperAdminController@manageCategory");
+Route::post('/manage-category/featured', "SuperAdminController@updateFeaturedCategories");
 Route::post('/manage-category/bulk-delete', "SuperAdminController@bulkDeleteCategories");
 Route::post('/save-category', "SuperAdminController@saveCategory");
 Route::post('/unpublished-category/{id}', "SuperAdminController@unpublishedCategory");
@@ -157,6 +158,7 @@ Route::get('/manage-product', "SuperAdminController@manageProduct");
 Route::post('/manage-product/bulk-delete', "SuperAdminController@bulkDeleteProducts");
 Route::post('/unpublished-product/{id}', "SuperAdminController@unpublishedProduct");
 Route::post('/published-product/{id}', "SuperAdminController@publishedProduct");
+Route::post('/manage-product/bulk-publication', "SuperAdminController@bulkUpdateProductPublication");
 Route::post('/delete-product/{id}', "SuperAdminController@deleteProduct");
 Route::get('/edit-product/{id}', "SuperAdminController@editProduct");
 Route::post('/update-product/', "SuperAdminController@updateProduct");

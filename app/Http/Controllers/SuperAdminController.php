@@ -126,6 +126,38 @@ class SuperAdminController extends Controller {
                         ->with('admin_main_content', $manage_category);
     }
 
+    public function updateFeaturedCategories(Request $request)
+    {
+        $this->authCheck();
+
+        $selectedIds = collect((array) $request->input('featured_category_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $publishedIds = Category::where('publication_status', 1)
+            ->whereIn('category_id', $selectedIds)
+            ->pluck('category_id');
+
+        DB::table('category')->update(['is_featured' => 0]);
+
+        foreach ($publishedIds as $index => $categoryId) {
+            DB::table('category')
+                ->where('category_id', $categoryId)
+                ->update([
+                    'is_featured' => 1,
+                    'display_order' => $index + 1,
+                ]);
+        }
+
+        Cache::forget('mega-menu-tree');
+        Cache::forget('storefront-navbar-tree');
+
+        return Redirect::to('/manage-category')
+            ->with('message', $publishedIds->count().' featured categor'.($publishedIds->count() === 1 ? 'y' : 'ies').' saved.');
+    }
+
     public function unpublishedCategory($category_id) {
         DB::table('category')
                 ->where('category_id', $category_id)
@@ -1051,6 +1083,29 @@ class SuperAdminController extends Controller {
                 ->where('id', $id)
                 ->update(['publication_status' => 1]);
         return Redirect::to('/manage-product');
+    }
+
+    public function bulkUpdateProductPublication(Request $request)
+    {
+        $this->authCheck();
+        $this->validate($request, [
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'required|integer|distinct|exists:product,id',
+            'publication_status' => 'required|boolean',
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $request->product_ids)));
+        $updated = DB::table('product')
+            ->whereIn('id', $ids)
+            ->whereNull('deleted_at')
+            ->update(['publication_status' => (int) $request->publication_status, 'updated_at' => now()]);
+
+        Cache::forget('xml-sitemap');
+
+        return Redirect::to('/manage-product')->with(
+            'message',
+            $updated.' product'.($updated === 1 ? '' : 's').' '.((int) $request->publication_status === 1 ? 'published' : 'unpublished').'.'
+        );
     }
 
     public function deleteproduct($id) {
