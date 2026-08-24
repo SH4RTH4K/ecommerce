@@ -57,6 +57,7 @@
                     <button id="bulk-product-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button>
                     <span id="bulk-product-count" class="muted">0 selected</span>
                 </div>
+                </form>
                 <table class="table table-striped table-bordered bootstrap-datatable datatable">
                     <thead>
                         <tr>
@@ -80,7 +81,7 @@
                         
                         ?>
                         <tr>
-                            <td><input type="checkbox" class="bulk-row-checkbox" name="product_ids[]" value="{{ $vproduct->id }}" aria-label="Select {{ $vproduct->product_name }}"></td>
+                            <td><input type="checkbox" class="bulk-row-checkbox" name="product_ids[]" value="{{ $vproduct->id }}" form="bulk-product-form" aria-label="Select {{ $vproduct->product_name }}"></td>
                             <td>{{$vproduct->id}}</td>
                             <td class="center">{{$vproduct->product_name}}</td>
                             <td class="center">{{ $vproduct->product_code ?: $vproduct->sku ?: '—' }}</td>
@@ -108,32 +109,26 @@
                                 if($vproduct->publication_status==1)
                                 {
                                 ?>
-                                <button type="submit" class="btn btn-danger" formaction="{{URL::to('/unpublished-product/'.$vproduct->id)}}" formmethod="post" aria-label="Unpublish product">
-                                    <i class="halflings-icon white thumbs-down"></i>  
-                                </button>
+                                <form method="post" action="{{ URL::to('/unpublished-product/'.$vproduct->id) }}" style="display:inline">{{ csrf_field() }}<button type="submit" class="btn btn-danger" aria-label="Unpublish product"><i class="halflings-icon white thumbs-down"></i></button></form>
                                 <?php
                                 }
                                 else{
                                 ?>
-                                <button type="submit" class="btn btn-success" formaction="{{URL::to('/published-product/'.$vproduct->id)}}" formmethod="post" aria-label="Publish product">
-                                    <i class="halflings-icon white thumbs-up"></i>  
-                                </button>
+                                <form method="post" action="{{ URL::to('/published-product/'.$vproduct->id) }}" style="display:inline">{{ csrf_field() }}<button type="submit" class="btn btn-success" aria-label="Publish product"><i class="halflings-icon white thumbs-up"></i></button></form>
                                 <?php
                                 }
                                 ?>
                                 <a class="btn btn-info" href="{{URL::to('/edit-product/'.$vproduct->id)}}">
                                     <i class="halflings-icon white edit"></i>  
                                 </a>
-                                <button type="submit" class="btn btn-danger" formaction="{{URL::to('/delete-product/'.$vproduct->id)}}" formmethod="post" onclick="return checkDelete()" aria-label="Delete product">
-                                    <i class="halflings-icon white trash"></i> 
-                                </button>
+                                <form method="post" action="{{ URL::to('/delete-product/'.$vproduct->id) }}" style="display:inline">{{ csrf_field() }}<button type="submit" class="btn btn-danger" onclick="return checkDelete()" aria-label="Delete product"><i class="halflings-icon white trash"></i></button></form>
                             </td>
                         </tr>
                         <?php
                             }
                         ?>
                     </tbody>
-                </table></form>
+                </table>
             </div>
         </div><!--/span-->
     </div><!--/row-->
@@ -145,11 +140,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var publish = document.getElementById('bulk-product-publish');
     var unpublish = document.getElementById('bulk-product-unpublish');
     function syncPublicationButtons() {
-        var hasSelection = form.querySelectorAll('.bulk-row-checkbox:checked').length > 0;
+        var hasSelection = document.querySelectorAll('#bulk-product-form .bulk-row-checkbox:checked, .bulk-row-checkbox[form="bulk-product-form"]:checked').length > 0;
         publish.disabled = !hasSelection;
         unpublish.disabled = !hasSelection;
     }
-    form.querySelectorAll('.bulk-row-checkbox').forEach(function (checkbox) { checkbox.addEventListener('change', syncPublicationButtons); });
+    document.querySelectorAll('#bulk-product-form .bulk-row-checkbox, .bulk-row-checkbox[form="bulk-product-form"]').forEach(function (checkbox) { checkbox.addEventListener('change', syncPublicationButtons); });
     var selectAll = document.getElementById('select-all-products');
     if (selectAll) selectAll.addEventListener('change', function () { setTimeout(syncPublicationButtons, 0); });
     syncPublicationButtons();

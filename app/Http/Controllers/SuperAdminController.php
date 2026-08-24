@@ -1219,17 +1219,17 @@ class SuperAdminController extends Controller {
     }
 
     public function unpublishedProduct($id) {
-        DB::table('product')
-                ->where('id', $id)
-                ->update(['publication_status' => 0]);
-        return Redirect::to('/manage-product');
+        $this->authCheck();
+        $updated = DB::table('product')->where('id', $id)->whereNull('deleted_at')->update(['publication_status' => 0, 'updated_at' => now()]);
+        Cache::forget('xml-sitemap');
+        return Redirect::to('/manage-product')->with($updated ? 'message' : 'exception', $updated ? 'Product unpublished.' : 'Product not found.');
     }
 
     public function publishedProduct($id) {
-        DB::table('product')
-                ->where('id', $id)
-                ->update(['publication_status' => 1]);
-        return Redirect::to('/manage-product');
+        $this->authCheck();
+        $updated = DB::table('product')->where('id', $id)->whereNull('deleted_at')->update(['publication_status' => 1, 'updated_at' => now()]);
+        Cache::forget('xml-sitemap');
+        return Redirect::to('/manage-product')->with($updated ? 'message' : 'exception', $updated ? 'Product published.' : 'Product not found.');
     }
 
     public function bulkUpdateProductPublication(Request $request)
