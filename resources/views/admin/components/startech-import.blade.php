@@ -174,10 +174,10 @@
                 @endforeach
                 <label class="sti-check">
                     <input type="checkbox" name="dry_run" value="1" {{ $dryRun ? 'checked' : '' }}>
-                    <span>Fetch only</span>
+                    <span>Fetch only — do not save</span>
                 </label>
             </div>
-            <div class="sti-help">Fetch only previews the selected source data and does not save any database changes.</div>
+            <div class="sti-help sti-dry-run-help" style="{{ $dryRun ? '' : 'display:none' }}">Preview mode is active: categories, brands, series, and products will not be written to the database.</div>
             @if($scopeSelectName)
                 <div class="sti-batch" id="sti-scope-wrap">
                     <label for="sti-scope-select">{{ $scopeSelectLabel }}</label>
@@ -223,7 +223,7 @@
                 </div>
             @endif
             <div class="sti-actions">
-                <button class="btn btn-warning" type="submit"><i class="icon-refresh"></i> {{ $submitLabel }}</button>
+                <button class="btn btn-warning sti-submit-button" type="submit"><i class="icon-refresh"></i> <span>{{ $dryRun ? 'Preview only' : $submitLabel }}</span></button>
                 <span class="sti-help">{{ $helpText }}</span>
             </div>
             <div class="sti-note">
@@ -289,3 +289,18 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endif
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('input[name="dry_run"]').forEach(function (checkbox) {
+        var form = checkbox.closest('form');
+        var button = form && form.querySelector('.sti-submit-button span');
+        var help = form && form.querySelector('.sti-dry-run-help');
+        if (!button) return;
+        var importLabel = @json($submitLabel);
+        checkbox.addEventListener('change', function () {
+            button.textContent = checkbox.checked ? 'Preview only' : importLabel;
+            if (help) help.style.display = checkbox.checked ? '' : 'none';
+        });
+    });
+});
+</script>
