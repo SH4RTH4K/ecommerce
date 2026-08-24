@@ -525,14 +525,25 @@ class SuperAdminController extends Controller {
             ->all();
         $imageSetting = DB::table('site_settings')->where('setting_key', 'homepage_featured_brand_images')->value('setting_value');
         $images = json_decode($imageSetting ?: '{}', true) ?: [];
+        $deleteFeaturedBrandImage = function ($path) {
+            $path = ltrim((string) $path, '/');
+            $prefix = 'asset/front-end/img/featured-brands/';
+            if ($path !== '' && strpos($path, $prefix) === 0) {
+                $absolutePath = public_path($path);
+                if (is_file($absolutePath)) @unlink($absolutePath);
+            }
+        };
         foreach ($selectedIds as $brandId) {
             $brandId = (int) $brandId;
             if (in_array((string) $brandId, (array) $request->input('remove_featured_brand_images', []), true)) {
+                $deleteFeaturedBrandImage($images[(string) $brandId] ?? null);
                 unset($images[(string) $brandId]);
             }
             $image = $request->file('featured_brand_images', [])[$brandId] ?? null;
             if ($image) {
+                $oldImage = $images[(string) $brandId] ?? null;
                 $images[(string) $brandId] = \App\Support\PublicUpload::store($image, 'asset/front-end/img/featured-brands/', 'brand-'.$brandId.'-', ['jpg', 'jpeg', 'png', 'webp']);
+                if ($oldImage && $oldImage !== $images[(string) $brandId]) $deleteFeaturedBrandImage($oldImage);
             }
         }
         $images = collect($images)->only($publishedIds->map(fn ($id) => (string) $id)->all())->all();

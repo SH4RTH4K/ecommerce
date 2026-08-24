@@ -60,7 +60,7 @@
                         <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="display:flex;align-items:center;gap:7px;border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
                             <input type="checkbox" name="featured_brand_ids[]" value="{{ $brand->manufacturer_id }}" {{ in_array((int) $brand->manufacturer_id, $featuredBrandIds, true) ? 'checked' : '' }}>
                             <span style="flex:1">{{ $brand->manufacturer_name }}</span>
-                            <span class="featured-brand-image-preview" style="width:30px;height:30px;display:inline-grid;place-items:center;flex:0 0 30px;border-radius:50%;background:#f1f5f8;overflow:hidden" title="Image preview">
+                            <span class="featured-brand-image-preview" style="width:30px;height:30px;display:inline-grid;place-items:center;flex:0 0 30px;border-radius:50%;background:#f1f5f8;overflow:hidden" title="{{ $brand->manufacturer_name }} image preview">
                                 @if(!empty($featuredBrandImages[(string) $brand->manufacturer_id]))<img src="{{ asset($featuredBrandImages[(string) $brand->manufacturer_id]) }}" alt="" style="width:100%;height:100%;object-fit:contain">@endif
                             </span>
                             <input type="file" name="featured_brand_images[{{ $brand->manufacturer_id }}]" accept="image/png,image/jpeg,image/webp" title="Upload image icon for {{ $brand->manufacturer_name }}" style="width:125px;margin:0;padding:2px" data-preview-target="featured-brand-preview-{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()">
@@ -69,7 +69,7 @@
                                     <option value="{{ $icon }}" {{ ($featuredBrandIcons[(string) $brand->manufacturer_id] ?? '') === $icon ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
-                            @if(!empty($featuredBrandImages[(string) $brand->manufacturer_id]))<label style="font-size:11px;margin:0" title="Remove uploaded image"><input type="checkbox" name="remove_featured_brand_images[]" value="{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()"> Remove</label>@endif
+                            @if(!empty($featuredBrandImages[(string) $brand->manufacturer_id]))<span style="font-size:10px;color:#777;white-space:nowrap" title="Saved image for {{ $brand->manufacturer_name }}">{{ $brand->manufacturer_name }} image</span><label style="font-size:11px;margin:0;color:#a00;white-space:nowrap" title="Permanently delete {{ $brand->manufacturer_name }} image"><input type="checkbox" name="remove_featured_brand_images[]" value="{{ $brand->manufacturer_id }}" onclick="event.stopPropagation()"> Delete permanently</label>@endif
                         </label>
                     @endforeach
                 </div>
