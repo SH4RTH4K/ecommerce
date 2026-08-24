@@ -477,11 +477,41 @@ class SuperAdminController extends Controller {
                 ->get();
         $manufacturerOptions = Manufacturer::orderBy('manufacturer_name')
                 ->get();
+        $featuredBrandSetting = DB::table('site_settings')
+                ->where('setting_key', 'homepage_featured_brands')
+                ->value('setting_value');
+        $featuredBrandIds = $featuredBrandSetting !== null
+                ? collect(json_decode($featuredBrandSetting, true) ?: [])->map(fn ($id) => (int) $id)->filter()->values()->all()
+                : [];
         $manage_manufacturer = view('admin.admin-pages.manage-manufacturer')
                 ->with('all_manufacturer', $all_manufacturer)
-                ->with('manufacturerOptions', $manufacturerOptions);
+                ->with('manufacturerOptions', $manufacturerOptions)
+                ->with('featuredBrandIds', $featuredBrandIds);
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_manufacturer);
+    }
+
+    public function updateFeaturedBrands(Request $request)
+    {
+        $this->authCheck();
+
+        $selectedIds = collect((array) $request->input('featured_brand_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $publishedIds = Manufacturer::where('publication_status', 1)
+            ->whereIn('manufacturer_id', $selectedIds)
+            ->pluck('manufacturer_id');
+
+        DB::table('site_settings')->updateOrInsert(
+            ['setting_key' => 'homepage_featured_brands'],
+            ['setting_value' => json_encode($publishedIds->values()->all()), 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        return Redirect::to('/manage-manufacturer')
+            ->with('message', $publishedIds->count().' featured brand'.($publishedIds->count() === 1 ? '' : 's').' saved.');
     }
 
     public function unpublishedManufacturer($manufacturer_id) {

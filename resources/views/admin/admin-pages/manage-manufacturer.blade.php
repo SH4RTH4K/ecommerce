@@ -40,7 +40,48 @@
     ])
     @include('admin.components.data-transfer',['resource'=>'manufacturers'])
 
-    <div class="row-fluid sortable">		
+    <div class="box" style="margin-bottom:20px">
+        <div class="box-header" data-original-title>
+            <h2><i class="halflings-icon star"></i><span class="break"></span>Featured Brands</h2>
+        </div>
+        <div class="box-content">
+            <p class="muted">Choose the published brands that appear in the homepage “Popular Brands” section. The display order follows the brand name.</p>
+            <form method="post" action="{{ url('/manage-manufacturer/featured') }}" id="featured-brand-form">
+                {{ csrf_field() }}
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                    <input type="search" id="featured-brand-search" placeholder="Search brands..." style="margin:0;max-width:280px">
+                    <button type="button" class="btn" id="featured-brand-select-visible">Select visible</button>
+                    <button type="button" class="btn" id="featured-brand-clear">Clear all</button>
+                    <span class="muted"><strong id="featured-brand-count">{{ count($featuredBrandIds) }}</strong> selected</span>
+                </div>
+                <div id="featured-brand-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:300px;overflow:auto;padding:4px">
+                    @foreach($manufacturerOptions->where('publication_status', 1) as $brand)
+                        <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
+                            <input type="checkbox" name="featured_brand_ids[]" value="{{ $brand->manufacturer_id }}" {{ in_array((int) $brand->manufacturer_id, $featuredBrandIds, true) ? 'checked' : '' }}>
+                            {{ $brand->manufacturer_name }}
+                        </label>
+                    @endforeach
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top:14px"><i class="halflings-icon white ok"></i> Save featured brands</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var search = document.getElementById('featured-brand-search');
+        var options = Array.prototype.slice.call(document.querySelectorAll('.featured-brand-option'));
+        var count = document.getElementById('featured-brand-count');
+        function refresh() { count.textContent = document.querySelectorAll('#featured-brand-options input:checked').length; }
+        function visible() { var term = (search.value || '').toLowerCase().trim(); return options.filter(function (option) { return !option.hidden && (!term || option.dataset.name.indexOf(term) !== -1); }); }
+        search.addEventListener('input', function () { options.forEach(function (option) { option.hidden = !!search.value.trim() && option.dataset.name.indexOf(search.value.toLowerCase().trim()) === -1; }); });
+        document.getElementById('featured-brand-select-visible').addEventListener('click', function () { visible().forEach(function (option) { option.querySelector('input').checked = true; }); refresh(); });
+        document.getElementById('featured-brand-clear').addEventListener('click', function () { options.forEach(function (option) { option.querySelector('input').checked = false; }); refresh(); });
+        options.forEach(function (option) { option.querySelector('input').addEventListener('change', refresh); });
+    }());
+    </script>
+
+    <div class="row-fluid sortable">
         <div class="box span12">
             <div class="box-header" data-original-title>
                 <h2><i class="halflings-icon user"></i><span class="break"></span>Manage Manufacturers</h2>

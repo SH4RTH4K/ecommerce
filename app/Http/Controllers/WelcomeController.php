@@ -38,10 +38,23 @@ class WelcomeController extends Controller
             ->limit(10)
             ->get();
 
-        $brands = Manufacturer::where('publication_status', 1)
-            ->orderBy('manufacturer_name')
-            ->limit(12)
-            ->get();
+        $featuredBrandSetting = DB::table('site_settings')
+            ->where('setting_key', 'homepage_featured_brands')
+            ->value('setting_value');
+        if ($featuredBrandSetting !== null) {
+            $featuredBrandIds = collect(json_decode($featuredBrandSetting, true) ?: [])
+                ->map(fn ($id) => (int) $id)->filter()->values();
+            $brands = Manufacturer::where('publication_status', 1)
+                ->whereIn('manufacturer_id', $featuredBrandIds)
+                ->get()
+                ->sortBy(fn ($brand) => $featuredBrandIds->search((int) $brand->manufacturer_id))
+                ->values();
+        } else {
+            $brands = Manufacturer::where('publication_status', 1)
+                ->orderBy('manufacturer_name')
+                ->limit(12)
+                ->get();
+        }
 
         $featuredCategories = $categoryTree->where('is_featured', 1)
             ->sortBy(function ($category) {

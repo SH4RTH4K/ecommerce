@@ -130,6 +130,7 @@ Route::post('/update-subCategory/', "SuperAdminController@updateSubCategory");
 Route::get('/add-manufacturer', "SuperAdminController@addManufacturer");
 Route::post('/save-manufacturer', "SuperAdminController@saveManufacturer");
 Route::get('/manage-manufacturer', "SuperAdminController@manageManufacturer");
+Route::post('/manage-manufacturer/featured', "SuperAdminController@updateFeaturedBrands");
 Route::get('/catalog-hierarchy', 'CatalogHierarchyController@index')->name('catalog-hierarchy.index');
 Route::get('/catalog-imports', 'CatalogHierarchyController@imports')->name('catalog-imports.index');
 Route::post('/catalog-hierarchy/startech-import', 'CatalogHierarchyController@importStarTechCatalog')->name('catalog-hierarchy.startech-import');
