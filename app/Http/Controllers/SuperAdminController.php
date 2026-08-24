@@ -535,6 +535,7 @@ class SuperAdminController extends Controller {
                 $images[(string) $brandId] = \App\Support\PublicUpload::store($image, 'asset/front-end/img/featured-brands/', 'brand-'.$brandId.'-', ['jpg', 'jpeg', 'png', 'webp']);
             }
         }
+        $images = collect($images)->only($publishedIds->map(fn ($id) => (string) $id)->all())->all();
 
         DB::table('site_settings')->updateOrInsert(
             ['setting_key' => 'homepage_featured_brands'],
@@ -550,7 +551,7 @@ class SuperAdminController extends Controller {
         );
 
         return Redirect::to('/manage-manufacturer')
-            ->with('message', $publishedIds->count().' featured brand'.($publishedIds->count() === 1 ? '' : 's').' saved.');
+            ->with('message', 'Featured brands saved: '.$publishedIds->count().' selected, '.count($icons).' Font Awesome icon'.(count($icons) === 1 ? '' : 's').', and '.count($images).' image icon'.(count($images) === 1 ? '' : 's').'.');
     }
 
     public function unpublishedManufacturer($manufacturer_id) {
