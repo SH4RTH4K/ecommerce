@@ -525,6 +525,8 @@ class SuperAdminController extends Controller {
             ->all();
         $imageSetting = DB::table('site_settings')->where('setting_key', 'homepage_featured_brand_images')->value('setting_value');
         $images = json_decode($imageSetting ?: '{}', true) ?: [];
+        $brandNames = Manufacturer::whereIn('manufacturer_id', $selectedIds)
+            ->pluck('manufacturer_name', 'manufacturer_id');
         $deleteFeaturedBrandImage = function ($path) {
             $path = ltrim((string) $path, '/');
             $prefix = 'asset/front-end/img/featured-brands/';
@@ -532,6 +534,22 @@ class SuperAdminController extends Controller {
                 $absolutePath = public_path($path);
                 if (is_file($absolutePath)) @unlink($absolutePath);
             }
+        };
+        $renameFeaturedBrandImage = function ($path, $brandId, $brandName) {
+            $path = ltrim((string) $path, '/');
+            $prefix = 'asset/front-end/img/featured-brands/';
+            if ($path === '' || strpos($path, $prefix) !== 0) return $path;
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $slug = \Illuminate\Support\Str::slug((string) $brandName) ?: 'brand';
+            $newPath = $prefix.'brand-'.$slug.'-'.(int) $brandId.'.'.$extension;
+            if ($path === $newPath) return $path;
+            $oldAbsolute = public_path($path);
+            $newAbsolute = public_path($newPath);
+            if (is_file($oldAbsolute)) {
+                if (is_file($newAbsolute)) @unlink($newAbsolute);
+                if (@rename($oldAbsolute, $newAbsolute)) return $newPath;
+            }
+            return $path;
         };
         foreach ($selectedIds as $brandId) {
             $brandId = (int) $brandId;
@@ -544,6 +562,9 @@ class SuperAdminController extends Controller {
                 $oldImage = $images[(string) $brandId] ?? null;
                 $images[(string) $brandId] = \App\Support\PublicUpload::store($image, 'asset/front-end/img/featured-brands/', 'brand-'.$brandId.'-', ['jpg', 'jpeg', 'png', 'webp']);
                 if ($oldImage && $oldImage !== $images[(string) $brandId]) $deleteFeaturedBrandImage($oldImage);
+            }
+            if (!empty($images[(string) $brandId])) {
+                $images[(string) $brandId] = $renameFeaturedBrandImage($images[(string) $brandId], $brandId, $brandNames->get($brandId, 'brand'));
             }
         }
         $images = collect($images)->only($publishedIds->map(fn ($id) => (string) $id)->all())->all();
