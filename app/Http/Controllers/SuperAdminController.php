@@ -483,10 +483,15 @@ class SuperAdminController extends Controller {
         $featuredBrandIds = $featuredBrandSetting !== null
                 ? collect(json_decode($featuredBrandSetting, true) ?: [])->map(fn ($id) => (int) $id)->filter()->values()->all()
                 : [];
+        $featuredBrandIconSetting = DB::table('site_settings')
+                ->where('setting_key', 'homepage_featured_brand_icons')
+                ->value('setting_value');
+        $featuredBrandIcons = json_decode($featuredBrandIconSetting ?: '{}', true) ?: [];
         $manage_manufacturer = view('admin.admin-pages.manage-manufacturer')
                 ->with('all_manufacturer', $all_manufacturer)
                 ->with('manufacturerOptions', $manufacturerOptions)
-                ->with('featuredBrandIds', $featuredBrandIds);
+                ->with('featuredBrandIds', $featuredBrandIds)
+                ->with('featuredBrandIcons', $featuredBrandIcons);
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_manufacturer);
     }
@@ -504,10 +509,22 @@ class SuperAdminController extends Controller {
         $publishedIds = Manufacturer::where('publication_status', 1)
             ->whereIn('manufacturer_id', $selectedIds)
             ->pluck('manufacturer_id');
+        $allowedIcons = ['fa-building', 'fa-laptop', 'fa-desktop', 'fa-mobile-phone', 'fa-camera', 'fa-shield', 'fa-bolt', 'fa-cog', 'fa-star', 'fa-tag', 'fa-certificate', 'fa-cube', 'fa-hdd-o', 'fa-print'];
+        $icons = collect((array) $request->input('featured_brand_icons', []))
+            ->mapWithKeys(function ($icon, $id) use ($allowedIcons) {
+                $icon = trim((string) $icon);
+                return in_array($icon, $allowedIcons, true) ? [(int) $id => $icon] : [];
+            })
+            ->only($publishedIds->map(fn ($id) => (int) $id)->all())
+            ->all();
 
         DB::table('site_settings')->updateOrInsert(
             ['setting_key' => 'homepage_featured_brands'],
             ['setting_value' => json_encode($publishedIds->values()->all()), 'created_at' => now(), 'updated_at' => now()]
+        );
+        DB::table('site_settings')->updateOrInsert(
+            ['setting_key' => 'homepage_featured_brand_icons'],
+            ['setting_value' => json_encode($icons), 'created_at' => now(), 'updated_at' => now()]
         );
 
         return Redirect::to('/manage-manufacturer')

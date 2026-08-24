@@ -57,9 +57,14 @@
                 </div>
                 <div id="featured-brand-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:300px;overflow:auto;padding:4px">
                     @foreach($manufacturerOptions->where('publication_status', 1) as $brand)
-                        <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
+                        <label class="featured-brand-option" data-name="{{ strtolower($brand->manufacturer_name) }}" style="display:flex;align-items:center;gap:7px;border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
                             <input type="checkbox" name="featured_brand_ids[]" value="{{ $brand->manufacturer_id }}" {{ in_array((int) $brand->manufacturer_id, $featuredBrandIds, true) ? 'checked' : '' }}>
-                            {{ $brand->manufacturer_name }}
+                            <span style="flex:1">{{ $brand->manufacturer_name }}</span>
+                            <select name="featured_brand_icons[{{ $brand->manufacturer_id }}]" title="Icon for {{ $brand->manufacturer_name }}" style="width:42px;margin:0;padding:2px" onclick="event.stopPropagation()">
+                                @foreach(['' => 'Initials', 'fa-building' => 'Building', 'fa-laptop' => 'Laptop', 'fa-desktop' => 'Desktop', 'fa-mobile-phone' => 'Phone', 'fa-camera' => 'Camera', 'fa-shield' => 'Shield', 'fa-bolt' => 'Power', 'fa-cog' => 'Gear', 'fa-star' => 'Star', 'fa-tag' => 'Tag', 'fa-certificate' => 'Certificate', 'fa-cube' => 'Cube', 'fa-hdd-o' => 'Storage', 'fa-print' => 'Printer'] as $icon => $label)
+                                    <option value="{{ $icon }}" {{ ($featuredBrandIcons[(string) $brand->manufacturer_id] ?? '') === $icon ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </label>
                     @endforeach
                 </div>

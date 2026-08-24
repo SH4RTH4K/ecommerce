@@ -41,9 +41,11 @@ class WelcomeController extends Controller
         $featuredBrandSetting = DB::table('site_settings')
             ->where('setting_key', 'homepage_featured_brands')
             ->value('setting_value');
+        $featuredBrandIcons = [];
         if ($featuredBrandSetting !== null) {
             $featuredBrandIds = collect(json_decode($featuredBrandSetting, true) ?: [])
                 ->map(fn ($id) => (int) $id)->filter()->values();
+            $featuredBrandIcons = json_decode(DB::table('site_settings')->where('setting_key', 'homepage_featured_brand_icons')->value('setting_value') ?: '{}', true) ?: [];
             $brands = Manufacturer::where('publication_status', 1)
                 ->whereIn('manufacturer_id', $featuredBrandIds)
                 ->get()
@@ -76,7 +78,7 @@ class WelcomeController extends Controller
             'newArrivals',
             'latestProducts',
             'brands',
-            'banners', 'homepageFeatureCards'
+            'banners', 'homepageFeatureCards', 'featuredBrandIcons'
         ));
     }
     
