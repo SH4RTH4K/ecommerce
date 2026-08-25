@@ -28,8 +28,7 @@ class PcBuilderController extends Controller
     public function choose(Request $request, $slot)
     {
         $slots=$this->slots(); abort_unless(isset($slots[$slot]),404);
-        $config=$slots[$slot];
-        $category=$config['category_id'] ? Category::findOrFail((int)$config['category_id']) : Category::whereRaw('LOWER(category_name) = ?',[strtolower($config['category'])])->firstOrFail();
+        [$config,$category]=$this->resolveSlot($slots[$slot]);
         $query=Product::where('category_id',$category->category_id)->where('publication_status',1)->where('product_condition','In Stock'); if($config['sub_category_id'])$query->where('sub_category',(string)$config['sub_category_id']);
         if($request->filled('q')){$term=trim($request->q);$query->where(function($q)use($term){$q->where('product_name','like','%'.$term.'%')->orWhere('product_model','like','%'.$term.'%')->orWhere('sku','like','%'.$term.'%');});}
         if($request->filled('min_price'))$query->whereRaw(Product::sellingPriceSql().' >= ?',[(float)$request->min_price]);
@@ -44,7 +43,7 @@ class PcBuilderController extends Controller
     {
         $this->validate($request,['slot'=>'required','product_id'=>'required|integer']); $slots=$this->slots(); abort_unless(isset($slots[$request->slot]),422);
         $slot=$slots[$request->slot];
-        $category=$slot['category_id'] ? Category::findOrFail((int)$slot['category_id']) : Category::whereRaw('LOWER(category_name) = ?',[strtolower($slot['category'])])->firstOrFail();
+        [$slot,$category]=$this->resolveSlot($slot);
         $product=Product::where('id',$request->product_id)->where('category_id',$category->category_id)->when($slot['sub_category_id'],fn($q)=>$q->where('sub_category',(string)$slot['sub_category_id']))->where('publication_status',1)->where('product_condition','In Stock')->firstOrFail();
         $build=(array)$request->session()->get('pc_build',[]);$build[$request->slot]=$product->id;
         $selected=Product::whereIn('id',array_values($build))->get()->keyBy('id');
@@ -74,6 +73,31 @@ class PcBuilderController extends Controller
         $warnings=[]; $rules=app(PcBuilderConfigurationService::class)->rules();
         foreach($rules as $rule){if(empty($rule['enabled'])||empty($build[$rule['left_slot']])||empty($build[$rule['right_slot']]))continue;$left=$this->attributeValue($build[$rule['left_slot']],$rule['left_attribute']);$right=$this->attributeValue($build[$rule['right_slot']],$rule['right_attribute']);if($left!==null&&$right!==null&&$this->normalizeValue($left)!==$this->normalizeValue($right))$warnings[]=$rule['message']?:($rule['name'].' values do not match.');}
         return array_values(array_unique($warnings));
+    }
+
+    /**
+     * PC parts are stored as subcategories under the Component category in
+     * this catalog. Keep explicit admin mappings authoritative, but allow the
+     * default slot name (for example, "processor") to resolve to a matching
+     * subcategory when no mapping has been saved yet.
+     */
+    private function resolveSlot(array $slot): array
+    {
+        if (!empty($slot['category_id'])) {
+            return [$slot, Category::findOrFail((int)$slot['category_id'])];
+        }
+
+        $category=Category::whereRaw('LOWER(category_name) = ?',[strtolower($slot['category'])])->first();
+        if ($category) return [$slot, $category];
+
+        $subcategory=\DB::table('sub_category')
+            ->whereRaw('LOWER(sub_category_name) = ?',[strtolower($slot['category'])])
+            ->first();
+        abort_unless($subcategory,404);
+
+        $slot['category_id']=(int)$subcategory->category_id;
+        $slot['sub_category_id']=(int)$subcategory->sub_category_id;
+        return [$slot, Category::findOrFail((int)$subcategory->category_id)];
     }
 
     private function attributeValue($productId,$attribute){return \DB::table('product_attribute_values as v')->join('catalog_attributes as a','a.id','=','v.attribute_id')->where('v.product_id',$productId)->where(function($q)use($attribute){$q->where('a.slug',str_slug($attribute))->orWhereRaw('LOWER(a.name)=?', [strtolower(trim($attribute))]);})->value('v.value');}
