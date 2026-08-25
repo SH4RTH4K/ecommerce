@@ -21,6 +21,7 @@ class ProductCodeConfiguration extends Model
         'is_active' => 'boolean',
         'effective_from' => 'datetime',
         'effective_to' => 'datetime',
+        'version' => 'integer',
     ];
 
     public function scopeForType($query, string $codeType)

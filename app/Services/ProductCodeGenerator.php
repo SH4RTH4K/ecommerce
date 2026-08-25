@@ -86,6 +86,16 @@ class ProductCodeGenerator
         return $this->render($configuration, $context, $this->previewSequenceNumber($configuration, $context));
     }
 
+    public function previewWithSequence(array $context, int $sequence, ?ProductCodeConfiguration $configuration = null): array
+    {
+        $configuration = $configuration ? $configuration->loadMissing(['components', 'company', 'branch']) : $this->resolveConfiguration($context);
+        if (! $configuration) {
+            throw ValidationException::withMessages(['configuration' => $this->configurationUnavailableMessage($context['code_type'] ?? null)]);
+        }
+
+        return $this->render($configuration, $context, max(1, $sequence));
+    }
+
     public function allocate(array $context, ?ProductCodeConfiguration $configuration = null): array
     {
         $configuration = $configuration ? $configuration->loadMissing(['components', 'company', 'branch']) : $this->resolveConfiguration($context);
@@ -171,6 +181,7 @@ class ProductCodeGenerator
     {
         return [
             'id' => $configuration->id,
+            'version' => (int) ($configuration->version ?: 1),
             'code_type' => $this->normalizeCodeType($configuration->code_type ?? null),
             'code_type_label' => $this->codeTypeLabel($configuration->code_type ?? null),
             'name' => $configuration->name,

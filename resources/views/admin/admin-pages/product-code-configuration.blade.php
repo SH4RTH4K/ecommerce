@@ -87,6 +87,9 @@
     ];
 
     $componentLabels = $availableComponents ?? [];
+    $simplePrefix = collect($componentRows)->firstWhere('component_type', 'prefix')['static_value'] ?? '';
+    $simpleHasNameCode = collect($componentRows)->contains(fn ($component) => $component['component_type'] === 'name_code');
+    $simpleHasSequence = collect($componentRows)->contains(fn ($component) => $component['component_type'] === 'sequence');
 @endphp
 <style>
 .pcc{padding:26px}
@@ -100,6 +103,7 @@
 .pcc-banner small{display:block;color:#607684;line-height:1.45}
 .pcc-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .pcc-tab{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #dce7ed;border-radius:999px;background:#fff;color:#315468;font-weight:700;text-decoration:none;box-shadow:0 3px 10px rgba(14,56,76,.04)}
+.pcc-tab{align-items:flex-start;border-radius:10px;min-width:150px}.pcc-tab-copy{display:grid;gap:2px}.pcc-tab-copy small{font-size:10px;font-weight:400;line-height:1.2;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.8}
 .pcc-tab:hover{text-decoration:none;background:#f6fbfe}
 .pcc-tab.active{background:#0f6b8f;color:#fff;border-color:#0f6b8f}
 .pcc-tab .count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:rgba(255,255,255,.2);font-size:12px}
@@ -146,9 +150,9 @@
 .pcc-small{font-size:12px;color:#607684;line-height:1.4}
 .pcc-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .pcc-pre{max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#f8fbfd;border:1px solid #dbe7ee;border-radius:8px;padding:10px;font-size:12px;line-height:1.45;color:#355063}
-.pcc-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 18px}
-.pcc-flow-step{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #dce7ed;border-radius:10px;background:#fff;color:#607684;font-size:12px;line-height:1.3}
-.pcc-flow-step strong{display:block;color:#214e67;font-size:13px}.pcc-flow-step .num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#eaf3f7;color:#0f6b8f;font-weight:800;flex:0 0 auto}.pcc-flow-step.active{border-color:#8bc6dc;background:#f4fbfe}.pcc-flow-step.active .num{background:#0f6b8f;color:#fff}
+.pcc-flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 18px}
+.pcc-flow-step{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #dce7ed;border-radius:10px;background:#fff;color:#607684;font:inherit;font-size:12px;line-height:1.3;text-align:left;cursor:pointer}
+.pcc-flow-step strong{display:block;color:#214e67;font-size:13px}.pcc-flow-step .num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#eaf3f7;color:#0f6b8f;font-weight:800;flex:0 0 auto}.pcc-flow-step.active{border-color:#8bc6dc;background:#f4fbfe}.pcc-flow-step.active .num{background:#0f6b8f;color:#fff}.pcc-flow-step.completed{border-color:#b8dfc8;background:#f4fbf6}.pcc-flow-step.completed .num{background:#23834b;color:#fff}
 .pcc-type-label{margin:0 0 9px;color:#607684;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
 .pcc-tab{transition:transform .15s ease,box-shadow .15s ease}.pcc-tab:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(14,56,76,.1)}
 .pcc-selector{position:relative}.pcc-selector .selector-copy{flex:1;min-width:220px}.pcc-selector .selector-copy strong{display:block;color:#123f61}.pcc-selector .selector-copy small{display:block;margin-top:3px;color:#758995}
@@ -157,8 +161,13 @@
 .pcc-sticky-actions{position:sticky;bottom:12px;z-index:5;padding:11px 12px;background:rgba(255,255,255,.96);border:1px solid #cfe0e8;border-radius:11px;box-shadow:0 8px 22px rgba(14,56,76,.14)}
 .pcc-safety{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:11px 13px;border:1px solid #f0d49c;border-radius:9px;background:#fff9ec;color:#76521a;font-size:12px;line-height:1.45}.pcc-safety i{margin-top:2px}
 .pcc-table-wrap{scrollbar-color:#b8d1dc #f5f9fb}.pcc-table th{background:#f4f8fa;color:#315468;font-size:12px;white-space:nowrap}.pcc-table td input,.pcc-table td select,.pcc-table td textarea{max-width:100%;box-sizing:border-box}
+.pcc-intro{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;margin-bottom:18px}.pcc-intro-card{background:#fff;border:1px solid #dce7ed;border-radius:12px;padding:18px;box-shadow:0 5px 18px rgba(14,56,76,.05)}.pcc-intro-card h2{margin:0 0 7px;color:#123f61;font-size:18px}.pcc-intro-card p{margin:0;color:#607684;line-height:1.55}.pcc-checklist{margin:0;padding:0;list-style:none}.pcc-checklist li{display:flex;gap:9px;align-items:flex-start;margin:8px 0;color:#315468;font-size:13px}.pcc-checklist i{color:#1988ad;margin-top:2px}.pcc-stage-label{display:flex;align-items:center;gap:8px;margin:0 0 9px;color:#123f61;font-size:13px;font-weight:800}.pcc-stage-label .stage-number{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#0f6b8f;color:#fff}.pcc-policy-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.pcc-policy-option{position:relative;display:block;margin:0!important;padding:12px 12px 12px 36px!important;border:1px solid #d7e4eb;border-radius:10px;background:#fff;cursor:pointer;font-weight:400!important;line-height:1.35}.pcc-policy-option input{position:absolute;left:13px;top:15px}.pcc-policy-option strong{display:block;color:#214e67;margin-bottom:3px}.pcc-policy-option small{display:block;color:#758995;font-size:11px}.pcc-policy-option.recommended{border-color:#8bc6dc;background:#f2fbfe}.pcc-policy-help{margin:10px 0 0;color:#607684;font-size:12px;line-height:1.45}
+.pcc{max-width:1380px;margin:0 auto!important;float:none!important}.pcc-wizard-tabs,.pcc-utility-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.pcc-wizard-tab,.pcc-utility-tab{border:1px solid #cbdfe9;background:#fff;color:#315468;border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;cursor:pointer}.pcc-wizard-tab .number{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;margin-right:6px;background:#e7f1f6;color:#0f6b8f}.pcc-wizard-tab.active,.pcc-utility-tab.active{background:#0f6b8f;border-color:#0f6b8f;color:#fff}.pcc-wizard-tab.active .number{background:#fff;color:#0f6b8f}.pcc-wizard-panel{display:none}.pcc-wizard-panel.active{display:block}.pcc-current-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pcc-current-metric{border:1px solid #dce7ed;border-radius:10px;padding:12px;background:#f9fcfe}.pcc-current-metric span{display:block;font-size:11px;color:#758995;text-transform:uppercase;letter-spacing:.04em}.pcc-current-metric strong{display:block;margin-top:4px;color:#123f61;word-break:break-word}.pcc-sample-list{margin:14px 0 0;padding:0;list-style:none;border-top:1px solid #e4edf2}.pcc-sample-list li{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #e4edf2;color:#315468}.pcc-sample-list code{color:#0f6b8f}.pcc-mode-switch{display:flex;gap:8px;margin:0 0 16px}.pcc-mode-switch button{border:1px solid #cbdfe9;border-radius:8px;background:#fff;color:#315468;padding:8px 12px;font-weight:700;cursor:pointer}.pcc-mode-switch button.active{background:#e8f7fc;border-color:#1988ad;color:#0b5d80}.pcc-simple-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px;border:1px solid #dce7ed;border-radius:11px;background:#f9fcfe}.pcc-simple-grid label{display:block;font-weight:700;color:#315468}.pcc-simple-grid input,.pcc-simple-grid select{width:100%;height:38px;box-sizing:border-box;margin:6px 0 0}.pcc-step-actions{display:flex;justify-content:space-between;gap:10px;margin-top:20px;padding-top:15px;border-top:1px solid #e4edf2}.pcc-step-actions .right{display:flex;gap:8px}.pcc-danger-zone{margin-top:18px;padding:14px;border:1px solid #edb0a8;border-radius:10px;background:#fff5f4}.pcc-danger-zone h3{margin:0 0 5px;color:#9d2e21}.pcc-danger-zone p{margin:0 0 10px;color:#7b4b46;font-size:12px}.pcc-utility-panel{display:none}.pcc-utility-panel.active{display:block}.pcc-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.pcc-compare div{padding:10px;border:1px solid #dbe7ee;border-radius:8px;background:#fff}.pcc-compare span{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#758995}.pcc-compare code{display:block;margin-top:4px;color:#0f6b8f;word-break:break-all}.pcc-impact{margin:12px 0;padding:11px 13px;border:1px solid #cbe4d1;border-radius:9px;background:#f5fbf6;color:#275c39;font-size:12px}.pcc-hidden{display:none!important}
+@media(max-width:1050px){.pcc-flow{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:850px){.pcc-flow{grid-template-columns:repeat(2,1fr)}.pcc-section-title{display:block}.pcc-section-title small{text-align:left;display:block;margin-top:5px}}
 @media(max-width:1100px){.pcc-grid{grid-template-columns:1fr}.pcc-history-grid{grid-template-columns:1fr}.pcc-hero{flex-direction:column}.pcc-selector select,.pcc-selector input{min-width:0;width:100%}}
+@media(max-width:850px){.pcc-intro{grid-template-columns:1fr}.pcc-policy-options{grid-template-columns:1fr}}
+@media(max-width:850px){.pcc-current-grid,.pcc-simple-grid{grid-template-columns:1fr}.pcc-wizard-tab{flex:1 1 42%}}
 @media(max-width:640px){.pcc{padding:16px}.pcc-grid-form{grid-template-columns:1fr}.pcc-flow{grid-template-columns:1fr}.pcc-sticky-actions .btn{width:100%;margin:3px 0}}
 </style>
 
@@ -166,7 +175,7 @@
     <header class="pcc-hero">
         <div>
             <h1>Product Code Configuration</h1>
-            <p>Configure the automatic generators for categories, subcategories, brands, series, and products without changing source code later.</p>
+            <p>Define how new {{ strtolower($selectedCodeTypeLabel) }} records receive codes. Test the format first, then decide separately whether old codes should change.</p>
         </div>
         <div class="summary">
             <span class="pcc-pill">Type: {{ $selectedCodeTypeLabel }}</span>
@@ -176,11 +185,18 @@
         </div>
     </header>
 
-    <div class="pcc-flow" aria-label="Configuration workflow">
-        <div class="pcc-flow-step active"><span class="num">1</span><span><strong>Choose a code type</strong>Company, category, brand, series, or product</span></div>
-        <div class="pcc-flow-step active"><span class="num">2</span><span><strong>Load a configuration</strong>Edit an existing version safely</span></div>
-        <div class="pcc-flow-step"><span class="num">3</span><span><strong>Build and test</strong>Arrange components and preview output</span></div>
-        <div class="pcc-flow-step"><span class="num">4</span><span><strong>Save and activate</strong>Publish only after review</span></div>
+    <nav class="pcc-flow" aria-label="Configuration workflow">
+        <button type="button" class="pcc-flow-step active" data-flow-step="1" data-wizard-go="1"><span class="num">1</span><span><strong>Code type</strong>Choose what to configure.</span></button>
+        <button type="button" class="pcc-flow-step" data-flow-step="2" data-wizard-go="2"><span class="num">2</span><span><strong>Current setup</strong>Review active settings.</span></button>
+        <button type="button" class="pcc-flow-step" data-flow-step="3" data-wizard-go="3"><span class="num">3</span><span><strong>Build format</strong>Create the new pattern.</span></button>
+        <button type="button" class="pcc-flow-step" data-flow-step="4" data-wizard-go="4"><span class="num">4</span><span><strong>Existing codes</strong>Choose what changes.</span></button>
+        <button type="button" class="pcc-flow-step" data-flow-step="5" data-wizard-go="5"><span class="num">5</span><span><strong>Test &amp; preview</strong>Validate safely.</span></button>
+        <button type="button" class="pcc-flow-step" data-flow-step="6" data-wizard-go="6"><span class="num">6</span><span><strong>Review &amp; save</strong>Commit the configuration.</span></button>
+    </nav>
+
+    <div class="pcc-intro pcc-wizard-panel active" id="wizard-intro-panel">
+        <div class="pcc-intro-card"><h2>What this page controls</h2><p>This format is used when a new {{ strtolower($selectedCodeTypeLabel) }} is created. Editing and saving this page does not rewrite existing codes. Old-code changes require a separate preview and confirmation.</p></div>
+        <div class="pcc-intro-card"><h2>Safe workflow</h2><ul class="pcc-checklist"><li><i class="icon-ok"></i><span>Build the format</span></li><li><i class="icon-ok"></i><span>Test a sample</span></li><li><i class="icon-ok"></i><span>Save for future records</span></li><li><i class="icon-lock"></i><span>Review old-code impact separately</span></li></ul></div>
     </div>
 
     @if(session('message'))<div class="pcc-banner"><div><strong>Success</strong><small>{{ session('message') }}</small></div></div>@endif
@@ -200,16 +216,16 @@
     @endif
 
     <div class="pcc-type-label">Step 1 · Choose what kind of code you are configuring</div>
-    <div class="pcc-tabs">
+    <div class="pcc-tabs" id="wizard-code-types">
         @foreach($codeTypes as $codeType => $label)
             <a class="pcc-tab {{ $selectedCodeType === $codeType ? 'active' : '' }}" href="{{ url('/product-code-configuration?code_type='.$codeType) }}">
-                <span>{{ $label }}</span>
+                <span class="pcc-tab-copy"><strong>{{ $label }}</strong><small>{{ !empty($codeTypeSummaries[$codeType]['is_active']) ? 'Active · ' : 'No active setup · ' }}{{ $codeTypeSummaries[$codeType]['template'] ?? 'Not configured' }}</small></span>
                 <span class="count">{{ (int) ($typeCounts[$codeType] ?? 0) }}</span>
             </a>
         @endforeach
     </div>
 
-    <form class="pcc-selector" method="get" action="{{ url('/product-code-configuration') }}">
+    <form class="pcc-selector pcc-hidden" id="wizard-current-selector" method="get" action="{{ url('/product-code-configuration') }}">
         <input type="hidden" name="code_type" value="{{ $selectedCodeType }}">
         <div class="selector-copy"><strong>Step 2 · Choose a saved configuration</strong><small>Loading a version does not change anything until you press Save.</small></div>
         @if($activeConfiguration)<span class="pcc-status"><i class="icon-ok"></i> Active version loaded</span>@else<span class="pcc-status is-draft"><i class="icon-warning-sign"></i> No active version</span>@endif
@@ -223,11 +239,25 @@
         <a class="btn" href="{{ url('/product-code-configuration') }}">Refresh active</a>
     </form>
 
-    <div class="pcc-grid">
+    <section class="pcc-card pcc-wizard-panel" id="wizard-current-summary">
+        <div class="pcc-head"><h2>Current {{ $selectedCodeTypeLabel }} setup</h2><p>Review what is active now before changing the format.</p></div>
+        <div class="pcc-body">
+            <div class="pcc-current-grid">
+                <div class="pcc-current-metric"><span>Format</span><strong>{{ $selectedSnapshot['template'] ?? 'Not configured' }}</strong></div>
+                <div class="pcc-current-metric"><span>Status</span><strong>{{ !empty($selectedSnapshot['is_active']) ? 'Active' : 'Draft / inactive' }}</strong></div>
+                <div class="pcc-current-metric"><span>Sequence</span><strong>{{ $selectedSnapshot['sequence_scope'] ?? 'Global' }} · {{ $selectedSnapshot['sequence_length'] ?? '-' }} digits</strong></div>
+                <div class="pcc-current-metric"><span>Existing records</span><strong>{{ number_format($existingRecordCount ?? 0) }}</strong></div>
+            </div>
+            <ul class="pcc-sample-list">@forelse($currentCodeSample ?? [] as $sample)<li><span>{{ $sample->name }}</span><code>{{ $sample->code }}</code></li>@empty<li><span>No current codes are available yet.</span></li>@endforelse</ul>
+            <div class="pcc-step-actions"><span></span><div class="right"><button type="button" class="btn btn-primary" data-wizard-next>Continue to build format <i class="icon-arrow-right"></i></button></div></div>
+        </div>
+    </section>
+
+    <div class="pcc-grid pcc-hidden" id="wizard-editor-shell">
         <section class="pcc-card">
             <div class="pcc-head">
-                <h2>Configuration Builder</h2>
-                <p>Set the template, sequence behavior, and component order for the selected code type.</p>
+                <h2>Step 3 · Design the code format</h2>
+                <p>Set the scope, sequence, and code components. The rows below are joined from top to bottom.</p>
             </div>
             <div class="pcc-body">
                 <form id="product-code-configuration-form" method="post" action="{{ url('/product-code-configuration') }}">
@@ -320,10 +350,28 @@
                             </div>
                         </div>
 
-                        <div class="span-2">
+                        <div class="span-2 pcc-policy-card" id="wizard-existing-policy">
+                            <label>Step 5 · What should happen to existing codes?</label>
+                            <div class="pcc-policy-options">
+                                <label class="pcc-policy-option recommended"><input type="radio" name="existing_record_policy" value="FUTURE_ONLY" {{ old('existing_record_policy', 'FUTURE_ONLY') === 'FUTURE_ONLY' ? 'checked' : '' }}><strong>Keep existing codes</strong><small>Recommended. 0 existing records change; future records use this format.</small></label>
+                                <label class="pcc-policy-option"><input type="radio" name="existing_record_policy" value="UPDATE_ALL" {{ old('existing_record_policy') === 'UPDATE_ALL' ? 'checked' : '' }}><strong>Update all</strong><small>{{ number_format($existingRecordCount ?? 0) }} eligible record(s) are reviewed in a dry run.</small></label>
+                                <label class="pcc-policy-option"><input type="radio" name="existing_record_policy" value="UPDATE_SELECTED" {{ old('existing_record_policy') === 'UPDATE_SELECTED' ? 'checked' : '' }}><strong>Update selected</strong><small>Choose from {{ number_format($existingRecordCount ?? 0) }} record(s) in the dry-run preview.</small></label>
+                            </div>
+                            <p class="pcc-policy-help"><i class="icon-lock"></i> Saving never rewrites old codes immediately. Update options always open a dry-run preview first.</p>
+                            <div class="pcc-step-actions"><button type="button" class="btn" data-wizard-back>Back</button><div class="right"><button type="button" class="btn btn-primary" data-wizard-next>Test this format <i class="icon-arrow-right"></i></button></div></div>
+                            <div style="display:none"><select id="existing_record_policy_legacy" name="existing_record_policy_legacy">
+                                <option value="FUTURE_ONLY" selected>Future records only — Recommended</option>
+                                <option value="UPDATE_ALL">Preview and update all eligible existing records</option>
+                                <option value="UPDATE_SELECTED">Preview and update selected existing records</option>
+                            </select>
+                            <div class="pcc-small">Saving never rewrites existing codes immediately. Existing-record modes open a dry-run preview first.</div>
+                        </div>
+                        </div>
+
+                        <div class="span-2" id="wizard-advanced-components">
                             <label>Available component types</label>
                             <div class="pcc-token-list">
-                                @foreach($componentLabels as $key => $label)
+                                @foreach($wizardComponentLabels as $key => $label)
                                     <span class="pcc-token">{{ $label }}</span>
                                 @endforeach
                             </div>
@@ -331,9 +379,11 @@
                         </div>
                     </div>
 
-                    <div class="pcc-section">
+                    <div class="pcc-section" id="wizard-format-builder">
                         <div class="pcc-section-title"><h3>Step 3 · Build the code pattern</h3><small>Keep one Sequence component. The row order becomes the final code order.</small></div>
-                        <div class="pcc-small">Add, remove, or move rows to build the template. The position field always controls the final order.</div>
+                        <div class="pcc-mode-switch"><button type="button" class="active" data-builder-mode="simple">Simple mode</button><button type="button" data-builder-mode="advanced">Advanced mode</button></div>
+                        <div id="pcc-simple-builder"><p class="pcc-small">Use these common controls first. Switch to Advanced only for special tokens or a custom component order.</p><div class="pcc-simple-grid"><label>Prefix<input id="simple-prefix" type="text" maxlength="255" value="{{ $simplePrefix }}" placeholder="Example: CAT"></label><label>Name code<select id="simple-name-code"><option value="1" {{ $simpleHasNameCode ? 'selected' : '' }}>Include name code</option><option value="0" {{ ! $simpleHasNameCode ? 'selected' : '' }}>Do not include</option></select></label><label>Numeric sequence<select id="simple-sequence"><option value="1" {{ $simpleHasSequence ? 'selected' : '' }}>Include sequence</option><option value="0" {{ ! $simpleHasSequence ? 'selected' : '' }}>Do not include</option></select></label></div></div>
+                        <div id="pcc-advanced-builder" class="pcc-hidden"><div class="pcc-small">Add, remove, or move rows to build the template. The position field controls the final order.</div>
                         <div class="pcc-actions">
                             <button type="button" class="btn btn-small" id="add-component-row"><i class="icon-plus"></i> Add component</button>
                         </div>
@@ -356,7 +406,9 @@
                                             <td>
                                                 <select name="components[{{ $index }}][component_type]" required>
                                                     @foreach($componentLabels as $value => $label)
-                                                        <option value="{{ $value }}" {{ ($component['component_type'] ?? 'sequence') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                        @if(isset($wizardComponentLabels[$value]) || ($component['component_type'] ?? 'sequence') === $value)
+                                                            <option value="{{ $value }}" {{ ($component['component_type'] ?? 'sequence') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                        @endif
                                                     @endforeach
                                                 </select>
                                             </td>
@@ -378,9 +430,11 @@
                                 </tbody>
                             </table>
                         </div>
+                        </div>
+                        <div class="pcc-step-actions"><button type="button" class="btn" data-wizard-back>Back</button><div class="right"><button type="button" class="btn btn-primary" data-wizard-next>Continue to existing codes <i class="icon-arrow-right"></i></button></div></div>
                     </div>
 
-                    <div class="pcc-sticky-actions">
+                    <div class="pcc-sticky-actions pcc-hidden" id="wizard-original-actions">
                     <div class="pcc-actions">
                         <button type="submit" class="btn btn-primary"><i class="icon-save"></i> Save Configuration</button>
                         <button type="button" class="btn btn-warning" id="pcc-preview-button"><i class="icon-play"></i> Test Generator</button>
@@ -389,7 +443,7 @@
                             <button type="submit" class="btn btn-danger" form="delete-product-code-configuration" onclick="return confirm('Move this product code configuration to the Recycle Bin?')"><i class="icon-trash"></i> Delete Configuration</button>
                         @endif
                     </div>
-                    <div class="pcc-help">Test Generator never consumes a sequence number. Saving an active version affects future generated codes.</div>
+                    <div class="pcc-help"><strong>Step 4 · Test and save:</strong> Test Generator never consumes a sequence number. Save activates this format for future generated codes.</div>
                     </div>
                     <div class="pcc-safety"><i class="icon-lock"></i><span><strong>Safety check:</strong> Preview the draft before activating it. Existing generated codes are not rewritten, but new codes will follow the active pattern.</span></div>
                 </form>
@@ -399,7 +453,7 @@
             </div>
         </section>
 
-        <aside class="pcc-card pcc-preview-panel">
+        <aside class="pcc-card pcc-preview-panel" id="wizard-preview-panel">
             <div class="pcc-head">
                 <h2>Preview &amp; Reference</h2>
                 <p>See the current template, test draft values, and scan the token list before saving.</p>
@@ -409,7 +463,14 @@
                     <strong>Generated preview</strong>
                     <code id="pcc-preview-code">Generate a preview to see the code here.</code>
                     <small id="pcc-preview-status">Current template loaded from {{ $selectedSnapshot['name'] ?? config('product_code.default_name', 'Default Product Code') }}.</small>
+                    <div class="pcc-actions"><button type="button" class="btn btn-warning" id="pcc-wizard-preview-button"><i class="icon-play"></i> Test generated code</button></div>
                 </div>
+
+                <div class="pcc-compare" aria-label="Current and proposed code comparison">
+                    <div><span>Current</span><code id="pcc-current-preview-code">{{ ! empty($currentCodeSample) && $currentCodeSample->first() ? $currentCodeSample->first()->code : 'No current code' }}</code></div>
+                    <div><span>Proposed</span><code id="pcc-proposed-preview-code">Test the draft to generate a proposed code.</code></div>
+                </div>
+                <div class="pcc-impact" id="pcc-impact-summary">Existing-code impact: keep existing codes selected — 0 records will change.</div>
 
                 <div class="pcc-card" style="box-shadow:none;margin:0 0 14px">
                     <div class="pcc-head" style="border-bottom:0;padding:0 0 10px">
@@ -484,19 +545,43 @@
                     </div>
                 </div>
 
-                <div>
+                <div id="wizard-token-reference" class="pcc-hidden">
                     <h3 style="margin:0 0 10px;font-size:16px;color:#123f61">Token Reference</h3>
                     <div class="pcc-token-list">
-                        @foreach($componentLabels as $label)
+                        @foreach($wizardComponentLabels as $label)
                             <span class="pcc-token">{{ $label }}</span>
                         @endforeach
                     </div>
                 </div>
+                <div class="pcc-step-actions"><button type="button" class="btn" data-wizard-back>Back to existing codes</button><div class="right"><button type="button" class="btn btn-primary" data-wizard-next>Review and save <i class="icon-arrow-right"></i></button></div></div>
             </div>
         </aside>
     </div>
 
-    <section class="pcc-section">
+    <section class="pcc-card pcc-wizard-panel" id="wizard-review-summary">
+        <div class="pcc-head"><h2>Step 6 · Review and save</h2><p>Confirm the format and existing-code policy before making this configuration active.</p></div>
+        <div class="pcc-body">
+            <div class="pcc-current-grid">
+                <div class="pcc-current-metric"><span>Code type</span><strong>{{ $selectedCodeTypeLabel }}</strong></div>
+                <div class="pcc-current-metric"><span>Current format</span><strong>{{ $selectedSnapshot['template'] ?? 'Not configured' }}</strong></div>
+                <div class="pcc-current-metric"><span>New format</span><strong id="wizard-review-template">Use Test &amp; Preview to confirm.</strong></div>
+                <div class="pcc-current-metric"><span>Existing-code policy</span><strong id="wizard-review-policy">Keep existing codes</strong></div>
+            </div>
+            <div class="pcc-impact" id="wizard-review-impact">Existing codes will remain unchanged.</div>
+            <div class="pcc-safety"><i class="icon-lock"></i><span>For existing-code updates, Save opens the impact preview. No existing records change until the preview is reviewed and a strong confirmation is entered.</span></div>
+            <div class="pcc-step-actions"><div><button type="button" class="btn" data-wizard-back>Back</button><button type="button" class="btn" data-reset-draft>Discard draft</button></div><div class="right"><button type="submit" class="btn btn-primary" form="product-code-configuration-form" id="wizard-save-button"><i class="icon-save"></i> Save Configuration</button></div></div>
+            @if($selectedConfigurationId)<div class="pcc-danger-zone"><h3>Danger zone</h3><p>Deleting this configuration can affect future code generation. This does not rewrite historical codes.</p><button type="submit" class="btn btn-danger" form="delete-product-code-configuration" onclick="return confirm('Move this configuration to the Recycle Bin?')">Delete Configuration</button></div>@endif
+        </div>
+    </section>
+
+    <nav class="pcc-utility-tabs" aria-label="Configuration utilities">
+        <button type="button" class="pcc-utility-tab active" data-utility-go="configure">Configure</button>
+        <button type="button" class="pcc-utility-tab" data-utility-go="sequences">Sequences</button>
+        <button type="button" class="pcc-utility-tab" data-utility-go="generated-history">Code History</button>
+        <button type="button" class="pcc-utility-tab" data-utility-go="configuration-history">Configuration History</button>
+    </nav>
+
+    <section class="pcc-section pcc-utility-panel" id="utility-sequences">
         <h3>Sequence Management - {{ $selectedCodeTypeLabel }}</h3>
         <div class="pcc-small">View the live counters for this code type, correct the next generated number, or reset a scope with an audit reason.</div>
         <div class="pcc-table-wrap" style="margin-top:12px">
@@ -554,7 +639,7 @@
     </section>
 
     <div class="pcc-history-grid pcc-section">
-        <section class="pcc-card">
+        <section class="pcc-card pcc-utility-panel" id="utility-generated-history">
             <div class="pcc-head">
                 <h2>Generated Code History</h2>
                 <p>Track generated code changes for the selected type over time.</p>
@@ -589,7 +674,7 @@
             </div>
         </section>
 
-        <section class="pcc-card">
+        <section class="pcc-card pcc-utility-panel" id="utility-configuration-history">
             <div class="pcc-head">
                 <h2>{{ $selectedCodeTypeLabel }} Configuration History</h2>
                 <p>See how the template and settings changed for this code type.</p>
@@ -630,7 +715,7 @@
     <tr data-component-row data-component-index="__INDEX__">
         <td>
             <select name="components[__INDEX__][component_type]" required>
-                @foreach($componentLabels as $value => $label)
+                @foreach($wizardComponentLabels as $value => $label)
                     <option value="{{ $value }}">{{ $label }}</option>
                 @endforeach
             </select>
@@ -653,6 +738,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var form = document.getElementById('product-code-configuration-form');
     var previewButton = document.getElementById('pcc-preview-button');
+    var wizardPreviewButton = document.getElementById('pcc-wizard-preview-button');
     var previewCode = document.getElementById('pcc-preview-code');
     var previewStatus = document.getElementById('pcc-preview-status');
     var separatorMode = document.getElementById('separator_mode');
@@ -665,11 +751,154 @@ document.addEventListener('DOMContentLoaded', function () {
     var previewUrl = @json(url('/product-code-configuration/preview'));
     var csrfToken = @json(csrf_token());
     var formIsDirty = false;
+    var wizardStep = 1;
+    var existingRecordCount = @json((int) ($existingRecordCount ?? 0));
+    var wizardTabs = Array.prototype.slice.call(document.querySelectorAll('[data-wizard-go]'));
+    var flowSteps = Array.prototype.slice.call(document.querySelectorAll('[data-flow-step]'));
+    var editorShell = document.getElementById('wizard-editor-shell');
+    var currentSelector = document.getElementById('wizard-current-selector');
+    var currentSummary = document.getElementById('wizard-current-summary');
+    var codeTypes = document.getElementById('wizard-code-types');
+    var introPanel = document.getElementById('wizard-intro-panel');
+    var policyPanel = document.getElementById('wizard-existing-policy');
+    var formatBuilder = document.getElementById('wizard-format-builder');
+    var previewPanel = document.getElementById('wizard-preview-panel');
+    var reviewPanel = document.getElementById('wizard-review-summary');
+    var settingsGrid = form ? form.querySelector('.pcc-grid-form') : null;
+    var advancedTokens = document.getElementById('wizard-advanced-components');
+    var simpleBuilder = document.getElementById('pcc-simple-builder');
+    var advancedBuilder = document.getElementById('pcc-advanced-builder');
+    var tokenReference = document.getElementById('wizard-token-reference');
+    var simplePrefix = document.getElementById('simple-prefix');
+    var simpleNameCode = document.getElementById('simple-name-code');
+    var simpleSequence = document.getElementById('simple-sequence');
+    var reviewTemplate = document.getElementById('wizard-review-template');
+    var reviewPolicy = document.getElementById('wizard-review-policy');
+    var reviewImpact = document.getElementById('wizard-review-impact');
+    var wizardSaveButton = document.getElementById('wizard-save-button');
+    var proposedPreview = document.getElementById('pcc-proposed-preview-code');
+    var impactSummary = document.getElementById('pcc-impact-summary');
+    var previewTimer = null;
 
     function syncSeparator() {
         var value = separatorMode.value === '__custom__' ? customSeparator.value : separatorMode.value;
         separatorField.value = value;
         customSeparator.style.display = separatorMode.value === '__custom__' ? 'block' : 'none';
+    }
+
+    function setVisible(element, visible) {
+        if (! element) return;
+        element.classList.toggle('pcc-hidden', !visible);
+    }
+
+    function selectedPolicy() {
+        var selected = form.querySelector('input[name="existing_record_policy"]:checked');
+        return selected ? selected.value : 'FUTURE_ONLY';
+    }
+
+    function updateReview() {
+        var separator = separatorField.value || '';
+        var componentNames = Array.prototype.slice.call(rowsBody.querySelectorAll('[data-component-row] select[name$="[component_type]"]')).map(function (field) {
+            return field.options[field.selectedIndex].text;
+        });
+        if (reviewTemplate) reviewTemplate.textContent = componentNames.length ? componentNames.join(separator || ' ') : 'No components selected';
+        var policy = selectedPolicy();
+        var policyLabels = { FUTURE_ONLY: 'Keep existing codes', UPDATE_ALL: 'Update all eligible existing codes', UPDATE_SELECTED: 'Update selected existing codes' };
+        if (reviewPolicy) reviewPolicy.textContent = policyLabels[policy] || policy;
+        var impact = policy === 'UPDATE_ALL'
+            ? existingRecordCount+' existing record(s) will be checked in a dry run before any update.'
+            : (policy === 'UPDATE_SELECTED'
+                ? 'You will choose from '+existingRecordCount+' existing record(s) in the dry-run preview.'
+                : 'Existing codes will remain unchanged; only future records use this format.');
+        if (impactSummary) impactSummary.textContent = 'Existing-code impact: '+impact;
+        if (reviewImpact) reviewImpact.textContent = impact;
+        if (wizardSaveButton) {
+            wizardSaveButton.textContent = policy === 'UPDATE_ALL' ? 'Save & update '+existingRecordCount+' existing codes' : (policy === 'UPDATE_SELECTED' ? 'Save & choose existing codes' : 'Save Configuration');
+        }
+    }
+
+    function setSettingsStep(step) {
+        if (! settingsGrid) return;
+        Array.prototype.slice.call(settingsGrid.children).forEach(function (child) {
+            if (child === policyPanel) setVisible(child, step === 4);
+            else if (child === advancedTokens) setVisible(child, step === 3 && advancedBuilder && !advancedBuilder.classList.contains('pcc-hidden'));
+            else setVisible(child, step === 3);
+        });
+    }
+
+    function showWizardStep(step) {
+        wizardStep = Math.max(1, Math.min(6, step));
+        wizardTabs.forEach(function (tab) { tab.classList.toggle('active', Number(tab.getAttribute('data-wizard-go')) === wizardStep); });
+        flowSteps.forEach(function (flowStep) {
+            var flowNumber = Number(flowStep.getAttribute('data-flow-step'));
+            flowStep.classList.toggle('active', flowNumber === wizardStep);
+            flowStep.classList.toggle('completed', flowNumber < wizardStep);
+        });
+        setVisible(introPanel, wizardStep === 1);
+        setVisible(codeTypes, wizardStep === 1);
+        setVisible(currentSelector, wizardStep === 2);
+        setVisible(currentSummary, wizardStep === 2);
+        if (currentSummary) currentSummary.classList.toggle('active', wizardStep === 2);
+        setVisible(editorShell, wizardStep === 3 || wizardStep === 4 || wizardStep === 5);
+        setSettingsStep(wizardStep);
+        setVisible(formatBuilder, wizardStep === 3);
+        setVisible(previewPanel, wizardStep === 3 || wizardStep === 5);
+        setVisible(reviewPanel, wizardStep === 6);
+        if (reviewPanel) reviewPanel.classList.toggle('active', wizardStep === 6);
+        updateReview();
+        if (wizardStep === 3 || wizardStep === 5) window.setTimeout(runPreview, 0);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function findComponentRow(type) {
+        return Array.prototype.slice.call(rowsBody.querySelectorAll('[data-component-row]')).find(function (row) {
+            var field = row.querySelector('select[name$="[component_type]"]');
+            return field && field.value === type;
+        });
+    }
+
+    function syncSimpleBuilder() {
+        if (! simpleBuilder || simpleBuilder.classList.contains('pcc-hidden')) return;
+        var prefixRow = findComponentRow('prefix');
+        if (simplePrefix && simplePrefix.value.trim() !== '') {
+            if (! prefixRow) prefixRow = addRow({ component_type: 'prefix', position: 1, static_value: simplePrefix.value, format_options: '', is_required: 1 });
+            var prefixValue = prefixRow.querySelector('input[name$="[static_value]"]');
+            if (prefixValue) prefixValue.value = simplePrefix.value;
+        } else if (prefixRow) prefixRow.remove();
+        [['name_code', simpleNameCode], ['sequence', simpleSequence]].forEach(function (entry) {
+            var row = findComponentRow(entry[0]);
+            var enabled = entry[1] && entry[1].value === '1';
+            if (enabled && !row) addRow({ component_type: entry[0], position: rowsBody.querySelectorAll('[data-component-row]').length + 1, static_value: '', format_options: '', is_required: 1 });
+            if (!enabled && row) row.remove();
+        });
+        if (! rowsBody.querySelector('[data-component-row]')) addRow({ component_type: 'sequence', position: 1, static_value: '', format_options: '', is_required: 1 });
+        renumberRows();
+    }
+
+    function validateFormatStep() {
+        var rows = Array.prototype.slice.call(rowsBody.querySelectorAll('[data-component-row]'));
+        if (!rows.length) { window.alert('Add at least one code component before continuing.'); return false; }
+        var seen = {};
+        for (var index = 0; index < rows.length; index++) {
+            var type = rows[index].querySelector('select[name$="[component_type]"]').value;
+            if (type === 'prefix') {
+                var value = rows[index].querySelector('input[name$="[static_value]"]').value.trim();
+                if (!value) { window.alert('Enter a prefix value or remove the Prefix component.'); return false; }
+            }
+            if (type !== 'static_text' && seen[type]) { window.alert('Each component can be used once. Remove the duplicate '+type.replace('_', ' ')+' component.'); return false; }
+            seen[type] = true;
+        }
+        return true;
+    }
+
+    function setBuilderMode(mode) {
+        var advanced = mode === 'advanced';
+        setVisible(simpleBuilder, !advanced);
+        setVisible(advancedBuilder, advanced);
+        setVisible(advancedTokens, advanced && wizardStep === 3);
+        setVisible(tokenReference, false);
+        Array.prototype.slice.call(document.querySelectorAll('[data-builder-mode]')).forEach(function (button) { button.classList.toggle('active', button.getAttribute('data-builder-mode') === mode); });
+        if (!advanced) syncSimpleBuilder();
     }
 
     function renumberRows() {
@@ -762,9 +991,9 @@ document.addEventListener('DOMContentLoaded', function () {
         addRow({ component_type: 'sequence', position: 1, static_value: '', format_options: '', is_required: 1 });
     }
 
-    if (previewButton) {
-        previewButton.addEventListener('click', function () {
+    function runPreview() {
             syncSeparator();
+            syncSimpleBuilder();
             var payload = new FormData(form);
             fetch(previewUrl, {
                 method: 'POST',
@@ -787,6 +1016,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (previewCode) {
                     previewCode.textContent = result.data.preview || 'No preview available.';
                 }
+                if (proposedPreview) proposedPreview.textContent = result.data.preview || 'No preview available.';
                 if (previewStatus) {
                     previewStatus.textContent = 'Preview updated from the current draft configuration.';
                 }
@@ -800,15 +1030,65 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (previewCode) {
                     previewCode.textContent = previewMessage;
                 }
+                if (proposedPreview) proposedPreview.textContent = 'Preview unavailable until the required context is selected.';
                 if (previewStatus) {
                     previewStatus.textContent = message ? 'Preview failed. Fix the preview context and try again.' : 'Preview request failed.';
                 }
             });
+    }
+
+    if (previewButton) previewButton.addEventListener('click', runPreview);
+    if (wizardPreviewButton) wizardPreviewButton.addEventListener('click', runPreview);
+
+    wizardTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () { showWizardStep(Number(tab.getAttribute('data-wizard-go'))); });
+    });
+    Array.prototype.slice.call(document.querySelectorAll('[data-wizard-next]')).forEach(function (button) {
+        button.addEventListener('click', function () { syncSimpleBuilder(); if (wizardStep === 3 && !validateFormatStep()) return; showWizardStep(wizardStep + 1); });
+    });
+    Array.prototype.slice.call(document.querySelectorAll('[data-wizard-back]')).forEach(function (button) {
+        button.addEventListener('click', function () { showWizardStep(wizardStep - 1); });
+    });
+    Array.prototype.slice.call(document.querySelectorAll('[data-builder-mode]')).forEach(function (button) {
+        button.addEventListener('click', function () { setBuilderMode(button.getAttribute('data-builder-mode')); });
+    });
+    function queuePreview() {
+        if (wizardStep !== 3 && wizardStep !== 5) return;
+        window.clearTimeout(previewTimer);
+        previewTimer = window.setTimeout(runPreview, 350);
+    }
+    [simplePrefix, simpleNameCode, simpleSequence].forEach(function (field) { if (field) field.addEventListener('input', function () { syncSimpleBuilder(); updateReview(); queuePreview(); }); if (field) field.addEventListener('change', function () { syncSimpleBuilder(); updateReview(); queuePreview(); }); });
+    Array.prototype.slice.call(form.querySelectorAll('input[name="existing_record_policy"]')).forEach(function (field) { field.addEventListener('change', updateReview); });
+
+    var utilityTabs = Array.prototype.slice.call(document.querySelectorAll('[data-utility-go]'));
+    var utilityPanels = Array.prototype.slice.call(document.querySelectorAll('.pcc-utility-panel'));
+    utilityTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            var target = tab.getAttribute('data-utility-go');
+            utilityTabs.forEach(function (item) { item.classList.toggle('active', item === tab); });
+            utilityPanels.forEach(function (panel) { panel.classList.toggle('active', panel.id === 'utility-'+target); });
+            var wizardElements = [introPanel, codeTypes, currentSelector, currentSummary, editorShell, reviewPanel];
+            wizardElements.forEach(function (element) { if (element) element.classList.toggle('pcc-hidden', target !== 'configure'); });
+            if (target === 'configure') showWizardStep(wizardStep);
+        });
+    });
+
+    if (codeTypes) {
+        Array.prototype.slice.call(codeTypes.querySelectorAll('a')).forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                if (formIsDirty && ! window.confirm('Changing code type discards the current unsaved draft. Continue?')) event.preventDefault();
+            });
         });
     }
+    Array.prototype.slice.call(document.querySelectorAll('[data-reset-draft]')).forEach(function (button) {
+        button.addEventListener('click', function () {
+            if (window.confirm('Discard unsaved draft changes?')) window.location.assign(window.location.href);
+        });
+    });
 
     form.addEventListener('submit', function (event) {
         syncSeparator();
+        syncSimpleBuilder();
         var activeField = form.querySelector('input[name="is_active"]');
         if (activeField && activeField.checked && ! window.confirm('Make this configuration active for future codes? Existing codes will not change.')) {
             event.preventDefault();
@@ -818,13 +1098,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     form.addEventListener('input', function () { formIsDirty = true; });
-    form.addEventListener('change', function () { formIsDirty = true; });
+    form.addEventListener('change', function () { formIsDirty = true; queuePreview(); });
     window.addEventListener('beforeunload', function (event) {
         if (formIsDirty) {
             event.preventDefault();
             event.returnValue = '';
         }
     });
+    setBuilderMode('simple');
+    showWizardStep(1);
 });
 </script>
 @endsection

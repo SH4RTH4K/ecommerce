@@ -16,6 +16,11 @@ class ProductCodeHistory extends Model
         'changed_at' => 'datetime',
     ];
 
+    public function batch()
+    {
+        return $this->belongsTo(ProductCodeRegenerationBatch::class, 'batch_id');
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');

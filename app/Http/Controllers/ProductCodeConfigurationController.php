@@ -7,6 +7,7 @@ use App\ProductCodeComponent;
 use App\ProductCodeConfiguration;
 use App\ProductCodeConfigurationHistory;
 use App\ProductCodeHistory;
+use App\Services\CodeRegenerationService;
 use App\ProductCodeSequence;
 use App\Services\ProductCodeGenerator;
 use App\Services\RecycleBinService;
@@ -92,6 +93,15 @@ class ProductCodeConfigurationController extends Controller
             ->map
             ->count()
             ->all();
+        $codeTypeSummaries = $allConfigurations
+            ->groupBy(function ($configuration) use ($availableCodeTypes) {
+                return $this->normalizeCodeType($configuration->code_type ?? 'product', $availableCodeTypes);
+            })
+            ->map(function ($items) use ($generator) {
+                $configuration = $items->firstWhere('is_active', true) ?: $items->first();
+                return $configuration ? $generator->snapshot($configuration) : null;
+            })
+            ->all();
 
         $sequences = ProductCodeSequence::with('configuration')
             ->whereHas('configuration', function ($query) use ($selectedCodeType) {
@@ -126,6 +136,32 @@ class ProductCodeConfigurationController extends Controller
         $resetRules = config('product_code.reset_rules', []);
         $previewContextDefaults = $this->previewContextDefaults($companies, $branches, $categories, $subcategories, $brands, $series);
         $previewWarnings = $this->previewWarnings($snapshot, $companies, $branches, $categories, $subcategories, $brands, $series);
+        $recordMeta = [
+            'company' => ['table' => 'companies', 'id' => 'id', 'name' => 'name', 'code' => 'company_code'],
+            'category' => ['table' => 'category', 'id' => 'category_id', 'name' => 'category_name', 'code' => 'category_code'],
+            'subcategory' => ['table' => 'sub_category', 'id' => 'sub_category_id', 'name' => 'sub_category_name', 'code' => 'subcategory_code'],
+            'brand' => ['table' => 'manufacturer', 'id' => 'manufacturer_id', 'name' => 'manufacturer_name', 'code' => 'brand_code'],
+            'series' => ['table' => 'product_series', 'id' => 'id', 'name' => 'name', 'code' => 'series_code'],
+            'product' => ['table' => 'product', 'id' => 'id', 'name' => 'product_name', 'code' => 'product_code'],
+        ];
+        $selectedRecordMeta = $recordMeta[$selectedCodeType] ?? $recordMeta['product'];
+        $existingRecordCount = DB::table($selectedRecordMeta['table'])->whereNull('deleted_at')->count();
+        $currentCodeSample = DB::table($selectedRecordMeta['table'])
+            ->whereNull('deleted_at')
+            ->whereNotNull($selectedRecordMeta['code'])
+            ->where($selectedRecordMeta['code'], '<>', '')
+            ->orderBy($selectedRecordMeta['name'])
+            ->limit(3)
+            ->get([$selectedRecordMeta['name'].' as name', $selectedRecordMeta['code'].' as code']);
+        $wizardComponentTypes = [
+            'company' => ['prefix','name_code','year','year_short','month','day','date','sequence','static_text','custom_prefix','custom_suffix','custom_text'],
+            'category' => ['prefix','name_code','year','year_short','month','day','date','sequence','static_text','company','custom_prefix','custom_suffix','custom_text'],
+            'subcategory' => ['prefix','name_code','category_name_code','category_code','year','year_short','month','day','date','sequence','static_text','company','custom_prefix','custom_suffix','custom_text'],
+            'brand' => ['prefix','name_code','company','year','year_short','month','day','date','sequence','static_text','custom_prefix','custom_suffix','custom_text'],
+            'series' => ['prefix','name_code','brand_name_code','brand_code','company','year','year_short','month','day','date','sequence','static_text','custom_prefix','custom_suffix','custom_text'],
+            'product' => array_keys($availableComponents),
+        ];
+        $wizardComponentLabels = collect($availableComponents)->only($wizardComponentTypes[$selectedCodeType] ?? array_keys($availableComponents))->all();
 
         return view('admin.admin-master')->with('admin_main_content', view('admin.admin-pages.product-code-configuration', compact(
             'configurations',
@@ -135,6 +171,7 @@ class ProductCodeConfigurationController extends Controller
             'selectedCodeType',
             'codeTypes',
             'typeCounts',
+            'codeTypeSummaries',
             'sequences',
             'productCodeHistories',
             'configurationHistories',
@@ -149,7 +186,10 @@ class ProductCodeConfigurationController extends Controller
             'sequenceScopes',
             'resetRules',
             'previewContextDefaults',
-            'previewWarnings'
+            'previewWarnings',
+            'existingRecordCount',
+            'currentCodeSample',
+            'wizardComponentLabels'
         )));
     }
 
@@ -189,6 +229,8 @@ class ProductCodeConfigurationController extends Controller
             'preview_brand_id' => 'nullable|integer|exists:manufacturer,manufacturer_id',
             'preview_series_id' => 'nullable|integer|exists:product_series,id',
             'preview_variant_code' => 'nullable|string|max:255',
+            'existing_record_policy' => ['nullable', Rule::in(['FUTURE_ONLY', 'UPDATE_ALL', 'UPDATE_SELECTED'])],
+            'cascade_policy' => ['nullable', Rule::in(['NONE', 'DEPENDENTS'])],
         ]);
 
         $components = $this->normalizeComponents($validated['components']);
@@ -226,6 +268,7 @@ class ProductCodeConfigurationController extends Controller
                 'is_active' => (int) ($validated['is_active'] ?? 0),
                 'updated_by' => session('admin_id'),
                 'updated_at' => $now,
+                'version' => $configuration->exists ? ((int) $configuration->version + 1) : 1,
             ]);
 
             if (! $configuration->exists) {
@@ -267,10 +310,14 @@ class ProductCodeConfigurationController extends Controller
 
             ProductCodeConfigurationHistory::create([
                 'configuration_id' => $configuration->id,
+                'configuration_version' => (int) ($configuration->version ?: 1),
                 'old_template' => $oldSnapshot['template'] ?? null,
                 'new_template' => $template,
                 'old_settings' => $oldSnapshot,
-                'new_settings' => $this->configurationSnapshot($configuration->fresh(['components', 'company', 'branch'])),
+                'new_settings' => array_merge($this->configurationSnapshot($configuration->fresh(['components', 'company', 'branch'])), [
+                    'existing_record_policy' => $validated['existing_record_policy'] ?? 'FUTURE_ONLY',
+                    'cascade_policy' => $validated['cascade_policy'] ?? 'NONE',
+                ]),
                 'changed_by' => session('admin_id'),
                 'changed_at' => $now,
             ]);
@@ -278,9 +325,37 @@ class ProductCodeConfigurationController extends Controller
             $savedConfigurationId = $configuration->id;
         });
 
-        return redirect()
+        $policy = $validated['existing_record_policy'] ?? 'FUTURE_ONLY';
+        $redirect = redirect()
             ->to('/product-code-configuration?code_type='.$validated['code_type'].'&configuration='.$savedConfigurationId)
             ->with('message', 'Product code configuration saved successfully.');
+        if ($policy !== 'FUTURE_ONLY') {
+            $redirect = redirect()->route('product-code-configuration.regeneration-preview', ['configuration_id' => $savedConfigurationId, 'mode' => $policy])
+                ->with('message', 'Configuration saved. Review the dry-run preview before applying existing-code changes.');
+        }
+        return $redirect;
+    }
+
+    public function regenerationPreview(Request $request, CodeRegenerationService $regenerator)
+    {
+        $mode = strtoupper((string) $request->input('mode', 'UPDATE_ALL'));
+        abort_unless(in_array($mode, ['UPDATE_ALL', 'UPDATE_SELECTED'], true), 422);
+        $configuration = ProductCodeConfiguration::with('components')->findOrFail($request->integer('configuration_id'));
+        $this->requireAdminPermission('view_product_code_configuration');
+        $selected = array_map('intval', (array) $request->input('selected', []));
+        $preview = $regenerator->preview($configuration, $mode, $selected, true);
+        if ($request->isMethod('post') || $request->expectsJson()) return response()->json($preview);
+        return view('admin.admin-master')->with('admin_main_content', view('admin.admin-pages.product-code-regeneration-preview', compact('configuration', 'preview', 'mode')));
+    }
+
+    public function applyRegeneration(Request $request, CodeRegenerationService $regenerator)
+    {
+        $validated = $request->validate(['configuration_id' => 'required|integer|exists:product_code_configurations,id', 'mode' => ['required', Rule::in(['UPDATE_ALL','UPDATE_SELECTED'])], 'selected' => 'nullable|array', 'selected.*' => 'integer', 'reason' => 'required|string|max:2000', 'confirmation' => 'required|in:REGENERATE']);
+        $this->requireAdminPermission('regenerate_product_code');
+        $configuration = ProductCodeConfiguration::with('components')->findOrFail($validated['configuration_id']);
+        $preview = $regenerator->preview($configuration, $validated['mode'], array_map('intval', $validated['selected'] ?? []), true);
+        $batch = $regenerator->apply($configuration, $preview, $validated['reason'], (int) session('admin_id'), true);
+        return redirect()->route('product-code-configuration.index', ['code_type' => $configuration->code_type, 'configuration' => $configuration->id])->with('message', 'Code regeneration completed. Batch #'.$batch->id.' updated '.$batch->success_count.' record(s).');
     }
 
     public function preview(Request $request, ProductCodeGenerator $generator)
@@ -536,6 +611,7 @@ class ProductCodeConfigurationController extends Controller
 
         return [
             'id' => $configuration->id,
+            'version' => (int) ($configuration->version ?: 1),
             'code_type' => $codeType,
             'code_type_label' => $this->codeTypeLabel($codeType),
             'name' => $configuration->name,
