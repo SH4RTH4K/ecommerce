@@ -1,3 +1,9 @@
+@extends('admin.admin-master')
+@section('title', 'Existing Code Impact Preview')
+@section('admin_main_content')
+<style>
+.pcc{padding:26px;box-sizing:border-box}.pcc-hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px;padding:20px;border-radius:12px;background:linear-gradient(135deg,#0d536f,#177a99);color:#fff}.pcc-hero h1{margin:0 0 5px;font-size:23px}.pcc-hero p{margin:0;max-width:680px;line-height:1.45}.summary{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.pcc-pill{padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px;font-weight:700}.pcc-card{margin-bottom:18px;background:#fff;border:1px solid #dce7ed;border-radius:12px;box-shadow:0 5px 18px rgba(14,56,76,.06);overflow:hidden}.pcc-head{padding:18px;border-bottom:1px solid #e8eff3}.pcc-head h2{margin:0 0 4px;color:#123f61;font-size:19px}.pcc-head p{margin:0;color:#667985}.pcc-body{padding:18px}.pcc-banner{margin:0 0 18px;padding:14px 16px;border:1px solid #dbe7ee;border-radius:12px;display:flex;justify-content:space-between;gap:14px;align-items:center}.pcc-banner strong,.pcc-banner small{display:block}.pcc-banner small{margin-top:4px;color:#607684;line-height:1.45}.pcc-table-wrap{overflow:auto;border:1px solid #dce7ed;border-radius:9px}.pcc-table{width:100%;margin:0}.pcc-table th{background:#f4f8fa;color:#315468;font-size:12px;white-space:nowrap}.pcc-table td,.pcc-table th{vertical-align:middle}.pcc-grid-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.pcc-grid-form .span-2{grid-column:1/-1}.pcc-grid-form label{display:block;margin:0 0 6px;font-weight:700;color:#315468}.pcc-grid-form input,.pcc-grid-form textarea{width:100%;box-sizing:border-box}.pcc-grid-form textarea{min-height:88px}.pcc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.pcc-safety{margin:14px 0 0;padding:11px 13px;border:1px solid #f0d49c;border-radius:9px;background:#fff9ec;color:#76521a;font-size:12px;line-height:1.45}@media(max-width:850px){.pcc{padding:16px}.pcc-hero{flex-direction:column}.summary{justify-content:flex-start}.pcc-grid-form{grid-template-columns:1fr}}
+</style>
 <main id="content" class="span10 pcc">
     <div class="pcc-hero"><div><h1>Existing Code Impact Preview</h1><p>Dry-run only. No codes, sequences, or history are changed until you explicitly apply this preview.</p></div><div class="summary"><span class="pcc-pill">{{ strtoupper($configuration->code_type) }}</span><span class="pcc-pill">{{ $preview['total'] }} affected</span><span class="pcc-pill">{{ $preview['ready'] }} ready</span><span class="pcc-pill">{{ $preview['conflicts'] }} conflicts</span></div></div>
     @if(! empty($preview['error']))
@@ -18,3 +24,4 @@
         </form>
     </div></div>
 </main>
+@endsection

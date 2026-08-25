@@ -372,7 +372,7 @@ class ProductCodeConfigurationController extends Controller
             ];
         }
         if ($request->isMethod('post') || $request->expectsJson()) return response()->json($preview);
-        return view('admin.admin-master')->with('admin_main_content', view('admin.admin-pages.product-code-regeneration-preview', compact('configuration', 'preview', 'mode')));
+        return view('admin.admin-pages.product-code-regeneration-preview', compact('configuration', 'preview', 'mode'));
     }
 
     public function applyRegeneration(Request $request, CodeRegenerationService $regenerator)
