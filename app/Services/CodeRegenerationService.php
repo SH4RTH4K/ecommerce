@@ -18,15 +18,37 @@ class CodeRegenerationService
         if (! in_array($type, self::TYPES, true)) throw ValidationException::withMessages(['code_type' => 'This code type cannot be regenerated.']);
         $rows = $this->records($type, $mode, $selected);
         $items = [];
-        $proposed = [];
+        $plannedCodes = [];
+        $reservedSequences = [];
+        $nextSequence = max(1, (int) $configuration->sequence_start);
+        $hasSequence = $this->hasSequenceComponent($configuration);
+        $preservedSequenceCount = 0;
+        $allocatedSequenceCount = 0;
+
         foreach ($rows as $row) {
             $old = trim((string) $row->current_code);
             if ($old === '') continue;
-            $sequence = $preserveSequence && preg_match('/(\d+)$/', $old, $match) ? (int) $match[1] : null;
+            $oldSequence = $preserveSequence && preg_match('/(\d+)$/', $old, $match) ? max(1, (int) $match[1]) : null;
+            $sequence = null;
+            $sequenceAction = 'Not used';
+            if ($hasSequence) {
+                if ($oldSequence !== null && ! isset($reservedSequences[$oldSequence])) {
+                    $sequence = $oldSequence;
+                    $sequenceAction = 'Preserved';
+                    $preservedSequenceCount++;
+                } else {
+                    $sequence = $this->nextAvailableSequence($nextSequence, $reservedSequences);
+                    $sequenceAction = 'Allocated';
+                    $allocatedSequenceCount++;
+                }
+                $reservedSequences[$sequence] = true;
+                $nextSequence = max($nextSequence, $sequence + 1);
+            }
+
             $context = $this->context($type, $row);
             try {
-                $rendered = $sequence !== null
-                    ? app(ProductCodeGenerator::class)->previewWithSequence($context, $sequence, $configuration)
+                $rendered = $hasSequence
+                    ? app(ProductCodeGenerator::class)->previewWithSequence($context, (int) $sequence, $configuration)
                     : app(ProductCodeGenerator::class)->preview($context, $configuration);
                 $new = trim((string) ($rendered['preview'] ?? ''));
                 $error = $new === '' ? 'Generator returned an empty code.' : null;
@@ -34,14 +56,37 @@ class CodeRegenerationService
                 $new = '';
                 $error = $exception->getMessage();
             }
-            $conflict = $error ? false : $this->conflict($type, $new, (int) $row->entity_id);
-            if ($conflict) $error = 'Proposed code already belongs to another record.';
-            if ($new !== '') $proposed[$new] = ($proposed[$new] ?? 0) + 1;
-            $items[] = ['entity_type' => $type, 'entity_id' => (int) $row->entity_id, 'name' => (string) $row->entity_name, 'old_code' => $old, 'new_code' => $new, 'sequence_number' => $sequence, 'status' => $error ? 'CONFLICT' : 'READY', 'error' => $error];
+
+            $attempts = 0;
+            while (! $error && $hasSequence && $this->hasCodeConflict($type, $new, (int) $row->entity_id, $plannedCodes)) {
+                if (++$attempts > 10000) {
+                    $error = 'No unused sequence number could be allocated for this record.';
+                    break;
+                }
+                $sequence = $this->nextAvailableSequence($nextSequence, $reservedSequences);
+                $reservedSequences[$sequence] = true;
+                $nextSequence = $sequence + 1;
+                if ($sequenceAction !== 'Allocated') {
+                    $preservedSequenceCount--;
+                    $allocatedSequenceCount++;
+                    $sequenceAction = 'Allocated to avoid a duplicate';
+                }
+                try {
+                    $new = trim((string) (app(ProductCodeGenerator::class)->previewWithSequence($context, $sequence, $configuration)['preview'] ?? ''));
+                    if ($new === '') $error = 'Generator returned an empty code.';
+                } catch (\Throwable $exception) {
+                    $new = '';
+                    $error = $exception->getMessage();
+                }
+            }
+
+            if (! $error && ! $hasSequence && $this->hasCodeConflict($type, $new, (int) $row->entity_id, $plannedCodes)) {
+                $error = 'Duplicate proposed code. Add a Numeric Sequence component to this format, then preview again.';
+            }
+            if (! $error && $new !== '') $plannedCodes[$new] = (int) $row->entity_id;
+            $items[] = ['entity_type' => $type, 'entity_id' => (int) $row->entity_id, 'name' => (string) $row->entity_name, 'old_code' => $old, 'new_code' => $new, 'sequence_number' => $sequence, 'sequence_action' => $sequenceAction, 'status' => $error ? 'CONFLICT' : 'READY', 'error' => $error];
         }
-        foreach ($items as &$item) if ($item['new_code'] !== '' && ($proposed[$item['new_code']] ?? 0) > 1) { $item['status'] = 'CONFLICT'; $item['error'] = 'Duplicate proposed code in this preview.'; }
-        unset($item);
-        return ['code_type' => $type, 'configuration_id' => $configuration->id, 'mode' => $mode, 'items' => $items, 'total' => count($items), 'ready' => count(array_filter($items, fn ($i) => $i['status'] === 'READY')), 'conflicts' => count(array_filter($items, fn ($i) => $i['status'] !== 'READY'))];
+        return ['code_type' => $type, 'configuration_id' => $configuration->id, 'mode' => $mode, 'items' => $items, 'total' => count($items), 'ready' => count(array_filter($items, fn ($i) => $i['status'] === 'READY')), 'conflicts' => count(array_filter($items, fn ($i) => $i['status'] !== 'READY')), 'sequence_preserved' => $preservedSequenceCount, 'sequence_allocated' => $allocatedSequenceCount];
     }
 
     public function apply(ProductCodeConfiguration $configuration, array $preview, string $reason, int $adminId, bool $allOrNothing = true): ProductCodeRegenerationBatch
@@ -63,7 +108,7 @@ class CodeRegenerationService
     private function records(string $type, string $mode, array $selected)
     {
         $map = ['company'=>['table'=>'companies','id'=>'id','name'=>'name','code'=>'company_code'],'category'=>['table'=>'category','id'=>'category_id','name'=>'category_name','code'=>'category_code'],'subcategory'=>['table'=>'sub_category','id'=>'sub_category_id','name'=>'sub_category_name','code'=>'subcategory_code'],'brand'=>['table'=>'manufacturer','id'=>'manufacturer_id','name'=>'manufacturer_name','code'=>'brand_code'],'series'=>['table'=>'product_series','id'=>'id','name'=>'name','code'=>'series_code'],'product'=>['table'=>'product','id'=>'id','name'=>'product_name','code'=>'product_code']][$type];
-        return DB::table($map['table'])->whereNull($map['table'].'.deleted_at')->when($mode === 'UPDATE_SELECTED' && $selected !== [], fn ($q) => $q->whereIn($map['id'], $selected))->get([$map['id'].' as entity_id', $map['name'].' as entity_name', $map['code'].' as current_code']);
+        return DB::table($map['table'])->whereNull($map['table'].'.deleted_at')->when($mode === 'UPDATE_SELECTED' && $selected !== [], fn ($q) => $q->whereIn($map['id'], $selected))->orderBy($map['id'])->get([$map['id'].' as entity_id', $map['name'].' as entity_name', $map['code'].' as current_code']);
     }
 
     private function context(string $type, $row): array
@@ -88,5 +133,23 @@ class CodeRegenerationService
     {
         $map = ['company'=>['companies','id','company_code'],'category'=>['category','category_id','category_code'],'subcategory'=>['sub_category','sub_category_id','subcategory_code'],'brand'=>['manufacturer','manufacturer_id','brand_code'],'series'=>['product_series','id','series_code'],'product'=>['product','id','product_code']][$type];
         return DB::table($map[0])->where($map[2],$code)->where($map[1],'<>',$id)->exists();
+    }
+
+    private function hasSequenceComponent(ProductCodeConfiguration $configuration): bool
+    {
+        return $configuration->components->contains(function ($component) {
+            return strtolower((string) $component->component_type) === 'sequence';
+        });
+    }
+
+    private function nextAvailableSequence(int $candidate, array $reservedSequences): int
+    {
+        while (isset($reservedSequences[$candidate])) $candidate++;
+        return $candidate;
+    }
+
+    private function hasCodeConflict(string $type, string $code, int $entityId, array $plannedCodes): bool
+    {
+        return $code === '' || isset($plannedCodes[$code]) || $this->conflict($type, $code, $entityId);
     }
 }

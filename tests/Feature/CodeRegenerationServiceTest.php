@@ -22,4 +22,19 @@ class CodeRegenerationServiceTest extends TestCase
         $this->assertSame($before, DB::table('manufacturer')->where('manufacturer_id', $brand->manufacturer_id)->value('brand_code'));
     }
 
+    public function testPreviewDoesNotReturnDuplicateReadyCodes(): void
+    {
+        $configuration = ProductCodeConfiguration::with('components')->where('code_type', 'category')->where('is_active', 1)->first();
+        if (! $configuration) $this->markTestSkipped('Category code fixtures are not available.');
+
+        $preview = app(CodeRegenerationService::class)->preview($configuration, 'UPDATE_ALL', [], true);
+        $readyCodes = collect($preview['items'])
+            ->where('status', 'READY')
+            ->pluck('new_code')
+            ->filter()
+            ->values();
+
+        $this->assertSame($readyCodes->count(), $readyCodes->unique()->count());
+    }
+
 }
