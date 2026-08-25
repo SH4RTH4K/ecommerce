@@ -10,6 +10,9 @@
 @section('main_content')
 @php
     $warrantyText = $product_details->warranty_display;
+    $productCode = trim((string) ($product_details->product_code ?: $product_details->sku));
+    $sku = trim((string) $product_details->sku);
+    $showSeparateSku = $sku !== '' && $sku !== $productCode;
 @endphp
 <section class="lt-detail-section">
     @include('partials.flash')
@@ -43,7 +46,7 @@
         </div>
 
         <div class="lt-detail-info">
-            <span class="lt-detail-code">Product code: {{ $product_details->sku ?: 'LT'.str_pad($product_details->id, 5, '0', STR_PAD_LEFT) }}</span>
+            <span class="lt-detail-code">Product code: {{ $productCode ?: 'LT'.str_pad($product_details->id, 5, '0', STR_PAD_LEFT) }}</span>
             <h1>{{ $product_details->product_name }}</h1>
             <p class="lt-detail-model">Model: {{ $product_details->product_model ?: 'Not specified' }}</p>
             <p class="lt-product-intro">Buy {{ $product_details->product_name }} from {{ optional($product_details->manufacturer)->manufacturer_name ?: $brandName }} with fast delivery and support.</p>
@@ -99,10 +102,12 @@
                         <dd>{{ $product_details->series->name }}</dd>
                     </div>
                 @endif
-                <div>
-                    <dt>SKU</dt>
-                    <dd>{{ $product_details->sku ?: 'Not specified' }}</dd>
-                </div>
+                @if($showSeparateSku)
+                    <div>
+                        <dt>SKU</dt>
+                        <dd>{{ $sku }}</dd>
+                    </div>
+                @endif
             </dl>
 
             <div class="lt-buy-actions">
