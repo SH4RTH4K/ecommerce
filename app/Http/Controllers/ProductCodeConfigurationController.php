@@ -14,6 +14,7 @@ use App\Services\RecycleBinService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -343,7 +344,33 @@ class ProductCodeConfigurationController extends Controller
         $configuration = ProductCodeConfiguration::with('components')->findOrFail($request->integer('configuration_id'));
         $this->requireAdminPermission('view_product_code_configuration');
         $selected = array_map('intval', (array) $request->input('selected', []));
-        $preview = $regenerator->preview($configuration, $mode, $selected, true);
+        try {
+            $preview = $regenerator->preview($configuration, $mode, $selected, true);
+        } catch (\Throwable $exception) {
+            Log::error('Product code regeneration preview failed.', [
+                'configuration_id' => $configuration->id,
+                'code_type' => $configuration->code_type,
+                'mode' => $mode,
+                'admin_id' => session('admin_id'),
+                'exception' => $exception,
+            ]);
+
+            $message = 'The dry-run preview could not be generated. No existing codes were changed. Please review the configuration or contact an administrator with the time of this error.';
+            if ($request->isMethod('post') || $request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            $preview = [
+                'code_type' => $configuration->code_type,
+                'configuration_id' => $configuration->id,
+                'mode' => $mode,
+                'items' => [],
+                'total' => 0,
+                'ready' => 0,
+                'conflicts' => 1,
+                'error' => $message,
+            ];
+        }
         if ($request->isMethod('post') || $request->expectsJson()) return response()->json($preview);
         return view('admin.admin-master')->with('admin_main_content', view('admin.admin-pages.product-code-regeneration-preview', compact('configuration', 'preview', 'mode')));
     }
