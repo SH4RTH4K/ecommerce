@@ -193,9 +193,6 @@ class ProductCodeConfigurationController extends Controller
 
         $components = $this->normalizeComponents($validated['components']);
         $template = $this->compileTemplate($components, $validated['separator'] ?? config('product_code.default_separator', '-'));
-        if (! collect($components)->contains(fn (array $component) => $component['component_type'] === 'sequence')) {
-            return back()->withInput()->withErrors(['components' => 'The sequence component must be included in every product code configuration.']);
-        }
 
         $now = now();
         $configurationId = $validated['configuration_id'] ?? null;

@@ -279,6 +279,7 @@ Route::post('/system-health/full-restore', 'SuperAdminController@restoreFullSyst
 Route::get('/system-health/backups/{id}/download', 'SuperAdminController@downloadSystemBackup');
 Route::post('/system-health/backups/{id}/delete', 'SuperAdminController@deleteSystemBackup');
 Route::post('/system-health/clear-cache', 'SuperAdminController@clearSystemCache');
+Route::post('/system-health/migrations/run', 'SuperAdminController@runPendingMigrations');
 Route::get('/system-monitor', 'SuperAdminController@systemMonitor');
 Route::post('/system-monitor/events/{id}/resolve', 'SuperAdminController@resolveSystemEvent');
 Route::get('/integrations', 'SuperAdminController@integrations');

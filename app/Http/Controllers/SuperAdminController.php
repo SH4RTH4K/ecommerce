@@ -2854,7 +2854,36 @@ class SuperAdminController extends Controller {
     public function resetAdminPassword(Request $request,$id){$this->validate($request,['password'=>'required|min:8|max:255|confirmed']);abort_unless(DB::table('tbl_admin')->where('admin_id',$id)->exists(),404);DB::table('tbl_admin')->where('admin_id',$id)->update(['admin_password'=>\Hash::make($request->password),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator password updated.');}
     public function adminActivity(Request $request){$query=DB::table('admin_activity_logs')->latest('created_at');if($request->filled('admin_id'))$query->where('admin_id',$request->admin_id);if($request->filled('search'))$query->where(function($q)use($request){$q->where('action','like','%'.$request->search.'%')->orWhere('path','like','%'.$request->search.'%');});$logs=$query->paginate(50)->appends($request->query());$admins=DB::table('tbl_admin')->select('admin_id','admin_name')->orderBy('admin_name')->get();return view('admin.admin-pages.admin-activity',compact('logs','admins'));}
 
-    public function systemHealth(){try{DB::select('SELECT 1');$database=['ok'=>true,'message'=>'Connected'];}catch(\Throwable $e){$database=['ok'=>false,'message'=>$e->getMessage()];}$storageWritable=is_writable(storage_path('app'))&&is_writable(storage_path('framework'))&&is_writable(storage_path('logs'));$free=@disk_free_space(base_path());$total=@disk_total_space(base_path());$health=['database'=>$database,'storage'=>['ok'=>$storageWritable,'message'=>$storageWritable?'Writable':'One or more storage directories are not writable'],'php'=>['ok'=>version_compare(PHP_VERSION,'7.2.5','>='),'message'=>PHP_VERSION],'laravel'=>['ok'=>true,'message'=>app()->version()],'disk'=>['ok'=>$free!==false&&$free>536870912,'message'=>$free===false?'Unknown':$this->formatBytes($free).' free of '.$this->formatBytes($total)],'environment'=>['ok'=>config('app.env')==='production'&&!config('app.debug'),'message'=>config('app.env').' · debug '.(config('app.debug')?'ON':'off')]];$backups=DB::table('system_backups')->latest()->limit(30)->get();$lastBackup=$backups->first();return view('admin.admin-pages.system-health',compact('health','backups','lastBackup'));}
+    public function systemHealth(){try{DB::select('SELECT 1');$database=['ok'=>true,'message'=>'Connected'];}catch(\Throwable $e){$database=['ok'=>false,'message'=>$e->getMessage()];}$storageWritable=is_writable(storage_path('app'))&&is_writable(storage_path('framework'))&&is_writable(storage_path('logs'));$free=@disk_free_space(base_path());$total=@disk_total_space(base_path());$health=['database'=>$database,'storage'=>['ok'=>$storageWritable,'message'=>$storageWritable?'Writable':'One or more storage directories are not writable'],'php'=>['ok'=>version_compare(PHP_VERSION,'8.3.0','>='),'message'=>PHP_VERSION],'laravel'=>['ok'=>true,'message'=>app()->version()],'disk'=>['ok'=>$free!==false&&$free>536870912,'message'=>$free===false?'Unknown':$this->formatBytes($free).' free of '.$this->formatBytes($total)],'environment'=>['ok'=>config('app.env')==='production'&&!config('app.debug'),'message'=>config('app.env').' · debug '.(config('app.debug')?'ON':'off')]];$migrations=$this->migrationStatus();$backups=DB::table('system_backups')->latest()->limit(30)->get();$lastBackup=$backups->first();return view('admin.admin-pages.system-health',compact('health','migrations','backups','lastBackup'));}
+
+    public function runPendingMigrations(){
+        $this->requireAdminPermission('settings');
+        try {
+            \Artisan::call('migrate', ['--force' => true, '--no-ansi' => true]);
+            $output=trim(\Artisan::output());
+            $this->auditAdminAction('RUN_PENDING_MIGRATIONS', ['output' => $output]);
+            return Redirect::back()->with('message', $output !== '' ? $output : 'Database migrations completed successfully.');
+        } catch (\Throwable $e) {
+            $this->auditAdminAction('RUN_PENDING_MIGRATIONS_FAILED', ['error' => $e->getMessage()]);
+            return Redirect::back()->with('exception', 'Migration failed: '.$e->getMessage());
+        }
+    }
+
+    private function migrationStatus(): array
+    {
+        try {
+            $migrator=app('migrator');
+            $ran=array_flip($migrator->getRepository()->getRan());
+            $files=$migrator->getMigrationFiles(database_path('migrations'));
+            $pending=[];
+            foreach ($files as $name => $path) {
+                if (!isset($ran[$name])) $pending[]=$name;
+            }
+            return ['ok'=>count($pending)===0,'pending'=>$pending,'ran'=>count($files)-count($pending),'total'=>count($files),'message'=>count($pending)===0?'All database migrations are up to date.':count($pending).' pending migration(s) require attention.'];
+        } catch (\Throwable $e) {
+            return ['ok'=>false,'pending'=>[],'ran'=>0,'total'=>0,'message'=>'Unable to check migrations: '.$e->getMessage()];
+        }
+    }
     public function createSystemBackup(){try{$id=app(\App\Services\DatabaseBackupService::class)->create(session('admin_name'));return Redirect::back()->with('message','Database backup completed successfully. Reference '.$id.'.');}catch(\Throwable $e){return Redirect::back()->with('exception','Backup failed: '.$e->getMessage());}}
     public function createFullSystemBackup(){set_time_limit(0);try{$id=app(\App\Services\DatabaseBackupService::class)->createFull(session('admin_name'));return Redirect::back()->with('message','Full database and media backup completed successfully. Reference '.$id.'.');}catch(\Throwable $e){return Redirect::back()->with('exception','Full backup failed: '.$e->getMessage());}}
     public function createMediaSystemBackup(){set_time_limit(0);try{$id=app(\App\Services\DatabaseBackupService::class)->createMedia(session('admin_name'));return Redirect::back()->with('message','Media backup completed successfully. Reference '.$id.'.');}catch(\Throwable $e){return Redirect::back()->with('exception','Media backup failed: '.$e->getMessage());}}

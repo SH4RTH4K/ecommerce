@@ -146,8 +146,20 @@
 .pcc-small{font-size:12px;color:#607684;line-height:1.4}
 .pcc-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .pcc-pre{max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#f8fbfd;border:1px solid #dbe7ee;border-radius:8px;padding:10px;font-size:12px;line-height:1.45;color:#355063}
+.pcc-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 18px}
+.pcc-flow-step{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #dce7ed;border-radius:10px;background:#fff;color:#607684;font-size:12px;line-height:1.3}
+.pcc-flow-step strong{display:block;color:#214e67;font-size:13px}.pcc-flow-step .num{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#eaf3f7;color:#0f6b8f;font-weight:800;flex:0 0 auto}.pcc-flow-step.active{border-color:#8bc6dc;background:#f4fbfe}.pcc-flow-step.active .num{background:#0f6b8f;color:#fff}
+.pcc-type-label{margin:0 0 9px;color:#607684;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.pcc-tab{transition:transform .15s ease,box-shadow .15s ease}.pcc-tab:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(14,56,76,.1)}
+.pcc-selector{position:relative}.pcc-selector .selector-copy{flex:1;min-width:220px}.pcc-selector .selector-copy strong{display:block;color:#123f61}.pcc-selector .selector-copy small{display:block;margin-top:3px;color:#758995}
+.pcc-status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#e9f8ef;color:#147043;font-size:11px;font-weight:800}.pcc-status.is-draft{background:#fff4e5;color:#9a5c08}
+.pcc-section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:20px 0 10px;padding-bottom:9px;border-bottom:1px solid #e8eff3}.pcc-section-title h3{margin:0}.pcc-section-title small{max-width:440px;text-align:right;color:#758995;line-height:1.4}
+.pcc-sticky-actions{position:sticky;bottom:12px;z-index:5;padding:11px 12px;background:rgba(255,255,255,.96);border:1px solid #cfe0e8;border-radius:11px;box-shadow:0 8px 22px rgba(14,56,76,.14)}
+.pcc-safety{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:11px 13px;border:1px solid #f0d49c;border-radius:9px;background:#fff9ec;color:#76521a;font-size:12px;line-height:1.45}.pcc-safety i{margin-top:2px}
+.pcc-table-wrap{scrollbar-color:#b8d1dc #f5f9fb}.pcc-table th{background:#f4f8fa;color:#315468;font-size:12px;white-space:nowrap}.pcc-table td input,.pcc-table td select,.pcc-table td textarea{max-width:100%;box-sizing:border-box}
+@media(max-width:850px){.pcc-flow{grid-template-columns:repeat(2,1fr)}.pcc-section-title{display:block}.pcc-section-title small{text-align:left;display:block;margin-top:5px}}
 @media(max-width:1100px){.pcc-grid{grid-template-columns:1fr}.pcc-history-grid{grid-template-columns:1fr}.pcc-hero{flex-direction:column}.pcc-selector select,.pcc-selector input{min-width:0;width:100%}}
-@media(max-width:640px){.pcc{padding:16px}.pcc-grid-form{grid-template-columns:1fr}}
+@media(max-width:640px){.pcc{padding:16px}.pcc-grid-form{grid-template-columns:1fr}.pcc-flow{grid-template-columns:1fr}.pcc-sticky-actions .btn{width:100%;margin:3px 0}}
 </style>
 
 <main id="content" class="span10 pcc">
@@ -163,6 +175,13 @@
             <span class="pcc-pill">Sequence: {{ $selectedSnapshot['sequence_scope'] ?? config('product_code.default_sequence_scope', 'global') }}</span>
         </div>
     </header>
+
+    <div class="pcc-flow" aria-label="Configuration workflow">
+        <div class="pcc-flow-step active"><span class="num">1</span><span><strong>Choose a code type</strong>Company, category, brand, series, or product</span></div>
+        <div class="pcc-flow-step active"><span class="num">2</span><span><strong>Load a configuration</strong>Edit an existing version safely</span></div>
+        <div class="pcc-flow-step"><span class="num">3</span><span><strong>Build and test</strong>Arrange components and preview output</span></div>
+        <div class="pcc-flow-step"><span class="num">4</span><span><strong>Save and activate</strong>Publish only after review</span></div>
+    </div>
 
     @if(session('message'))<div class="pcc-banner"><div><strong>Success</strong><small>{{ session('message') }}</small></div></div>@endif
     @if(session('exception'))<div class="pcc-banner"><div><strong>Attention</strong><small>{{ session('exception') }}</small></div></div>@endif
@@ -180,6 +199,7 @@
         </div>
     @endif
 
+    <div class="pcc-type-label">Step 1 · Choose what kind of code you are configuring</div>
     <div class="pcc-tabs">
         @foreach($codeTypes as $codeType => $label)
             <a class="pcc-tab {{ $selectedCodeType === $codeType ? 'active' : '' }}" href="{{ url('/product-code-configuration?code_type='.$codeType) }}">
@@ -191,7 +211,9 @@
 
     <form class="pcc-selector" method="get" action="{{ url('/product-code-configuration') }}">
         <input type="hidden" name="code_type" value="{{ $selectedCodeType }}">
-        <label for="configuration-switch">Load configuration</label>
+        <div class="selector-copy"><strong>Step 2 · Choose a saved configuration</strong><small>Loading a version does not change anything until you press Save.</small></div>
+        @if($activeConfiguration)<span class="pcc-status"><i class="icon-ok"></i> Active version loaded</span>@else<span class="pcc-status is-draft"><i class="icon-warning-sign"></i> No active version</span>@endif
+        <label for="configuration-switch" class="sr-only">Load configuration</label>
         <select id="configuration-switch" name="configuration">
             @foreach($configurationOptions as $configurationId => $configurationLabel)
                 <option value="{{ $configurationId }}" {{ (string) $selectedConfigurationId === (string) $configurationId ? 'selected' : '' }}>{{ $configurationLabel }}</option>
@@ -214,6 +236,7 @@
                     <input type="hidden" name="code_type" value="{{ $selectedCodeType }}">
                     <input type="hidden" name="separator" id="separator" value="{{ $separatorValue }}">
 
+                    <div class="pcc-section-title"><h3>Basic identity and scope</h3><small>These settings decide where this configuration applies.</small></div>
                     <div class="pcc-grid-form">
                         <div>
                             <label for="name">Configuration name</label>
@@ -304,12 +327,12 @@
                                     <span class="pcc-token">{{ $label }}</span>
                                 @endforeach
                             </div>
-                            <div class="pcc-help">The sequence component is required. Arrange the rows below in the exact order you want the code to render.</div>
+                            <div class="pcc-help">Arrange the rows below in the exact order you want the code to render. Add a Sequence component only when this code type needs a running number.</div>
                         </div>
                     </div>
 
                     <div class="pcc-section">
-                        <h3>Component Builder</h3>
+                        <div class="pcc-section-title"><h3>Step 3 · Build the code pattern</h3><small>Keep one Sequence component. The row order becomes the final code order.</small></div>
                         <div class="pcc-small">Add, remove, or move rows to build the template. The position field always controls the final order.</div>
                         <div class="pcc-actions">
                             <button type="button" class="btn btn-small" id="add-component-row"><i class="icon-plus"></i> Add component</button>
@@ -357,6 +380,7 @@
                         </div>
                     </div>
 
+                    <div class="pcc-sticky-actions">
                     <div class="pcc-actions">
                         <button type="submit" class="btn btn-primary"><i class="icon-save"></i> Save Configuration</button>
                         <button type="button" class="btn btn-warning" id="pcc-preview-button"><i class="icon-play"></i> Test Generator</button>
@@ -365,7 +389,9 @@
                             <button type="submit" class="btn btn-danger" form="delete-product-code-configuration" onclick="return confirm('Move this product code configuration to the Recycle Bin?')"><i class="icon-trash"></i> Delete Configuration</button>
                         @endif
                     </div>
-                    <div class="pcc-help">Use <strong>Test Generator</strong> to preview the current draft without consuming a sequence number.</div>
+                    <div class="pcc-help">Test Generator never consumes a sequence number. Saving an active version affects future generated codes.</div>
+                    </div>
+                    <div class="pcc-safety"><i class="icon-lock"></i><span><strong>Safety check:</strong> Preview the draft before activating it. Existing generated codes are not rewritten, but new codes will follow the active pattern.</span></div>
                 </form>
                 @if($selectedConfigurationId)
                     <form id="delete-product-code-configuration" method="post" action="{{ route('product-code-configuration.destroy', $selectedConfigurationId) }}" style="display:none">@csrf @method('DELETE')</form>
@@ -638,6 +664,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var nextIndex = rowsBody.querySelectorAll('[data-component-row]').length;
     var previewUrl = @json(url('/product-code-configuration/preview'));
     var csrfToken = @json(csrf_token());
+    var formIsDirty = false;
 
     function syncSeparator() {
         var value = separatorMode.value === '__custom__' ? customSeparator.value : separatorMode.value;
@@ -780,8 +807,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    form.addEventListener('submit', function () {
+    form.addEventListener('submit', function (event) {
         syncSeparator();
+        var activeField = form.querySelector('input[name="is_active"]');
+        if (activeField && activeField.checked && ! window.confirm('Make this configuration active for future codes? Existing codes will not change.')) {
+            event.preventDefault();
+            return;
+        }
+        formIsDirty = false;
+    });
+
+    form.addEventListener('input', function () { formIsDirty = true; });
+    form.addEventListener('change', function () { formIsDirty = true; });
+    window.addEventListener('beforeunload', function (event) {
+        if (formIsDirty) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
     });
 });
 </script>
