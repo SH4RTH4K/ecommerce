@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 
 class ApplicationUpdateService
@@ -142,6 +143,19 @@ class ApplicationUpdateService
         $settings = $this->settings(); $handle = $this->lock();
         try { $this->assertRepository(); $current = trim($this->git(['rev-parse', 'HEAD'])['output']); $this->gitOrFail(['revert', '--no-edit', '--no-commit', $deployment->previous_commit.'..'.$current], 'Source rollback failed; resolve the source history manually.'); $this->gitOrFail(['commit', '-m', 'Rollback application deployment #'.$deployment->id], 'Rollback commit failed.'); $rollback = ApplicationDeployment::create(['repository_url'=>$settings->repository_url,'branch'=>$settings->branch,'previous_commit'=>$current,'target_commit'=>$deployment->previous_commit,'deployed_commit'=>trim($this->git(['rev-parse','HEAD'])['output']),'status'=>'success','started_by'=>$adminId,'started_at'=>now(),'completed_at'=>now(),'rollback_of'=>$deployment->id,'safe_log'=>'Source rollback completed. Database migrations were not reversed.']); return $rollback; }
         finally { flock($handle, LOCK_UN); fclose($handle); }
+    }
+
+    public function deploymentCommitSubjects(array $commits): array
+    {
+        $subjects = [];
+        foreach (array_unique(array_filter($commits)) as $commit) {
+            $commit = trim((string) $commit);
+            if (! preg_match('/^[a-f0-9]{7,40}$/i', $commit)) continue;
+            $result = $this->git(['show', '-s', '--format=%s', $commit], false);
+            if ($result['code'] === 0 && $result['output'] !== '') $subjects[$commit] = Str::limit($result['output'], 180);
+        }
+
+        return $subjects;
     }
 
     private function validateConfiguration(ApplicationUpdateSetting $s): void { if ($s->provider !== 'github' || !in_array($s->repository_type, ['public','private'], true) || !preg_match('#^(https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?|git@github\.com:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\.git)$#', trim((string)$s->repository_url))) throw new \RuntimeException('Enter a valid GitHub repository URL.'); if (!preg_match('/^[A-Za-z0-9._-]{1,100}$/', $s->branch) || !preg_match('/^[A-Za-z0-9._-]{1,50}$/', $s->remote_name)) throw new \RuntimeException('Branch or remote name is invalid.'); if ($s->repository_type === 'private' && !in_array($s->authentication, ['ssh','pat'], true)) throw new \RuntimeException('Private repositories require SSH deploy-key or PAT authentication.'); }

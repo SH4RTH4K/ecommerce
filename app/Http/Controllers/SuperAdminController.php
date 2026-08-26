@@ -41,6 +41,15 @@ class SuperAdminController extends Controller {
         $status = null; $error = null;
         if ($settings->enabled) { try { $status = $updates->status($settings); } catch (\Throwable $e) { $error = $e->getMessage(); } }
         $history = ApplicationDeployment::latest()->limit(20)->get();
+        try {
+            $subjects = $updates->deploymentCommitSubjects($history->map(fn ($item) => $item->deployed_commit ?: $item->target_commit)->all());
+            $history->each(function ($item) use ($subjects) {
+                $commit = $item->deployed_commit ?: $item->target_commit;
+                $item->setAttribute('commit_subject', $subjects[$commit] ?? null);
+            });
+        } catch (\Throwable $exception) {
+            Log::warning('Deployment history commit comments could not be loaded.', ['exception' => $exception]);
+        }
         return view('admin.admin-pages.application-update', compact('settings','status','error','history'));
     }
 
