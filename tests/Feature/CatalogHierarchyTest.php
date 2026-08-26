@@ -38,6 +38,57 @@ class CatalogHierarchyTest extends TestCase
         }
     }
 
+    public function testBrandNamesAreValidatedWithoutCaseSensitivity(): void
+    {
+        DB::beginTransaction();
+        try {
+            $suffix = str_random(8);
+            $session = $this->catalogSession();
+            $companyId = DB::table('companies')->insertGetId([
+                'name' => 'Case Company '.$suffix,
+                'is_active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $brandId = DB::table('manufacturer')->insertGetId([
+                'company_id' => $companyId,
+                'manufacturer_name' => 'Acme '.$suffix,
+                'publication_status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            DB::table('manufacturer')->insert([
+                'company_id' => $companyId,
+                'manufacturer_name' => 'Globex '.$suffix,
+                'publication_status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->withSession($session)->post('/catalog-hierarchy/brands', [
+                'company_id' => $companyId,
+                'manufacturer_name' => 'ACME '.$suffix,
+                'publication_status' => 1,
+            ])->assertSessionHasErrors('manufacturer_name');
+
+            $this->withSession($session)->patch('/catalog-hierarchy/brands/'.$brandId, [
+                'company_id' => $companyId,
+                'manufacturer_name' => 'GLOBEX '.$suffix,
+                'publication_status' => 1,
+            ])->assertSessionHasErrors('manufacturer_name');
+
+            $this->withSession($session)->patch('/catalog-hierarchy/brands/'.$brandId, [
+                'company_id' => $companyId,
+                'manufacturer_name' => 'aCmE '.$suffix,
+                'publication_status' => 1,
+            ])->assertSessionDoesntHaveErrors();
+
+            $this->assertSame('aCmE '.$suffix, DB::table('manufacturer')->where('manufacturer_id', $brandId)->value('manufacturer_name'));
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function testFiltersNarrowTheVisibleHierarchy(): void
     {
         DB::beginTransaction();

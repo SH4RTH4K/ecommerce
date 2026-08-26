@@ -230,11 +230,14 @@ class CatalogHierarchyController extends Controller
     public function storeCompany(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:160|unique:companies,name',
+            'name' => 'required|string|max:160',
             'company_code' => 'nullable|string|max:30',
         ]);
 
         $companyName = trim($data['name']);
+        if ($this->companyNameExistsCaseInsensitive($companyName)) {
+            return back()->withInput()->withErrors(['name' => 'That company name already exists.']);
+        }
         $requestedCode = trim((string) ($data['company_code'] ?? ''));
         $companyCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
@@ -260,11 +263,14 @@ class CatalogHierarchyController extends Controller
     {
         $company = Company::findOrFail($id);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:160', Rule::unique('companies')->ignore($company->id)],
+            'name' => ['required', 'string', 'max:160'],
             'company_code' => 'nullable|string|max:30',
         ]);
 
         $companyName = trim($data['name']);
+        if ($this->companyNameExistsCaseInsensitive($companyName, (int) $company->id)) {
+            return back()->withInput()->withErrors(['name' => 'That company name already exists.']);
+        }
         $requestedCode = trim((string) ($data['company_code'] ?? ''));
         if ($requestedCode !== '') {
             $companyCode = normalize_business_code($requestedCode, 30);
@@ -301,11 +307,15 @@ class CatalogHierarchyController extends Controller
     {
         $data = $request->validate([
             'company_id' => 'required|integer|exists:companies,id',
-            'manufacturer_name' => 'required|string|max:160|unique:manufacturer,manufacturer_name',
+            'manufacturer_name' => 'required|string|max:160',
             'brand_code' => 'nullable|string|max:30',
         ]);
 
         $brandName = trim($data['manufacturer_name']);
+        if ($this->manufacturerNameExistsCaseInsensitive($brandName)) {
+            return back()->withInput()->withErrors(['manufacturer_name' => 'That brand name already exists.']);
+        }
+
         $requestedCode = trim((string) ($data['brand_code'] ?? ''));
         $brandCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
@@ -334,11 +344,15 @@ class CatalogHierarchyController extends Controller
         $brand = Manufacturer::findOrFail($id);
         $data = $request->validate([
             'company_id' => 'required|integer|exists:companies,id',
-            'manufacturer_name' => ['required', 'string', 'max:160', Rule::unique('manufacturer')->ignore($brand->manufacturer_id, 'manufacturer_id')],
+            'manufacturer_name' => ['required', 'string', 'max:160'],
             'brand_code' => 'nullable|string|max:30',
         ]);
 
         $brandName = trim($data['manufacturer_name']);
+        if ($this->manufacturerNameExistsCaseInsensitive($brandName, (int) $brand->manufacturer_id)) {
+            return back()->withInput()->withErrors(['manufacturer_name' => 'That brand name already exists.']);
+        }
+
         $requestedCode = trim((string) ($data['brand_code'] ?? ''));
         if ($requestedCode !== '') {
             $brandCode = normalize_business_code($requestedCode, 30);
@@ -365,6 +379,43 @@ class CatalogHierarchyController extends Controller
         return back()->with('message', 'Brand updated successfully.');
     }
 
+    private function manufacturerNameExistsCaseInsensitive(string $name, ?int $ignoreId = null): bool
+    {
+        $query = DB::table('manufacturer')
+            ->whereRaw('LOWER(TRIM(manufacturer_name)) = ?', [mb_strtolower($name, 'UTF-8')]);
+
+        if ($ignoreId !== null) {
+            $query->where('manufacturer_id', '<>', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    private function companyNameExistsCaseInsensitive(string $name, ?int $ignoreId = null): bool
+    {
+        $query = DB::table('companies')
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($name, 'UTF-8')]);
+
+        if ($ignoreId !== null) {
+            $query->where('id', '<>', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    private function seriesNameExistsCaseInsensitive(string $name, int $manufacturerId, ?int $ignoreId = null): bool
+    {
+        $query = DB::table('product_series')
+            ->where('manufacturer_id', $manufacturerId)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($name, 'UTF-8')]);
+
+        if ($ignoreId !== null) {
+            $query->where('id', '<>', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
     public function deleteBrand($id)
     {
         $brand = Manufacturer::withCount('series')->findOrFail($id);
@@ -378,11 +429,14 @@ class CatalogHierarchyController extends Controller
     {
         $data = $request->validate([
             'manufacturer_id' => 'required|integer|exists:manufacturer,manufacturer_id',
-            'name' => ['required', 'string', 'max:160', Rule::unique('product_series')->where(fn ($query) => $query->where('manufacturer_id', $request->manufacturer_id))],
+            'name' => ['required', 'string', 'max:160'],
             'series_code' => 'nullable|string|max:30',
         ]);
 
         $seriesName = trim($data['name']);
+        if ($this->seriesNameExistsCaseInsensitive($seriesName, (int) $data['manufacturer_id'])) {
+            return back()->withInput()->withErrors(['name' => 'That product series name already exists for this brand.']);
+        }
         $requestedCode = trim((string) ($data['series_code'] ?? ''));
         $seriesCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
@@ -411,11 +465,14 @@ class CatalogHierarchyController extends Controller
         $series = ProductSeries::findOrFail($id);
         $data = $request->validate([
             'manufacturer_id' => 'required|integer|exists:manufacturer,manufacturer_id',
-            'name' => ['required', 'string', 'max:160', Rule::unique('product_series')->where(fn ($query) => $query->where('manufacturer_id', $request->manufacturer_id))->ignore($series->id)],
+            'name' => ['required', 'string', 'max:160'],
             'series_code' => 'nullable|string|max:30',
         ]);
 
         $seriesName = trim($data['name']);
+        if ($this->seriesNameExistsCaseInsensitive($seriesName, (int) $data['manufacturer_id'], (int) $series->id)) {
+            return back()->withInput()->withErrors(['name' => 'That product series name already exists for this brand.']);
+        }
         $requestedCode = trim((string) ($data['series_code'] ?? ''));
         if ($requestedCode !== '') {
             $seriesCode = normalize_business_code($requestedCode, 30);

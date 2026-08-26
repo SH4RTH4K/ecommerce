@@ -221,6 +221,10 @@ class SuperAdminController extends Controller {
 
     public function saveCategory(Request $request) {
         $categoryName = trim((string) $request->category_name);
+        if ($this->categoryNameExistsCaseInsensitive($categoryName)) {
+            return Redirect::back()->withInput()->withErrors(['category_name' => 'That category name already exists.']);
+        }
+
         $requestedCode = trim((string) $request->input('category_code', ''));
         $categoryCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
@@ -340,6 +344,10 @@ class SuperAdminController extends Controller {
         }
 
         $categoryName = trim((string) $request->category_name);
+        if ($this->categoryNameExistsCaseInsensitive($categoryName, $categoryId)) {
+            return Redirect::back()->withInput()->withErrors(['category_name' => 'That category name already exists.']);
+        }
+
         $requestedCode = trim((string) $request->input('category_code', (string) ($existing->category_code ?? '')));
         if ($requestedCode !== '') {
             $categoryCode = normalize_business_code($requestedCode, 30);
@@ -450,6 +458,10 @@ class SuperAdminController extends Controller {
     public function saveSubCategory(Request $request) {
         $subCategoryName = trim((string) $request->subCategory_name);
         $categoryId = (int) $request->category_id;
+        if ($this->subCategoryNameExistsCaseInsensitive($subCategoryName, $categoryId)) {
+            return Redirect::back()->withInput()->withErrors(['subCategory_name' => 'That subcategory name already exists in this category.']);
+        }
+
         $requestedCode = trim((string) $request->input('sub_category_code', ''));
         $subCategoryCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
@@ -574,6 +586,10 @@ class SuperAdminController extends Controller {
 
         $subCategoryName = trim((string) $request->subCategory_name);
         $categoryId = (int) $request->category_id;
+        if ($this->subCategoryNameExistsCaseInsensitive($subCategoryName, $categoryId, $subCategoryId)) {
+            return Redirect::back()->withInput()->withErrors(['subCategory_name' => 'That subcategory name already exists in this category.']);
+        }
+
         $requestedCode = trim((string) $request->input('sub_category_code', (string) ($existing->subcategory_code ?? '')));
         if ($requestedCode !== '') {
             $subCategoryCode = normalize_business_code($requestedCode, 30);
@@ -615,6 +631,11 @@ class SuperAdminController extends Controller {
     public function saveManufacturer(Request $request) {
         $manufacturerName = trim((string) $request->manufacturer_name);
         $companyId = $request->filled('company_id') ? (int) $request->company_id : null;
+
+        if ($this->manufacturerNameExistsCaseInsensitive($manufacturerName)) {
+            return Redirect::back()->withInput()->withErrors(['manufacturer_name' => 'That brand name already exists.']);
+        }
+
         $requestedCode = trim((string) $request->input('brand_code', ''));
         $brandCode = $requestedCode !== ''
             ? normalize_business_code($requestedCode, 30)
@@ -844,6 +865,10 @@ class SuperAdminController extends Controller {
 
         $manufacturerName = trim((string) $request->manufacturer_name);
         $companyId = $request->filled('company_id') ? (int) $request->company_id : ($existing->company_id ?? null);
+        if ($this->manufacturerNameExistsCaseInsensitive($manufacturerName, $manufacturerId)) {
+            return Redirect::back()->withInput()->withErrors(['manufacturer_name' => 'That brand name already exists.']);
+        }
+
         $requestedCode = trim((string) $request->input('brand_code', (string) ($existing->brand_code ?? '')));
         if ($requestedCode !== '') {
             $brandCode = normalize_business_code($requestedCode, 30);
@@ -867,6 +892,43 @@ class SuperAdminController extends Controller {
         $data['slug'] = $this->nextUniqueSlug('manufacturer', 'slug', $manufacturerName, $manufacturerId, 'manufacturer_id', ['company_id' => $companyId]);
         $existing->update($data);
         return Redirect::to('/manage-manufacturer');
+    }
+
+    private function manufacturerNameExistsCaseInsensitive(string $name, ?int $ignoreId = null): bool
+    {
+        $query = DB::table('manufacturer')
+            ->whereRaw('LOWER(TRIM(manufacturer_name)) = ?', [mb_strtolower($name, 'UTF-8')]);
+
+        if ($ignoreId !== null) {
+            $query->where('manufacturer_id', '<>', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    private function categoryNameExistsCaseInsensitive(string $name, ?int $ignoreId = null): bool
+    {
+        $query = DB::table('category')
+            ->whereRaw('LOWER(TRIM(category_name)) = ?', [mb_strtolower($name, 'UTF-8')]);
+
+        if ($ignoreId !== null) {
+            $query->where('category_id', '<>', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    private function subCategoryNameExistsCaseInsensitive(string $name, int $categoryId, ?int $ignoreId = null): bool
+    {
+        $query = DB::table('sub_category')
+            ->where('category_id', $categoryId)
+            ->whereRaw('LOWER(TRIM(sub_category_name)) = ?', [mb_strtolower($name, 'UTF-8')]);
+
+        if ($ignoreId !== null) {
+            $query->where('sub_category_id', '<>', $ignoreId);
+        }
+
+        return $query->exists();
     }
 
     
