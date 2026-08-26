@@ -161,6 +161,7 @@ Route::post('/save-product', "SuperAdminController@saveProduct");
 Route::get('/manage-product', "SuperAdminController@manageProduct");
 Route::get('/pc-builder-settings', "SuperAdminController@pcBuilderSettings");
 Route::post('/pc-builder-settings', "SuperAdminController@updatePcBuilderSettings");
+Route::post('/pc-builder-settings/remove-icon/{slot}', "SuperAdminController@removePcBuilderIcon");
 Route::post('/manage-product/bulk-delete', "SuperAdminController@bulkDeleteProducts");
 Route::post('/unpublished-product/{id}', "SuperAdminController@unpublishedProduct");
 Route::post('/published-product/{id}', "SuperAdminController@publishedProduct");

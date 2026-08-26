@@ -27,7 +27,6 @@ class CodeRegenerationService
 
         foreach ($rows as $row) {
             $old = trim((string) $row->current_code);
-            if ($old === '') continue;
             $oldSequence = $preserveSequence && preg_match('/(\d+)$/', $old, $match) ? max(1, (int) $match[1]) : null;
             $sequence = null;
             $sequenceAction = 'Not used';

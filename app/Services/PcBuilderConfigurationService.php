@@ -12,16 +12,16 @@ class PcBuilderConfigurationService
     public function defaultSlots(): array
     {
         return [
-            ['key'=>'processor','label'=>'Processor','category'=>'processor','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'cog'],
-            ['key'=>'cooler','label'=>'CPU Cooler','category'=>'cpu cooler','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'refresh'],
-            ['key'=>'motherboard','label'=>'Motherboard','category'=>'motherboard','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'sitemap'],
-            ['key'=>'ram','label'=>'Memory (RAM)','category'=>'ram','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'list'],
-            ['key'=>'storage','label'=>'Primary Storage','category'=>'ssd','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'hdd-o'],
-            ['key'=>'graphics','label'=>'Graphics Card','category'=>'graphics card','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'picture-o'],
-            ['key'=>'power','label'=>'Power Supply','category'=>'power supply','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'bolt'],
-            ['key'=>'casing','label'=>'Casing','category'=>'casing','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'archive'],
-            ['key'=>'hdd','label'=>'Additional HDD','category'=>'hdd','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'hdd-o'],
-            ['key'=>'monitor','label'=>'Monitor','category'=>'monitor','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'desktop'],
+            ['key'=>'processor','label'=>'Processor','category'=>'processor','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'cog','icon_image'=>null],
+            ['key'=>'cooler','label'=>'CPU Cooler','category'=>'cpu cooler','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'refresh','icon_image'=>null],
+            ['key'=>'motherboard','label'=>'Motherboard','category'=>'motherboard','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'sitemap','icon_image'=>null],
+            ['key'=>'ram','label'=>'Memory (RAM)','category'=>'ram','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'list','icon_image'=>null],
+            ['key'=>'storage','label'=>'Primary Storage','category'=>'ssd','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'hdd-o','icon_image'=>null],
+            ['key'=>'graphics','label'=>'Graphics Card','category'=>'graphics card','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'picture-o','icon_image'=>null],
+            ['key'=>'power','label'=>'Power Supply','category'=>'power supply','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'bolt','icon_image'=>null],
+            ['key'=>'casing','label'=>'Casing','category'=>'casing','category_id'=>null,'sub_category_id'=>null,'required'=>true,'icon'=>'archive','icon_image'=>null],
+            ['key'=>'hdd','label'=>'Additional HDD','category'=>'hdd','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'hdd-o','icon_image'=>null],
+            ['key'=>'monitor','label'=>'Monitor','category'=>'monitor','category_id'=>null,'sub_category_id'=>null,'required'=>false,'icon'=>'desktop','icon_image'=>null],
         ];
     }
 

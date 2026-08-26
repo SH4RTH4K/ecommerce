@@ -78,7 +78,7 @@
                         <div class="control-group"><label class="control-label">Featured Categories</label><div class="controls"><label class="checkbox"><input type="checkbox" name="is_featured" value="1" {{$category_info->is_featured ? 'checked' : ''}}> Show on homepage</label></div></div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Update</button>
-                            <button type="reset" class="btn">Cancel</button>
+                            <a href="{{ url('/manage-category') }}" class="btn">Cancel</a>
                         </div>
                     </fieldset>
                 </form>

@@ -6,8 +6,14 @@
     @if($errors->any())<div class="alert alert-error">{{ $errors->first() }}</div>@endif
     <div class="box"><div class="box-header"><h2><i class="halflings-icon wrench"></i><span class="break"></span>PC Builder Configuration</h2></div><div class="box-content">
         <p class="muted">Map each slot to the exact product subcategory when possible. In this catalog, PC parts are subcategories under <strong>Component</strong>; this prevents Desktop products from appearing as Processors.</p>
-        <form method="post" action="{{ url('/pc-builder-settings') }}">{{ csrf_field() }}
+        <form method="post" action="{{ url('/pc-builder-settings') }}" enctype="multipart/form-data">{{ csrf_field() }}
             <h3>Builder slots</h3>
+            <p class="muted">Choose a built-in fallback icon or upload a custom local icon for each builder slot.</p>
+            <table class="table table-bordered"><thead><tr><th>Slot</th><th>Preview</th><th>Upload custom icon</th><th>Remove</th></tr></thead><tbody>
+            @foreach($slots as $slot)
+                <tr><td><strong>{{ $slot['label'] }}</strong></td><td><span data-slot-icon-preview="{{ $slot['key'] }}" style="width:38px;height:38px;display:inline-grid;place-items:center;border:1px solid #d9e3e9;border-radius:7px;background:#f8fafb;color:#0b3d62;font-size:20px;overflow:hidden">@if(!empty($slot['icon_image']))<img src="{{ asset($slot['icon_image']) }}" alt="" style="width:100%;height:100%;object-fit:contain">@else<i class="fa fa-{{ $slot['icon'] }}" aria-hidden="true"></i>@endif</span></td><td><input type="file" name="slot_icons[{{ $slot['key'] }}]" accept="image/png,image/jpeg,image/webp" data-slot-icon-file="{{ $slot['key'] }}" title="Upload custom icon for {{ $slot['label'] }}"><small style="display:block;color:#71828d">PNG, JPG or WebP · max 1 MB</small></td><td>@if(!empty($slot['icon_image']))<button type="submit" class="btn btn-mini btn-danger" formaction="{{ url('/pc-builder-settings/remove-icon/'.$slot['key']) }}" formmethod="post" onclick="return confirm('Remove this custom slot image and use the built-in icon?')"><i class="halflings-icon white trash"></i> Remove image</button>@else<span class="muted">Using fallback</span>@endif</td></tr>
+            @endforeach
+            </tbody></table>
             <table class="table table-bordered"><thead><tr><th>Slot</th><th>Label</th><th>Category</th><th>Exact subcategory</th><th>Icon</th><th>Required</th><th>Available</th></tr></thead><tbody>
             @foreach($slots as $slot)
                 <tr><td><strong>{{ $slot['key'] }}</strong></td><td><input name="slots[{{ $slot['key'] }}][label]" value="{{ $slot['label'] }}" class="span2"></td>
@@ -26,4 +32,15 @@
         </form>
     </div></div>
 </div>
+<script>
+(function () {
+    document.querySelectorAll('[data-slot-icon-file]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0], preview = document.querySelector('[data-slot-icon-preview="' + input.dataset.slotIconFile + '"]');
+            if (!file || !preview) return;
+            var image = document.createElement('img'); image.alt = 'New slot icon preview'; image.style.cssText = 'width:100%;height:100%;object-fit:contain'; image.src = URL.createObjectURL(file); image.onload = function () { URL.revokeObjectURL(image.src); }; preview.innerHTML = ''; preview.appendChild(image);
+        });
+    });
+}());
+</script>
 @endsection

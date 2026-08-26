@@ -330,7 +330,8 @@ class SuperAdminController extends Controller {
         $this->authCheck();
         $all_category=DB::table('category')
                 ->whereNull('deleted_at')
-                ->whereIn('category_id',[14,15])
+                ->where('publication_status', 1)
+                ->orderBy('category_name')
                 ->get();
         $addSubCategory = view('admin.admin-pages.add-subCategory')
                 ->with('all_category', $all_category);
@@ -444,7 +445,8 @@ class SuperAdminController extends Controller {
         $this->authCheck();
         $all_category=DB::table('category')
                 ->whereNull('deleted_at')
-                ->whereIn('category_id',[14,15])
+                ->where('publication_status', 1)
+                ->orderBy('category_name')
                 ->get();
         $subCategory_info = SubCategory::find($sub_category_id);
         $edit_subCategory = view('admin.admin-pages.edit-subCategory')
@@ -1266,7 +1268,7 @@ class SuperAdminController extends Controller {
     public function updatePcBuilderSettings(Request $request)
     {
         $this->authCheck();
-        $this->validate($request, ['slots'=>'required|array', 'rules'=>'nullable|array']);
+        $this->validate($request, ['slots'=>'required|array', 'rules'=>'nullable|array', 'slot_icons.*'=>'nullable|image|mimes:jpg,jpeg,png,webp|max:1024']);
         $allowedIcons = ['cog','sitemap','list','picture-o','hdd-o','bolt','archive','refresh','desktop','cogs','folder-open','wrench'];
         $defaults = app(\App\Services\PcBuilderConfigurationService::class)->defaultSlots();
         $slots = [];
@@ -1274,7 +1276,7 @@ class SuperAdminController extends Controller {
             $input = (array) $request->input('slots.'.$default['key'], []);
             $subCategory = DB::table('sub_category')->where('sub_category_id',(int)($input['sub_category_id']??0))->where('publication_status',1)->whereNull('deleted_at')->first();
             $category = $subCategory ? Category::where('category_id',$subCategory->category_id)->where('publication_status',1)->first() : Category::where('category_id', (int) ($input['category_id'] ?? 0))->where('publication_status', 1)->first();
-            $slots[] = array_merge($default, [
+            $slotData = array_merge($default, [
                 'label' => trim((string) ($input['label'] ?? $default['label'])) ?: $default['label'],
                 'category' => $category ? strtolower($category->category_name) : $default['category'],
                 'category_id' => $category ? (int) $category->category_id : null,
@@ -1282,6 +1284,12 @@ class SuperAdminController extends Controller {
                 'required' => !empty($input['required']),
                 'icon' => in_array($input['icon'] ?? '', $allowedIcons, true) ? $input['icon'] : $default['icon'],
             ]);
+            $uploadedIcon = $request->file('slot_icons.'.$default['key']);
+            if ($uploadedIcon) {
+                $this->removeCategoryIconImage($slotData['icon_image'] ?? null);
+                $slotData['icon_image'] = PublicUpload::store($uploadedIcon, 'asset/front-end/img/pc-builder-icons/', 'pc-builder-'.(Str::slug($slotData['label']) ?: $default['key']).'-', ['jpg', 'jpeg', 'png', 'webp']);
+            }
+            $slots[] = $slotData;
         }
         $slotKeys = collect($slots)->pluck('key')->all();
         $rules = [];
@@ -1293,6 +1301,25 @@ class SuperAdminController extends Controller {
         }
         app(\App\Services\PcBuilderConfigurationService::class)->save($slots, $rules);
         return Redirect::to('/pc-builder-settings')->with('message', 'PC Builder settings saved.');
+    }
+
+    public function removePcBuilderIcon(Request $request, $slotKey)
+    {
+        $this->authCheck();
+        $configuration = app(\App\Services\PcBuilderConfigurationService::class);
+        $slots = $configuration->slots();
+        $found = false;
+        foreach ($slots as &$slot) {
+            if ((string) $slot['key'] !== (string) $slotKey) continue;
+            $this->removeCategoryIconImage($slot['icon_image'] ?? null);
+            $slot['icon_image'] = null;
+            $found = true;
+            break;
+        }
+        unset($slot);
+        if (! $found) return Redirect::to('/pc-builder-settings')->with('exception', 'Builder slot not found.');
+        $configuration->save($slots, $configuration->rules());
+        return Redirect::to('/pc-builder-settings')->with('message', 'Custom slot image removed. The built-in icon is now active.');
     }
 
     public function unpublishedProduct($id) {

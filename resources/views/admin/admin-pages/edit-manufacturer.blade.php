@@ -62,7 +62,7 @@
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Update</button>
-                        <button type="reset" class="btn">Cancel</button>
+                            <a href="{{ url('/manage-manufacturer') }}" class="btn">Cancel</a>
                     </div>
                     
                 </fieldset>
