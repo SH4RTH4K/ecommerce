@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductCodeConfigurationController extends Controller
 {
@@ -380,11 +382,9 @@ class ProductCodeConfigurationController extends Controller
 
     public function applyRegeneration(Request $request, CodeRegenerationService $regenerator)
     {
-        if (! Schema::hasTable('product_code_regeneration_batches')
-            || ! Schema::hasColumn('product_code_histories', 'batch_id')
-            || ! Schema::hasColumn('product_code_histories', 'entity_type')) {
+        if ($readinessError = $this->regenerationReadinessError()) {
             return redirect()->route('product-code-configuration.index')
-                ->with('exception', 'Code regeneration is not ready on this server. Deploy the latest database migrations, then try again.');
+                ->with('exception', $readinessError);
         }
 
         $validated = $request->validate(['configuration_id' => 'required|integer|exists:product_code_configurations,id', 'mode' => ['required', Rule::in(['UPDATE_ALL','UPDATE_SELECTED'])], 'selected' => 'nullable|array', 'selected.*' => 'integer', 'reason' => 'required|string|max:2000', 'confirmation' => 'required|in:REGENERATE']);
@@ -394,10 +394,46 @@ class ProductCodeConfigurationController extends Controller
             $preview = $regenerator->preview($configuration, $validated['mode'], array_map('intval', $validated['selected'] ?? []), false);
             $batch = $regenerator->apply($configuration, $preview, $validated['reason'], (int) session('admin_id'), true);
             return redirect()->route('product-code-configuration.index', ['code_type' => $configuration->code_type, 'configuration' => $configuration->id])->with('message', 'Code regeneration completed. Batch #'.$batch->id.' updated '.$batch->success_count.' record(s).');
+        } catch (ValidationException $exception) {
+            return redirect()->back()->withInput()->withErrors($exception->errors());
         } catch (\Throwable $exception) {
-            Log::error('Product code regeneration apply failed.', ['configuration_id' => $configuration->id, 'admin_id' => session('admin_id'), 'exception' => $exception]);
-            return redirect()->back()->withInput()->with('exception', 'Code regeneration could not be applied. No changes were made. Review the preview and database migration status, then try again.');
+            $reference = 'PCR-'.strtoupper(Str::random(8));
+            Log::error('Product code regeneration apply failed.', ['reference' => $reference, 'configuration_id' => $configuration->id, 'admin_id' => session('admin_id'), 'exception' => $exception]);
+            return redirect()->back()->withInput()->with('exception', $this->regenerationFailureMessage($exception, $reference));
         }
+    }
+
+    private function regenerationReadinessError(): ?string
+    {
+        $requirements = [
+            'product_code_regeneration_batches' => ['code_type', 'configuration_id', 'mode', 'total_records', 'success_count', 'status', 'reason', 'started_at'],
+            'product_code_histories' => ['configuration_id', 'configuration_version', 'product_id', 'entity_type', 'entity_id', 'entity_name', 'old_code', 'new_code', 'reason', 'change_type', 'batch_id', 'changed_by', 'changed_at'],
+        ];
+
+        foreach ($requirements as $table => $columns) {
+            if (! Schema::hasTable($table)) return 'Code regeneration is not ready: the '.$table.' table is missing. Run the latest database migrations.';
+            foreach ($columns as $column) {
+                if (! Schema::hasColumn($table, $column)) return 'Code regeneration is not ready: '.$table.'.'.$column.' is missing. Run the latest database migrations.';
+            }
+        }
+
+        return null;
+    }
+
+    private function regenerationFailureMessage(\Throwable $exception, string $reference): string
+    {
+        $message = $exception instanceof QueryException && $exception->getPrevious()
+            ? $exception->getPrevious()->getMessage()
+            : $exception->getMessage();
+        $message = Str::before((string) $message, ' (Connection:');
+        $message = preg_replace('/\b(?:password|secret|token|authorization)\b\s*[:=]\s*\S+/i', '[redacted]', (string) $message);
+        $message = trim((string) $message);
+
+        if ($message !== '') {
+            return 'Code regeneration was not applied: '.Str::limit($message, 500).' (reference '.$reference.').';
+        }
+
+        return 'Code regeneration could not be applied. No changes were made. Check the server log with reference '.$reference.'.';
     }
 
     public function regenerationApplyPage()

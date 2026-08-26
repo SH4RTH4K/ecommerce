@@ -95,16 +95,45 @@ class CodeRegenerationService
     {
         if (trim($reason) === '') throw ValidationException::withMessages(['reason' => 'A reason is required for code regeneration.']);
         if ($allOrNothing && ($preview['conflicts'] ?? 0) > 0) throw ValidationException::withMessages(['preview' => 'Resolve all conflicts before applying this regeneration.']);
-        $batch = ProductCodeRegenerationBatch::create(['code_type' => $preview['code_type'], 'configuration_id' => $configuration->id, 'configuration_version' => (int) ($configuration->version ?: 1), 'mode' => $preview['mode'], 'preserve_sequence' => false, 'total_records' => $preview['total'], 'skipped_count' => $preview['total'] - $preview['ready'], 'initiated_by' => $adminId, 'status' => 'RUNNING', 'reason' => $reason, 'started_at' => now()]);
-        DB::transaction(function () use ($configuration, $preview, $reason, $adminId, $batch) {
-            foreach ($preview['items'] as $item) {
-                if ($item['status'] !== 'READY' || $item['old_code'] === $item['new_code']) continue;
+        $changedItems = array_values(array_filter($preview['items'], static fn ($item) => $item['status'] === 'READY' && $item['old_code'] !== $item['new_code']));
+
+        return DB::transaction(function () use ($configuration, $preview, $reason, $adminId, $changedItems) {
+            // Old versions created the batch before the transaction. Mark those
+            // abandoned records as failed before attempting a new controlled run.
+            ProductCodeRegenerationBatch::query()
+                ->where('configuration_id', $configuration->id)
+                ->where('status', 'RUNNING')
+                ->where('started_at', '<', now()->subMinutes(5))
+                ->update(['status' => 'FAILED', 'failed_count' => DB::raw('total_records'), 'completed_at' => now(), 'updated_at' => now()]);
+
+            $batch = ProductCodeRegenerationBatch::create([
+                'code_type' => $preview['code_type'],
+                'configuration_id' => $configuration->id,
+                'configuration_version' => (int) ($configuration->version ?: 1),
+                'mode' => $preview['mode'],
+                'preserve_sequence' => false,
+                'total_records' => $preview['total'],
+                'skipped_count' => $preview['total'] - count($changedItems),
+                'initiated_by' => $adminId,
+                'status' => 'RUNNING',
+                'reason' => $reason,
+                'started_at' => now(),
+            ]);
+
+            // A unique code may be held by another record that is also being
+            // regenerated. Move every changing record out of the final code
+            // namespace first, then write the proposed final codes.
+            foreach ($changedItems as $item) {
+                $this->updateEntity($item['entity_type'], $item['entity_id'], $this->temporaryCode($item['entity_type'], $item['entity_id'], $batch->id));
+            }
+
+            foreach ($changedItems as $item) {
                 $this->updateEntity($item['entity_type'], $item['entity_id'], $item['new_code']);
                 ProductCodeHistory::create(['configuration_id' => $configuration->id, 'configuration_version' => (int) ($configuration->version ?: 1), 'product_id' => $item['entity_type'] === 'product' ? $item['entity_id'] : null, 'entity_type' => $item['entity_type'], 'entity_id' => $item['entity_id'], 'entity_name' => $item['name'], 'old_code' => $item['old_code'], 'new_code' => $item['new_code'], 'reason' => $reason, 'change_type' => $preview['mode'] === 'UPDATE_SELECTED' ? 'SELECTED_REGENERATION' : 'CONFIGURATION_REGENERATION', 'batch_id' => $batch->id, 'changed_by' => $adminId, 'changed_at' => now()]);
             }
-            $batch->update(['success_count' => $preview['ready'], 'status' => 'COMPLETED', 'completed_at' => now()]);
+            $batch->update(['success_count' => count($changedItems), 'status' => 'COMPLETED', 'completed_at' => now()]);
+            return $batch->fresh();
         });
-        return $batch->fresh();
     }
 
     private function records(string $type, string $mode, array $selected)
@@ -129,6 +158,22 @@ class CodeRegenerationService
     {
         $map = ['company'=>['companies','id','company_code'],'category'=>['category','category_id','category_code'],'subcategory'=>['sub_category','sub_category_id','subcategory_code'],'brand'=>['manufacturer','manufacturer_id','brand_code'],'series'=>['product_series','id','series_code'],'product'=>['product','id','product_code']][$type];
         $data=[$map[2]=>$code,'updated_at'=>now()]; if ($type === 'product') $data['sku']=$code; DB::table($map[0])->where($map[1],$id)->update($data);
+    }
+
+    private function temporaryCode(string $type, int $entityId, int $batchId): string
+    {
+        $map = ['company'=>['companies','id','company_code'],'category'=>['category','category_id','category_code'],'subcategory'=>['sub_category','sub_category_id','subcategory_code'],'brand'=>['manufacturer','manufacturer_id','brand_code'],'series'=>['product_series','id','series_code'],'product'=>['product','id','product_code']][$type];
+        $prefix = 'PCR'.base_convert((string) $batchId, 10, 36).'-'.base_convert((string) $entityId, 10, 36);
+        $candidate = $prefix;
+        $attempt = 0;
+
+        while (DB::table($map[0])->where($map[2], $candidate)->exists()) {
+            $attempt++;
+            $suffix = '-'.$attempt;
+            $candidate = substr($prefix, 0, 30 - strlen($suffix)).$suffix;
+        }
+
+        return $candidate;
     }
 
     private function conflict(string $type, string $code, int $id, array $regeneratingIds = []): bool
