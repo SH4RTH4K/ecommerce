@@ -69,6 +69,27 @@ class ApplicationUpdateService
         return $this->status($settings);
     }
 
+    public function pullLatest(ApplicationUpdateSetting $settings): array
+    {
+        $handle = $this->lock();
+        try {
+            $status = $this->fetch($settings);
+            if ($status['status'] === 'Local Changes Detected') {
+                throw new \RuntimeException('Pull blocked because local tracked changes exist. Review them or use Discard Local Changes & Deploy.');
+            }
+            if ($status['status'] === 'Diverged Branch') {
+                throw new \RuntimeException('Pull blocked because the local branch has diverged from GitHub. Resolve the branch history first.');
+            }
+            if ($status['status'] === 'Update Available') {
+                $this->gitOrFail(['merge', '--ff-only', $settings->remote_name.'/'.$settings->branch], 'Fast-forward pull was not possible.');
+            }
+            return $this->status($settings);
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
     public function deploy(ApplicationUpdateSetting $settings, int $adminId, bool $discardLocalChanges = false): ApplicationDeployment
     {
         $handle = $this->lock();

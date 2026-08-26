@@ -76,13 +76,13 @@ class SuperAdminController extends Controller {
         $this->authCheck();
         try {
             $settings = $updates->settings();
-            $result = $updates->fetch($settings);
+            $result = $updates->pullLatest($settings);
             $settings->last_checked_commit = $result['remote'];
             $settings->last_checked_at = now();
             $settings->last_status = $result['status'];
             $settings->last_message = $result['message'];
             $settings->save();
-            return Redirect::back()->with('message', 'Remote changes pulled successfully. Review them below before deployment.');
+            return Redirect::back()->with('message', 'Latest GitHub code was pulled into the cPanel checkout successfully.');
         } catch (\Throwable $e) {
             return Redirect::back()->with('exception', 'Pull failed: '.$e->getMessage());
         }
