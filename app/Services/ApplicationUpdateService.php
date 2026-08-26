@@ -49,9 +49,15 @@ class ApplicationUpdateService
         $rows = [];
         foreach (array_filter(preg_split('/\R/', trim($commits['output']))) as $line) { $parts = explode("\x1f", $line, 5); if (count($parts) === 5) $rows[] = ['hash' => $parts[0], 'short' => $parts[1], 'author' => $parts[2], 'date' => $parts[3], 'subject' => $parts[4]]; }
         $changed = $this->git(['diff', '--name-status', 'HEAD', $settings->remote_name.'/'.$settings->branch])['output'];
-        $clean = trim($this->git(['status', '--porcelain'])['output']) === '';
+        $worktreeStatus = $this->git(['status', '--porcelain'])['output'];
+        $clean = trim($worktreeStatus) === '';
+        // A manual copy may have installed the exact remote files without
+        // moving HEAD. It is safe to normalize that state; other edits stay blocked.
+        $localChangesMatchTarget = ! $clean
+            && $this->git(['diff', '--quiet', $settings->remote_name.'/'.$settings->branch, '--'], false)['code'] === 0;
+        $deployable = $clean || $localChangesMatchTarget;
         $ahead = trim($this->git(['rev-list', '--count', $settings->remote_name.'/'.$settings->branch.'..HEAD'])['output']) !== '0';
-        return ['configured' => true, 'status' => !$clean ? 'Local Changes Detected' : ($ahead ? 'Diverged Branch' : ((int) trim($count['output']) ? 'Update Available' : 'Up to Date')), 'message' => !$clean ? 'Deployment is blocked because local code changes exist.' : ($ahead ? 'Branch has diverged; manual Git intervention is required.' : ((int) trim($count['output']) ? trim($count['output']).' update(s) available.' : 'Application is up to date.')), 'local' => trim($local['output']), 'remote' => $target, 'commits' => $rows, 'changed_files' => array_values(array_filter(preg_split('/\R/', trim($changed))))];
+        return ['configured' => true, 'status' => !$deployable ? 'Local Changes Detected' : ($ahead ? 'Diverged Branch' : ((int) trim($count['output']) ? 'Update Available' : 'Up to date')), 'message' => !$deployable ? 'Deployment is blocked because local code changes exist.' : ($localChangesMatchTarget ? 'The checkout already contains the remote files. Deployment will synchronize its Git state.' : ($ahead ? 'Branch has diverged; manual Git intervention is required.' : ((int) trim($count['output']) ? trim($count['output']).' update(s) available.' : 'Application is up to date.'))), 'local' => trim($local['output']), 'remote' => $target, 'commits' => $rows, 'changed_files' => array_values(array_filter(preg_split('/\R/', trim($changed)))), 'local_changes_match_target' => $localChangesMatchTarget];
     }
 
     public function fetch(ApplicationUpdateSetting $settings): array
@@ -69,6 +75,9 @@ class ApplicationUpdateService
         try {
             $status = $this->fetch($settings);
             if ($status['status'] !== 'Update Available') throw new \RuntimeException($status['message']);
+            if (! empty($status['local_changes_match_target'])) {
+                $this->gitOrFail(['reset', '--hard', $status['remote']], 'The checkout could not be synchronized with the remote update.');
+            }
             $deployment = ApplicationDeployment::create(['repository_url' => $settings->repository_url, 'branch' => $settings->branch, 'previous_commit' => $status['local'], 'target_commit' => $status['remote'], 'status' => 'running', 'commits_applied' => count($status['commits']), 'started_by' => $adminId, 'started_at' => now(), 'safe_log' => 'Validation passed. Fetch completed.']);
             try {
                 $merge = $this->git(['merge', '--ff-only', $settings->remote_name.'/'.$settings->branch]);
