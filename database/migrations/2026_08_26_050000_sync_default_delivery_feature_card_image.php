@@ -17,7 +17,19 @@ return new class extends \Illuminate\Database\Migrations\Migration
             ->where(function ($query) {
                 $query->whereNull('image_path')->orWhere('image_path', '');
             })
-            ->update(['image_path' => self::IMAGE_PATH, 'updated_at' => now()]);
+            ->update([
+                'image_path' => self::IMAGE_PATH,
+                'image_fit' => 'CONTAIN',
+                'updated_at' => now(),
+            ]);
+
+        // Keep the banner uncropped even when the image path was already
+        // present in the live database.
+        \Illuminate\Support\Facades\DB::table('homepage_feature_cards')
+            ->where('name', 'Fast Nationwide Delivery')
+            ->whereNotNull('image_path')
+            ->where('image_path', '<>', '')
+            ->update(['image_fit' => 'CONTAIN', 'updated_at' => now()]);
     }
 
     public function down(): void
