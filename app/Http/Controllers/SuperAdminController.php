@@ -31,6 +31,7 @@ use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\Process\Process;
 
 class SuperAdminController extends Controller {
 
@@ -3065,7 +3066,180 @@ class SuperAdminController extends Controller {
     public function resetAdminPassword(Request $request,$id){$this->validate($request,['password'=>'required|min:8|max:255|confirmed']);abort_unless(DB::table('tbl_admin')->where('admin_id',$id)->exists(),404);DB::table('tbl_admin')->where('admin_id',$id)->update(['admin_password'=>\Hash::make($request->password),'updated_at'=>now()]);return Redirect::back()->with('message','Administrator password updated.');}
     public function adminActivity(Request $request){$query=DB::table('admin_activity_logs')->latest('created_at');if($request->filled('admin_id'))$query->where('admin_id',$request->admin_id);if($request->filled('search'))$query->where(function($q)use($request){$q->where('action','like','%'.$request->search.'%')->orWhere('path','like','%'.$request->search.'%');});$logs=$query->paginate(50)->appends($request->query());$admins=DB::table('tbl_admin')->select('admin_id','admin_name')->orderBy('admin_name')->get();return view('admin.admin-pages.admin-activity',compact('logs','admins'));}
 
-    public function systemHealth(){try{DB::select('SELECT 1');$database=['ok'=>true,'message'=>'Connected'];}catch(\Throwable $e){$database=['ok'=>false,'message'=>$e->getMessage()];}$storageWritable=is_writable(storage_path('app'))&&is_writable(storage_path('framework'))&&is_writable(storage_path('logs'));$free=@disk_free_space(base_path());$total=@disk_total_space(base_path());$health=['database'=>$database,'storage'=>['ok'=>$storageWritable,'message'=>$storageWritable?'Writable':'One or more storage directories are not writable'],'php'=>['ok'=>version_compare(PHP_VERSION,'8.3.0','>='),'message'=>PHP_VERSION],'laravel'=>['ok'=>true,'message'=>app()->version()],'disk'=>['ok'=>$free!==false&&$free>536870912,'message'=>$free===false?'Unknown':$this->formatBytes($free).' free of '.$this->formatBytes($total)],'environment'=>['ok'=>config('app.env')==='production'&&!config('app.debug'),'message'=>config('app.env').' · debug '.(config('app.debug')?'ON':'off')]];$migrations=$this->migrationStatus();$backups=DB::table('system_backups')->latest()->limit(30)->get();$lastBackup=$backups->first();return view('admin.admin-pages.system-health',compact('health','migrations','backups','lastBackup'));}
+    public function systemHealth()
+    {
+        try {
+            DB::select('SELECT 1');
+            $database = ['ok' => true, 'message' => 'Connected'];
+        } catch (\Throwable $e) {
+            $database = ['ok' => false, 'message' => $e->getMessage()];
+        }
+
+        $storageWritable = is_writable(storage_path('app'))
+            && is_writable(storage_path('framework'))
+            && is_writable(storage_path('logs'));
+        $disk = $this->diskHealth();
+        $health = [
+            'database' => $database,
+            'storage' => [
+                'ok' => $storageWritable,
+                'message' => $storageWritable ? 'Writable' : 'One or more storage directories are not writable',
+            ],
+            'php' => ['ok' => version_compare(PHP_VERSION, '8.3.0', '>='), 'message' => PHP_VERSION],
+            'laravel' => ['ok' => true, 'message' => app()->version()],
+            'disk' => $disk,
+            'environment' => [
+                'ok' => config('app.env') === 'production' && ! config('app.debug'),
+                'message' => config('app.env').' · debug '.(config('app.debug') ? 'ON' : 'off'),
+            ],
+        ];
+        $migrations = $this->migrationStatus();
+        $backups = DB::table('system_backups')->latest()->limit(30)->get();
+        $lastBackup = $backups->first();
+
+        return view('admin.admin-pages.system-health', compact('health', 'migrations', 'backups', 'lastBackup'));
+    }
+
+    private function diskHealth(): array
+    {
+        if ($cpanel = $this->cpanelDiskUsage()) {
+            $used = (float) $cpanel['used_bytes'];
+            $limit = $cpanel['limit_bytes'];
+            $percent = $limit !== null && $limit > 0
+                ? round(($used / $limit) * 100, 2)
+                : null;
+            $message = $cpanel['used_label'].' used';
+            if ($cpanel['limit_label'] !== null) {
+                $message .= ' of '.$cpanel['limit_label'];
+                if ($percent !== null) {
+                    $message .= ' ('.$percent.'%)';
+                }
+            } else {
+                $message .= ' · cPanel quota unlimited';
+            }
+
+            return [
+                'ok' => $limit === null || $percent < 90,
+                'message' => $message,
+            ];
+        }
+
+        $path = base_path();
+        $free = @disk_free_space($path);
+        $total = @disk_total_space($path);
+        if ($free === false || $total === false || $total <= 0) {
+            return ['ok' => false, 'message' => 'Unavailable'];
+        }
+
+        return [
+            'ok' => $free > 536870912,
+            'message' => $this->formatBytes($free).' free of '.$this->formatBytes($total).' filesystem capacity (cPanel quota unavailable)',
+        ];
+    }
+
+    private function cpanelDiskUsage(): ?array
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            return null;
+        }
+
+        $username = $_SERVER['CPANEL_USER'] ?? getenv('CPANEL_USER') ?: null;
+        if (! $username && preg_match('#[/\\\\]home[/\\\\]([A-Za-z0-9._-]+)#', base_path(), $matches)) {
+            $username = $matches[1];
+        }
+        if (! $username && function_exists('get_current_user')) {
+            $username = get_current_user();
+        }
+        if (! is_string($username) || ! preg_match('/^[A-Za-z0-9._-]+$/', $username)) {
+            return null;
+        }
+
+        foreach (['/usr/local/cpanel/bin/uapi', '/usr/bin/uapi'] as $binary) {
+            if (! is_file($binary) || ! is_executable($binary)) {
+                continue;
+            }
+
+            try {
+                $process = new Process([
+                    $binary,
+                    '--output=json',
+                    '--user='.$username,
+                    'StatsBar',
+                    'get_stats',
+                    'display=diskusage',
+                    'warnings=0',
+                ], base_path(), null, null, 5);
+                $process->run();
+                if (! $process->isSuccessful()) {
+                    continue;
+                }
+
+                $payload = json_decode($process->getOutput(), true);
+                $data = data_get($payload, 'result.data');
+                $records = is_array($data) && array_is_list($data) ? $data : [$data];
+                foreach ($records as $record) {
+                    if (! is_array($record)) {
+                        continue;
+                    }
+                    $key = strtolower((string) ($record['id'] ?? $record['name'] ?? ''));
+                    if ($key !== 'diskusage') {
+                        continue;
+                    }
+
+                    $used = $this->cpanelMegabytesToBytes($record['count'] ?? $record['_count'] ?? null);
+                    $limitValue = $record['max'] ?? $record['_max'] ?? null;
+                    $limit = $this->cpanelMegabytesToBytes($limitValue);
+                    if ($used === null) {
+                        continue;
+                    }
+
+                    return [
+                        'used_bytes' => $used,
+                        'limit_bytes' => $limit,
+                        'used_label' => $this->cpanelAmountLabel($record['count'] ?? $record['_count'] ?? null),
+                        'limit_label' => $limit === null ? null : $this->cpanelAmountLabel($limitValue),
+                    ];
+                }
+            } catch (\Throwable $e) {
+                // Shared hosting may disable the UAPI binary. Use the safe
+                // filesystem fallback instead of breaking System Health.
+            }
+        }
+
+        return null;
+    }
+
+    private function cpanelMegabytesToBytes($value): ?float
+    {
+        $normalized = str_replace(',', '', trim((string) $value));
+        if ($value === null || strtolower($normalized) === 'unlimited') {
+            return null;
+        }
+        if (is_string($value) && ! is_numeric($normalized)) {
+            if (! preg_match('/^\\s*([0-9]+(?:\\.[0-9]+)?)\\s*(KB|MB|GB|TB|B)?/i', $normalized, $matches)) {
+                return null;
+            }
+            $number = (float) $matches[1];
+            $unit = strtoupper($matches[2] ?? 'MB');
+            $multipliers = ['B' => 1, 'KB' => 1024, 'MB' => 1048576, 'GB' => 1073741824, 'TB' => 1099511627776];
+            return $number * ($multipliers[$unit] ?? 1048576);
+        }
+
+        return (float) $value * 1048576;
+    }
+
+    private function cpanelAmountLabel($value): ?string
+    {
+        if ($value === null || strtolower(trim((string) $value)) === 'unlimited') {
+            return null;
+        }
+        if (is_string($value) && preg_match('/^\\s*[0-9,]+(?:\\.[0-9]+)?\\s*(KB|MB|GB|TB|B)\\b/i', $value)) {
+            return trim($value);
+        }
+        $number = (float) $value;
+        $formatted = fmod($number, 1.0) === 0.0 ? number_format($number, 0) : rtrim(rtrim(number_format($number, 2, '.', ','), '0'), '.');
+        return $formatted.' MB';
+    }
 
     public function runPendingMigrations(){
         $this->requireAdminPermission('settings');
