@@ -186,6 +186,7 @@ Route::delete('/product-code-configuration/{id}', 'ProductCodeConfigurationContr
  Route::post('/admin/system/git-repository', 'SuperAdminController@saveApplicationUpdateSettings')->name('admin.application-update.settings');
  Route::post('/admin/system/git-repository/test', 'SuperAdminController@testApplicationRepository')->name('admin.application-update.test');
  Route::post('/admin/system/application-update/check', 'SuperAdminController@checkApplicationUpdates')->name('admin.application-update.check');
+ Route::post('/admin/system/application-update/pull', 'SuperAdminController@pullApplicationUpdate')->name('admin.application-update.pull');
  Route::post('/admin/system/application-update/deploy', 'SuperAdminController@deployApplicationUpdate')->name('admin.application-update.deploy');
  Route::post('/admin/system/application-update/discard-and-deploy', 'SuperAdminController@discardAndDeployApplicationUpdate')->name('admin.application-update.discard-and-deploy');
  Route::post('/admin/system/application-update/rollback/{id}', 'SuperAdminController@rollbackApplicationDeployment')->name('admin.application-update.rollback');

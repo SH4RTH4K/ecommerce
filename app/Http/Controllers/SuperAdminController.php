@@ -71,6 +71,23 @@ class SuperAdminController extends Controller {
         try { $s=$updates->settings(); $result=$updates->fetch($s); $s->last_checked_commit=$result['remote']; $s->last_checked_at=now(); $s->last_status=$result['status']; $s->last_message=$result['message']; $s->save(); return Redirect::back()->with('message',$result['message']); } catch (\Throwable $e) { return Redirect::back()->with('exception',$e->getMessage()); }
     }
 
+    public function pullApplicationUpdate(ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        try {
+            $settings = $updates->settings();
+            $result = $updates->fetch($settings);
+            $settings->last_checked_commit = $result['remote'];
+            $settings->last_checked_at = now();
+            $settings->last_status = $result['status'];
+            $settings->last_message = $result['message'];
+            $settings->save();
+            return Redirect::back()->with('message', 'Remote changes pulled successfully. Review them below before deployment.');
+        } catch (\Throwable $e) {
+            return Redirect::back()->with('exception', 'Pull failed: '.$e->getMessage());
+        }
+    }
+
     public function deployApplicationUpdate(ApplicationUpdateService $updates)
     {
         $this->authCheck();
