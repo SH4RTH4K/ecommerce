@@ -34,7 +34,7 @@
                     }
                     ?>
                 </h3>
-                <form action="{{ url('/save-category') }}" method="POST">
+                <form action="{{ url('/save-category') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                 <fieldset class="form-horizontal">
                         <div class="control-group">
@@ -56,7 +56,7 @@
                         @php $categoryIcons = ['fa-folder-open'=>'Folder','fa-desktop'=>'Desktop','fa-laptop'=>'Laptop','fa-keyboard-o'=>'Keyboard','fa-mouse-pointer'=>'Mouse','fa-print'=>'Printer','fa-hdd-o'=>'Storage / HDD','fa-picture-o'=>'Graphics','fa-refresh'=>'Cooling','fa-archive'=>'Casing / Box','fa-link'=>'Cable / Connector','fa-signal'=>'Network / Wireless','fa-video-camera'=>'Camera','fa-camera'=>'Webcam / Camera','fa-headphones'=>'Headphones','fa-music'=>'Audio','fa-volume-up'=>'Speaker','fa-gamepad'=>'Gaming','fa-dot-circle-o'=>'Optical Disc','fa-bolt'=>'Power / UPS','fa-clock-o'=>'Watch','fa-mobile'=>'Mobile','fa-cogs'=>'Components','fa-shield'=>'Security','fa-globe'=>'Internet','fa-sitemap'=>'Network Structure','fa-shopping-cart'=>'Shopping']; @endphp
                         <div class="control-group">
                             <label class="control-label" for="icon_class">Category Icon</label>
-                            <div class="controls"><select name="icon_class" id="icon_class" class="span6">@foreach($categoryIcons as $class => $label)<option value="{{$class}}">{{$label}} ({{$class}})</option>@endforeach</select> <span id="category-icon-preview" style="font-size:24px;margin-left:12px"><i class="fa fa-folder-open"></i></span></div>
+                            <div class="controls"><div style="display:flex;align-items:center;gap:16px;max-width:720px;padding:14px;border:1px solid #d9e3e9;border-radius:10px;background:#f8fafb"><div id="category-icon-preview" style="width:72px;height:72px;display:grid;place-items:center;flex:0 0 72px;border:1px solid #d9e3e9;border-radius:12px;background:#fff;color:#0b3d62;font-size:32px;overflow:hidden"><i class="fa fa-folder-open" aria-hidden="true"></i></div><div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><select name="icon_class" id="icon_class" style="width:220px;max-width:100%;margin:0">@foreach($categoryIcons as $class => $label)<option value="{{$class}}">{{$label}}</option>@endforeach</select><span style="color:#71828d;font-size:12px">Built-in fallback</span></div><div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><input type="file" name="icon_image" id="icon_image" accept="image/png,image/jpeg,image/webp" style="max-width:260px;margin:0;padding:4px"><span style="color:#71828d;font-size:12px">PNG, JPG or WebP · max 1 MB</span></div><p class="help-block" style="margin:7px 0 0">Upload a custom icon for this category. It will be stored locally using the category name.</p></div></div></div>
                         </div>
                         <div class="control-group"><label class="control-label" for="display_order">Homepage Order</label><div class="controls"><input type="number" min="0" name="display_order" id="display_order" value="0" class="span2"><span class="help-inline">Lower numbers appear first.</span></div></div>
                         <div class="control-group"><label class="control-label">Featured Categories</label><div class="controls"><label class="checkbox"><input type="checkbox" name="is_featured" value="1" checked> Show on homepage</label></div></div>
@@ -75,7 +75,9 @@
                         </div>
                     </fieldset>
                 </form>
-                <script>document.getElementById('icon_class').addEventListener('change',function(){document.getElementById('category-icon-preview').innerHTML='<i class="fa '+this.value+'"></i>';});</script>
+                <script>
+                (function () { var select = document.getElementById('icon_class'), file = document.getElementById('icon_image'), preview = document.getElementById('category-icon-preview'); select.addEventListener('change', function () { if (!file.files.length) preview.innerHTML = '<i class="fa ' + this.value + '" aria-hidden="true"></i>'; }); file.addEventListener('change', function () { var selected = file.files[0]; if (!selected) return; var image = document.createElement('img'); image.alt = 'Category icon preview'; image.style.cssText = 'width:100%;height:100%;object-fit:contain'; image.src = URL.createObjectURL(selected); image.onload = function () { URL.revokeObjectURL(image.src); }; preview.innerHTML = ''; preview.appendChild(image); }); }());
+                </script>
 
             </div>
         </div><!--/span-->

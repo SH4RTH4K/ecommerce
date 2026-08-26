@@ -116,6 +116,7 @@ Route::post('/published-category/{id}', "SuperAdminController@publishedCategory"
 Route::post('/delete-category/{id}', "SuperAdminController@deleteCategory");
 Route::get('/edit-category/{id}', "SuperAdminController@editCategory");
 Route::post('/update-category/', "SuperAdminController@updateCategory");
+Route::post('/remove-category-icon/{id}', "SuperAdminController@removeCategoryIcon");
 
 Route::get('/add-subCategory', "SuperAdminController@addSubCategory");
 Route::post('/save-subCategory', "SuperAdminController@saveSubCategory");

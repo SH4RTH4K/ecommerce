@@ -46,6 +46,7 @@
         </div>
         <div class="box-content">
             <p class="muted">Choose the published brands that appear in the homepage “Popular Brands” section. The display order follows the brand name.</p>
+            <p class="muted">Choose the published brands for the homepage Popular Brands section, then drag the selected items below into the order you want to show.</p>
             <form method="post" action="{{ url('/manage-manufacturer/featured') }}" id="featured-brand-form" enctype="multipart/form-data">
                 {{ csrf_field() }}
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -54,6 +55,15 @@
                     <button type="button" class="btn" id="featured-brand-select-visible">Select visible</button>
                     <button type="button" class="btn" id="featured-brand-clear">Clear all</button>
                     <span class="muted"><strong id="featured-brand-count">{{ count($featuredBrandIds) }}</strong> selected</span>
+                </div>
+                <div id="featured-brand-order" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:42px;margin:0 0 12px;padding:8px;border:1px dashed #cbd7df;border-radius:4px;background:#f8fafb">
+                    <span class="muted" data-order-empty style="{{ count($featuredBrandIds) ? 'display:none' : '' }}">No brands selected yet.</span>
+                    @foreach($featuredBrandIds as $featuredBrandId)
+                        @php($featuredBrand = $manufacturerOptions->firstWhere('manufacturer_id', $featuredBrandId))
+                        @if($featuredBrand)
+                            <button type="button" class="featured-brand-order-item" draggable="true" data-id="{{ $featuredBrand->manufacturer_id }}" style="border:1px solid #c8d4dc;border-radius:3px;padding:6px 9px;background:#fff;cursor:grab"><i class="fa fa-arrows" aria-hidden="true"></i> {{ $featuredBrand->manufacturer_name }}</button>
+                        @endif
+                    @endforeach
                 </div>
                 <div id="featured-brand-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;max-height:460px;overflow:auto;padding:4px">
                     @foreach($manufacturerOptions->where('publication_status', 1) as $brand)
@@ -83,7 +93,31 @@
         var search = document.getElementById('featured-brand-search');
         var options = Array.prototype.slice.call(document.querySelectorAll('.featured-brand-option'));
         var count = document.getElementById('featured-brand-count');
-        function refresh() { count.textContent = document.querySelectorAll('#featured-brand-options input:checked').length; }
+        var order = document.getElementById('featured-brand-order');
+        var empty = order.querySelector('[data-order-empty]');
+        function refresh() {
+            var checked = {};
+            document.querySelectorAll('#featured-brand-options input[type="checkbox"]:checked').forEach(function (input) { checked[input.value] = true; });
+            Array.prototype.slice.call(order.querySelectorAll('.featured-brand-order-item')).forEach(function (item) { if (!checked[item.dataset.id]) item.remove(); });
+            options.forEach(function (option) {
+                var input = option.querySelector('input[type="checkbox"]');
+                if (input.checked && !order.querySelector('.featured-brand-order-item[data-id="' + input.value + '"]')) {
+                    var item = document.createElement('button');
+                    item.type = 'button'; item.draggable = true; item.className = 'featured-brand-order-item'; item.dataset.id = input.value;
+                    item.style.cssText = 'border:1px solid #c8d4dc;border-radius:3px;padding:6px 9px;background:#fff;cursor:grab';
+                    item.innerHTML = '<i class="fa fa-arrows" aria-hidden="true"></i> ' + option.querySelector('span[style*="font-weight:600"]').textContent.trim();
+                    order.appendChild(item);
+                }
+            });
+            empty.style.display = order.querySelector('.featured-brand-order-item') ? 'none' : '';
+            count.textContent = Object.keys(checked).length;
+        }
+        function addOrderFields(form) {
+            form.querySelectorAll('input[name="featured_brand_order[]"]').forEach(function (input) { input.remove(); });
+            order.querySelectorAll('.featured-brand-order-item').forEach(function (item) {
+                var input = document.createElement('input'); input.type = 'hidden'; input.name = 'featured_brand_order[]'; input.value = item.dataset.id; form.appendChild(input);
+            });
+        }
         function visible() { var term = (search.value || '').toLowerCase().trim(); return options.filter(function (option) { return !option.hidden && (!term || option.dataset.name.indexOf(term) !== -1); }); }
         search.addEventListener('input', function () { options.forEach(function (option) { option.hidden = !!search.value.trim() && option.dataset.name.indexOf(search.value.toLowerCase().trim()) === -1; }); });
         function setChecked(option, checked) {
@@ -94,6 +128,17 @@
         document.getElementById('featured-brand-select-visible').addEventListener('click', function () { visible().forEach(function (option) { setChecked(option, true); }); refresh(); });
         document.getElementById('featured-brand-clear').addEventListener('click', function () { options.forEach(function (option) { setChecked(option, false); }); refresh(); });
         options.forEach(function (option) { option.querySelector('input').addEventListener('change', refresh); });
+        order.addEventListener('dragstart', function (event) { if (event.target.classList.contains('featured-brand-order-item')) event.dataTransfer.setData('text/plain', event.target.dataset.id); });
+        order.addEventListener('dragover', function (event) { event.preventDefault(); });
+        order.addEventListener('drop', function (event) {
+            event.preventDefault();
+            var id = event.dataTransfer.getData('text/plain');
+            var item = order.querySelector('.featured-brand-order-item[data-id="' + id + '"]');
+            var target = event.target.closest('.featured-brand-order-item');
+            if (!item || !target || item === target) return;
+            order.insertBefore(item, event.clientX < target.getBoundingClientRect().left + target.offsetWidth / 2 ? target : target.nextSibling);
+        });
+        document.getElementById('featured-brand-form').addEventListener('submit', function () { addOrderFields(this); });
         document.querySelectorAll('input[type="file"][data-preview-target]').forEach(function (input) {
             input.addEventListener('change', function () {
                 var preview = input.parentElement.querySelector('.featured-brand-image-preview');
@@ -104,6 +149,7 @@
                 reader.readAsDataURL(file);
             });
         });
+        refresh();
     }());
     </script>
 

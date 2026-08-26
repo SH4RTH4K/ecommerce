@@ -102,7 +102,7 @@
             <div class="lt-section-heading"><div><span>Browse quickly</span><h2>Featured Categories</h2></div></div>
             <div class="lt-category-grid">
                 @forelse($featuredCategories as $category)
-                    <a href="{{ url('/product-by-category/'.$category->category_id) }}"><i class="fa {{ $category->icon_class ?: 'fa-folder-open' }}"></i><span>{{ $category->category_name }}</span></a>
+                    <a href="{{ url('/product-by-category/'.$category->category_id) }}">@if($category->icon_image)<img src="{{ asset($category->icon_image) }}" alt="" loading="lazy">@else<i class="fa {{ $category->icon_class ?: 'fa-folder-open' }}"></i>@endif<span>{{ $category->category_name }}</span></a>
                 @empty
                     <div class="lt-empty">Publish categories in the admin panel to populate this section.</div>
                 @endforelse

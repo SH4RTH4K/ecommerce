@@ -39,7 +39,7 @@
             <h2><i class="halflings-icon star"></i><span class="break"></span>Featured Categories</h2>
         </div>
         <div class="box-content">
-            <p class="muted">Choose multiple published categories for the homepage. The order below follows the category display order.</p>
+            <p class="muted">Choose multiple published categories for the homepage, then drag the selected items below into the order you want to show.</p>
             <form method="post" action="{{ url('/manage-category/featured') }}" id="featured-category-form">
                 {{ csrf_field() }}
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -48,11 +48,19 @@
                     <button type="button" class="btn" id="featured-clear">Clear all</button>
                     <span class="muted"><strong id="featured-count">{{ count($featuredCategoryIds) }}</strong> selected</span>
                 </div>
+                <div id="featured-category-order" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:42px;margin:0 0 12px;padding:8px;border:1px dashed #cbd7df;border-radius:4px;background:#f8fafb">
+                    <span class="muted" data-order-empty {{ count($featuredCategoryIds) ? 'style=display:none' : '' }}>No categories selected yet.</span>
+                    @foreach($all_category_info->where('publication_status', 1)->where('is_featured', 1)->sortBy('display_order') as $category)
+                        <button type="button" class="featured-order-item" draggable="true" data-id="{{ $category->category_id }}" style="border:1px solid #c8d4dc;border-radius:3px;padding:6px 9px;background:#fff;cursor:grab">
+                            <i class="fa fa-arrows" aria-hidden="true"></i> {{ $category->category_name }}
+                        </button>
+                    @endforeach
+                </div>
                 <div id="featured-category-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:300px;overflow:auto;padding:4px">
                     @foreach($all_category_info->where('publication_status', 1) as $category)
                         <label class="featured-category-option" data-name="{{ strtolower($category->category_name) }}" style="border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
                             <input type="checkbox" name="featured_category_ids[]" value="{{ $category->category_id }}" {{ in_array((int) $category->category_id, $featuredCategoryIds, true) ? 'checked' : '' }}>
-                            <i class="fa {{ $category->icon_class ?: 'fa-folder-open' }}"></i>
+                            @if($category->icon_image)<img src="{{ asset($category->icon_image) }}" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle">@else<i class="fa {{ $category->icon_class ?: 'fa-folder-open' }}"></i>@endif
                             {{ $category->category_name }}
                         </label>
                     @endforeach
@@ -153,7 +161,34 @@ document.addEventListener('DOMContentLoaded', function () {
     var search = document.getElementById('featured-category-search');
     var options = Array.prototype.slice.call(document.querySelectorAll('.featured-category-option'));
     var count = document.getElementById('featured-count');
-    function updateCount() { count.textContent = document.querySelectorAll('#featured-category-options input:checked').length; }
+    var order = document.getElementById('featured-category-order');
+    var empty = order.querySelector('[data-order-empty]');
+    function selectedInput(id) { return document.querySelector('#featured-category-options input[value="' + id + '"]'); }
+    function refreshOrder() {
+        var checked = {};
+        document.querySelectorAll('#featured-category-options input:checked').forEach(function (input) { checked[input.value] = true; });
+        Array.prototype.slice.call(order.querySelectorAll('.featured-order-item')).forEach(function (item) {
+            if (!checked[item.dataset.id]) item.remove();
+        });
+        options.forEach(function (option) {
+            var input = option.querySelector('input');
+            if (input.checked && !order.querySelector('.featured-order-item[data-id="' + input.value + '"]')) {
+                var item = document.createElement('button');
+                item.type = 'button'; item.draggable = true; item.className = 'featured-order-item'; item.dataset.id = input.value;
+                item.style.cssText = 'border:1px solid #c8d4dc;border-radius:3px;padding:6px 9px;background:#fff;cursor:grab';
+                item.innerHTML = '<i class="fa fa-arrows" aria-hidden="true"></i> ' + option.textContent.trim();
+                order.appendChild(item);
+            }
+        });
+        empty.style.display = order.querySelector('.featured-order-item') ? 'none' : '';
+        count.textContent = Object.keys(checked).length;
+    }
+    function addOrderFields(form) {
+        form.querySelectorAll('input[name="featured_category_order[]"]').forEach(function (input) { input.remove(); });
+        order.querySelectorAll('.featured-order-item').forEach(function (item) {
+            var input = document.createElement('input'); input.type = 'hidden'; input.name = 'featured_category_order[]'; input.value = item.dataset.id; form.appendChild(input);
+        });
+    }
     function filter() {
         var term = search.value.toLowerCase().trim();
         options.forEach(function (option) { option.style.display = !term || option.dataset.name.indexOf(term) !== -1 ? '' : 'none'; });
@@ -161,13 +196,25 @@ document.addEventListener('DOMContentLoaded', function () {
     search.addEventListener('input', filter);
     document.getElementById('featured-select-visible').addEventListener('click', function () {
         options.forEach(function (option) { if (option.style.display !== 'none') option.querySelector('input').checked = true; });
-        updateCount();
+        refreshOrder();
     });
     document.getElementById('featured-clear').addEventListener('click', function () {
         document.querySelectorAll('#featured-category-options input').forEach(function (input) { input.checked = false; });
-        updateCount();
+        refreshOrder();
     });
-    document.querySelectorAll('#featured-category-options input').forEach(function (input) { input.addEventListener('change', updateCount); });
+    document.querySelectorAll('#featured-category-options input').forEach(function (input) { input.addEventListener('change', refreshOrder); });
+    order.addEventListener('dragstart', function (event) { if (event.target.classList.contains('featured-order-item')) event.dataTransfer.setData('text/plain', event.target.dataset.id); });
+    order.addEventListener('dragover', function (event) { event.preventDefault(); });
+    order.addEventListener('drop', function (event) {
+        event.preventDefault();
+        var id = event.dataTransfer.getData('text/plain');
+        var item = order.querySelector('.featured-order-item[data-id="' + id + '"]');
+        var target = event.target.closest('.featured-order-item');
+        if (!item || !target || item === target) return;
+        order.insertBefore(item, event.clientX < target.getBoundingClientRect().left + target.offsetWidth / 2 ? target : target.nextSibling);
+    });
+    document.getElementById('featured-category-form').addEventListener('submit', function () { addOrderFields(this); });
+    refreshOrder();
 });
 </script>
 @endsection

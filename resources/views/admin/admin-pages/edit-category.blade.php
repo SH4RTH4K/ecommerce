@@ -34,7 +34,7 @@
                     }
                     ?>
                 </h3>-->
-                <form action="{{ url('/update-category') }}" method="POST">
+                <form action="{{ url('/update-category') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                 <fieldset class="form-horizontal">
                         <div class="control-group">
@@ -55,7 +55,25 @@
                             </div>
                         </div>
                         @php $categoryIcons = ['fa-folder-open'=>'Folder','fa-desktop'=>'Desktop','fa-laptop'=>'Laptop','fa-keyboard-o'=>'Keyboard','fa-mouse-pointer'=>'Mouse','fa-print'=>'Printer','fa-hdd-o'=>'Storage / HDD','fa-picture-o'=>'Graphics','fa-refresh'=>'Cooling','fa-archive'=>'Casing / Box','fa-link'=>'Cable / Connector','fa-signal'=>'Network / Wireless','fa-video-camera'=>'Camera','fa-camera'=>'Webcam / Camera','fa-headphones'=>'Headphones','fa-music'=>'Audio','fa-volume-up'=>'Speaker','fa-gamepad'=>'Gaming','fa-dot-circle-o'=>'Optical Disc','fa-bolt'=>'Power / UPS','fa-clock-o'=>'Watch','fa-mobile'=>'Mobile','fa-cogs'=>'Components','fa-shield'=>'Security','fa-globe'=>'Internet','fa-sitemap'=>'Network Structure','fa-shopping-cart'=>'Shopping']; @endphp
-                        <div class="control-group"><label class="control-label" for="icon_class">Category Icon</label><div class="controls"><select name="icon_class" id="icon_class" class="span6">@foreach($categoryIcons as $class => $label)<option value="{{$class}}" {{$category_info->icon_class === $class ? 'selected' : ''}}>{{$label}} ({{$class}})</option>@endforeach</select> <span id="category-icon-preview" style="font-size:24px;margin-left:12px"><i class="fa {{$category_info->icon_class}}"></i></span></div></div>
+                        <div class="control-group"><label class="control-label">Category Icon</label><div class="controls">
+                            <div style="display:flex;align-items:center;gap:16px;max-width:720px;padding:14px;border:1px solid #d9e3e9;border-radius:10px;background:#f8fafb">
+                                <div id="category-icon-preview" style="width:72px;height:72px;display:grid;place-items:center;flex:0 0 72px;border:1px solid #d9e3e9;border-radius:12px;background:#fff;color:#0b3d62;font-size:32px;overflow:hidden">
+                                    @if($category_info->icon_image)<img src="{{ asset($category_info->icon_image) }}" alt="{{ $category_info->category_name }} icon" style="width:100%;height:100%;object-fit:contain">@else<i class="fa {{ $category_info->icon_class ?: 'fa-folder-open' }}" aria-hidden="true"></i>@endif
+                                </div>
+                                <div style="min-width:0;flex:1">
+                                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                        <select name="icon_class" id="icon_class" style="width:220px;max-width:100%;margin:0">@foreach($categoryIcons as $class => $label)<option value="{{$class}}" {{$category_info->icon_class === $class ? 'selected' : ''}}>{{$label}}</option>@endforeach</select>
+                                        <span style="color:#71828d;font-size:12px">Built-in fallback</span>
+                                    </div>
+                                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                        <input type="file" name="icon_image" id="icon_image" accept="image/png,image/jpeg,image/webp" style="max-width:260px;margin:0;padding:4px">
+                                        <span style="color:#71828d;font-size:12px">PNG, JPG or WebP · max 1 MB</span>
+                                    </div>
+                                    @if($category_info->icon_image)<span style="display:block;margin-top:8px;color:#71828d;font-size:12px">A custom image is currently active.</span>@endif
+                                    <p class="help-block" style="margin:7px 0 0">Upload a custom icon for “{{ $category_info->category_name }}”. The file is stored locally as a category-named asset.</p>
+                                </div>
+                            </div>
+                        </div></div>
                         <div class="control-group"><label class="control-label" for="display_order">Homepage Order</label><div class="controls"><input type="number" min="0" name="display_order" id="display_order" value="{{$category_info->display_order}}" class="span2"><span class="help-inline">Lower numbers appear first.</span></div></div>
                         <div class="control-group"><label class="control-label">Featured Categories</label><div class="controls"><label class="checkbox"><input type="checkbox" name="is_featured" value="1" {{$category_info->is_featured ? 'checked' : ''}}> Show on homepage</label></div></div>
                         <div class="form-actions">
@@ -64,7 +82,19 @@
                         </div>
                     </fieldset>
                 </form>
-                <script>document.getElementById('icon_class').addEventListener('change',function(){document.getElementById('category-icon-preview').innerHTML='<i class="fa '+this.value+'"></i>';});</script>
+                @if($category_info->icon_image)
+                    <form method="post" action="{{ url('/remove-category-icon/'.$category_info->category_id) }}" style="margin:-10px 0 14px 180px" onsubmit="return confirm('Remove this custom category image and use the fallback icon?')">
+                        @csrf
+                        <button type="submit" class="btn btn-mini btn-danger"><i class="halflings-icon white trash"></i> Remove saved image</button>
+                    </form>
+                @endif
+                <script>
+                (function () {
+                    var select = document.getElementById('icon_class'), file = document.getElementById('icon_image'), preview = document.getElementById('category-icon-preview');
+                    select.addEventListener('change', function () { if (!file.files.length) preview.innerHTML = '<i class="fa ' + this.value + '" aria-hidden="true"></i>'; });
+                    file.addEventListener('change', function () { var selected = file.files[0]; if (!selected) return; var image = document.createElement('img'); image.alt = 'New category icon preview'; image.style.cssText = 'width:100%;height:100%;object-fit:contain'; image.src = URL.createObjectURL(selected); image.onload = function () { URL.revokeObjectURL(image.src); }; preview.innerHTML = ''; preview.appendChild(image); });
+                }());
+                </script>
 
             </div>
         </div><!--/span-->

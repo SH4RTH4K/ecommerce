@@ -1079,3 +1079,37 @@ img,iframe,video{max-width:100%}
   }
   .lt-card-actions form button i{font-size:16px}
 }
+
+/* Product-card controls adapt to the card width, including wide desktop layouts.
+   Labels are only shown when all three actions have enough room to breathe. */
+.lt-product-card{container-type:inline-size}
+@container (max-width:279px){
+  .lt-card-actions{grid-template-columns:42px 42px 42px!important;gap:7px}
+  .lt-card-actions form button,
+  .lt-card-actions form:first-child button{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:8px 6px;
+  }
+  .lt-card-actions form button span{display:none!important}
+  .lt-card-actions form button i{font-size:16px}
+}
+@container (min-width:280px){
+  .lt-card-actions{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr)!important;gap:8px}
+  .lt-card-actions form button,
+  .lt-card-actions form:first-child button{
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    min-height:36px;
+    padding:8px 6px;
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .lt-card-actions form button span{display:inline!important;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lt-card-actions form button i{font-size:14px}
+}

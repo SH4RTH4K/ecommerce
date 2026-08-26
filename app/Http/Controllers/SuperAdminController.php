@@ -79,6 +79,31 @@ class SuperAdminController extends Controller {
         return Redirect::route('admin.login');
     }
 
+    private function categoryIconImage(Request $request, $categoryName)
+    {
+        if (! $request->hasFile('icon_image')) {
+            return null;
+        }
+
+        $this->validate($request, [
+            'icon_image' => 'image|mimes:jpg,jpeg,png,webp|max:1024',
+        ]);
+
+        return PublicUpload::store(
+            $request->file('icon_image'),
+            'asset/front-end/img/category-icons/',
+            'category-'.(Str::slug($categoryName) ?: 'icon').'-',
+            ['jpg', 'jpeg', 'png', 'webp']
+        );
+    }
+
+    private function removeCategoryIconImage($path)
+    {
+        if ($path) {
+            PublicUpload::remove($path);
+        }
+    }
+
     public function addCategory() {
         $this->authCheck();
         $add_category = view('admin.admin-pages.add-category');
@@ -108,6 +133,7 @@ class SuperAdminController extends Controller {
         $data['category_description'] = $request->category_description;
         $allowedIcons = ['fa-folder-open','fa-music','fa-signal','fa-link','fa-archive','fa-refresh','fa-picture-o','fa-desktop','fa-dot-circle-o','fa-gamepad','fa-hdd-o','fa-headphones','fa-video-camera','fa-keyboard-o','fa-laptop','fa-mouse-pointer','fa-print','fa-clock-o','fa-volume-up','fa-bolt','fa-camera','fa-mobile','fa-cogs','fa-shield','fa-globe','fa-sitemap','fa-shopping-cart'];
         $data['icon_class'] = in_array($request->icon_class, $allowedIcons, true) ? $request->icon_class : 'fa-folder-open';
+        $data['icon_image'] = $this->categoryIconImage($request, $categoryName);
         $data['is_featured'] = $request->has('is_featured') ? 1 : 0;
         $data['display_order'] = max(0, (int) $request->display_order);
         $data['publication_status'] = $request->publication_status;
@@ -136,9 +162,23 @@ class SuperAdminController extends Controller {
             ->unique()
             ->values();
 
-        $publishedIds = Category::where('publication_status', 1)
+        $requestedOrder = collect((array) $request->input('featured_category_order', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+        if ($requestedOrder->isNotEmpty()) {
+            $selectedIds = $requestedOrder
+                ->filter(fn ($id) => $selectedIds->contains($id))
+                ->values();
+        }
+
+        $publishedCategoryIds = Category::where('publication_status', 1)
             ->whereIn('category_id', $selectedIds)
             ->pluck('category_id');
+        $publishedIds = $selectedIds
+            ->filter(fn ($id) => $publishedCategoryIds->contains($id))
+            ->values();
 
         DB::table('category')->update(['is_featured' => 0]);
 
@@ -215,11 +255,34 @@ class SuperAdminController extends Controller {
         $data['category_description'] = $request->category_description;
         $allowedIcons = ['fa-folder-open','fa-music','fa-signal','fa-link','fa-archive','fa-refresh','fa-picture-o','fa-desktop','fa-dot-circle-o','fa-gamepad','fa-hdd-o','fa-headphones','fa-video-camera','fa-keyboard-o','fa-laptop','fa-mouse-pointer','fa-print','fa-clock-o','fa-volume-up','fa-bolt','fa-camera','fa-mobile','fa-cogs','fa-shield','fa-globe','fa-sitemap','fa-shopping-cart'];
         $data['icon_class'] = in_array($request->icon_class, $allowedIcons, true) ? $request->icon_class : 'fa-folder-open';
+        if ($request->hasFile('icon_image')) {
+            $newIconImage = $this->categoryIconImage($request, $categoryName);
+            $this->removeCategoryIconImage($existing->icon_image);
+            $data['icon_image'] = $newIconImage;
+        } elseif ($request->boolean('remove_icon_image')) {
+            $this->removeCategoryIconImage($existing->icon_image);
+            $data['icon_image'] = null;
+        }
         $data['is_featured'] = $request->has('is_featured') ? 1 : 0;
         $data['display_order'] = max(0, (int) $request->display_order);
         $existing->update($data);
         Cache::forget('mega-menu-tree'); Cache::forget('storefront-navbar-tree');
         return Redirect::to('/manage-category');
+    }
+
+    public function removeCategoryIcon($categoryId)
+    {
+        $this->authCheck();
+        $category = Category::find((int) $categoryId);
+        if (! $category) {
+            return Redirect::back()->with('exception', 'Category not found.');
+        }
+
+        $this->removeCategoryIconImage($category->icon_image);
+        $category->update(['icon_image' => null]);
+
+        return Redirect::to('/edit-category/'.$category->category_id)
+            ->with('message', 'Custom category image removed. The fallback icon is now active.');
     }
 
     public function deleteCategory($category_id) {
@@ -512,9 +575,23 @@ class SuperAdminController extends Controller {
             ->unique()
             ->values();
 
-        $publishedIds = Manufacturer::where('publication_status', 1)
+        $requestedOrder = collect((array) $request->input('featured_brand_order', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+        if ($requestedOrder->isNotEmpty()) {
+            $selectedIds = $requestedOrder
+                ->filter(fn ($id) => $selectedIds->contains($id))
+                ->values();
+        }
+
+        $publishedBrandIds = Manufacturer::where('publication_status', 1)
             ->whereIn('manufacturer_id', $selectedIds)
             ->pluck('manufacturer_id');
+        $publishedIds = $selectedIds
+            ->filter(fn ($id) => $publishedBrandIds->contains($id))
+            ->values();
         $allowedIcons = ['fa-building', 'fa-laptop', 'fa-desktop', 'fa-mobile-phone', 'fa-camera', 'fa-shield', 'fa-bolt', 'fa-cog', 'fa-star', 'fa-tag', 'fa-certificate', 'fa-cube', 'fa-hdd-o', 'fa-print'];
         $icons = collect((array) $request->input('featured_brand_icons', []))
             ->mapWithKeys(function ($icon, $id) use ($allowedIcons) {
