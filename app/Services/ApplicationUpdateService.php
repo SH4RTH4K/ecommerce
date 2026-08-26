@@ -49,15 +49,19 @@ class ApplicationUpdateService
         $rows = [];
         foreach (array_filter(preg_split('/\R/', trim($commits['output']))) as $line) { $parts = explode("\x1f", $line, 5); if (count($parts) === 5) $rows[] = ['hash' => $parts[0], 'short' => $parts[1], 'author' => $parts[2], 'date' => $parts[3], 'subject' => $parts[4]]; }
         $changed = $this->git(['diff', '--name-status', 'HEAD', $settings->remote_name.'/'.$settings->branch])['output'];
-        $worktreeStatus = $this->git(['status', '--porcelain'])['output'];
-        $clean = trim($worktreeStatus) === '';
+        $worktreeLines = array_values(array_filter(preg_split('/\R/', trim($this->git(['status', '--porcelain'])['output']))));
+        // Untracked files include uploads, caches, and deployment artifacts. They
+        // do not prevent a fast-forward merge and must never make the discard
+        // option look as if it will remove them.
+        $trackedWorktreeLines = array_values(array_filter($worktreeLines, static fn ($line) => ! str_starts_with($line, '??') && ! str_starts_with($line, '!!')));
+        $clean = $trackedWorktreeLines === [];
         // A manual copy may have installed the exact remote files without
         // moving HEAD. It is safe to normalize that state; other edits stay blocked.
         $localChangesMatchTarget = ! $clean
             && $this->git(['diff', '--quiet', $settings->remote_name.'/'.$settings->branch, '--'], false)['code'] === 0;
         $deployable = $clean || $localChangesMatchTarget;
         $ahead = trim($this->git(['rev-list', '--count', $settings->remote_name.'/'.$settings->branch.'..HEAD'])['output']) !== '0';
-        return ['configured' => true, 'status' => !$deployable ? 'Local Changes Detected' : ($ahead ? 'Diverged Branch' : ((int) trim($count['output']) ? 'Update Available' : 'Up to date')), 'message' => !$deployable ? 'Deployment is blocked because local code changes exist.' : ($localChangesMatchTarget ? 'The checkout already contains the remote files. Deployment will synchronize its Git state.' : ($ahead ? 'Branch has diverged; manual Git intervention is required.' : ((int) trim($count['output']) ? trim($count['output']).' update(s) available.' : 'Application is up to date.'))), 'local' => trim($local['output']), 'remote' => $target, 'commits' => $rows, 'changed_files' => array_values(array_filter(preg_split('/\R/', trim($changed)))), 'local_changes_match_target' => $localChangesMatchTarget];
+        return ['configured' => true, 'status' => !$deployable ? 'Local Changes Detected' : ($ahead ? 'Diverged Branch' : ((int) trim($count['output']) ? 'Update Available' : 'Up to date')), 'message' => !$deployable ? 'Deployment is blocked because tracked server changes exist.' : ($localChangesMatchTarget ? 'The checkout already contains the remote files. Deployment will synchronize its Git state.' : ($ahead ? 'Branch has diverged; manual Git intervention is required.' : ((int) trim($count['output']) ? trim($count['output']).' update(s) available.' : 'Application is up to date.'))), 'local' => trim($local['output']), 'remote' => $target, 'commits' => $rows, 'changed_files' => array_values(array_filter(preg_split('/\R/', trim($changed)))), 'local_changes' => $trackedWorktreeLines, 'untracked_files' => array_values(array_filter($worktreeLines, static fn ($line) => str_starts_with($line, '??'))), 'local_changes_match_target' => $localChangesMatchTarget];
     }
 
     public function fetch(ApplicationUpdateSetting $settings): array
