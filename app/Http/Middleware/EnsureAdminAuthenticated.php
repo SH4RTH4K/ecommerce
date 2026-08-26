@@ -56,7 +56,7 @@ class EnsureAdminAuthenticated
         if (preg_match('#^(inventory|purchasing|suppliers|purchase-orders|stock-locations|stock-transfers)#i', $path)) return 'inventory';
         if (preg_match('#^(customer-inbox|review/|question/|support/|service-claims|stock-alerts)#i', $path)) return 'customers';
         if (preg_match('#^(coupons|abandoned-carts|marketing-campaigns|customer-segments)#i', $path)) return 'marketing';
-        if (preg_match('#^(site-customization|homepage-feature-cards|top-bar-management|top-bar/|banner-management|site-settings|save-banner|update-banner|toggle-banner|delete-banner|banner-product-preview|payment-methods|payment-transactions|emi-plans|admin-notifications|system-health|system-monitor|integrations|api-clients|webhook-endpoints|product-code-configuration)#i', $path)) return 'settings';
+        if (preg_match('#^(site-customization|homepage-feature-cards|top-bar-management|top-bar/|banner-management|site-settings|save-banner|update-banner|toggle-banner|delete-banner|banner-product-preview|payment-methods|payment-transactions|emi-plans|admin-notifications|system-health|system-monitor|integrations|api-clients|webhook-endpoints|product-code-configuration|admin/system/)#i', $path)) return 'settings';
         if (preg_match('#^(product-code-configuration|product-code-configuration/|api/product-code/|add-|manage-category|manage-subCategory|manage-manufacturer|manage-product|save-|update-|published-|unpublished-|delete-category|delete-subCategory|delete-manufacturer|delete-product|edit-|catalog-attributes|catalog-hierarchy|catalog-imports)#i', $path)) return 'catalog';
         return 'dashboard';
     }

@@ -23,12 +23,65 @@ use App\Services\ProductCodeGenerator;
 use App\Services\SafeMediaDeletionService;
 use App\Services\StorefrontThemeService;
 use App\Services\HomepageFeatureCardService;
+use App\Services\ApplicationUpdateService;
+use App\Models\ApplicationUpdateSetting;
+use App\Models\ApplicationDeployment;
 use App\Support\PublicUpload;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class SuperAdminController extends Controller {
+
+    public function applicationUpdate(ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        $settings = $updates->settings();
+        $status = null; $error = null;
+        if ($settings->enabled) { try { $status = $updates->status($settings); } catch (\Throwable $e) { $error = $e->getMessage(); } }
+        $history = ApplicationDeployment::latest()->limit(20)->get();
+        return view('admin.admin-pages.application-update', compact('settings','status','error','history'));
+    }
+
+    public function saveApplicationUpdateSettings(Request $request, ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        $data = $request->validate(['enabled'=>'nullable|boolean','repository_type'=>'required|in:public,private','repository_url'=>['required','string','max:255','regex:#^(https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?|git@github\\.com:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\\.git)$#'],'branch'=>'required|regex:/^[A-Za-z0-9._-]{1,100}$/','remote_name'=>'required|regex:/^[A-Za-z0-9._-]{1,50}$/','authentication'=>'required|in:none,ssh,pat','secret'=>'nullable|string|max:10000','dependency_mode'=>'required|in:changed,always,never','run_migrations'=>'nullable|boolean','clear_cache'=>'nullable|boolean','health_check'=>'nullable|boolean']);
+        $s = $updates->settings();
+        if ($data['repository_type'] === 'private' && ! in_array($data['authentication'], ['ssh','pat'], true)) return Redirect::back()->withInput()->withErrors(['authentication'=>'Private repositories require SSH Deploy Key or Personal Access Token authentication.']);
+        if ($data['repository_type'] === 'private' && trim((string)($data['secret'] ?? '')) === '' && ! $s->encrypted_secret) return Redirect::back()->withInput()->withErrors(['secret'=>'A credential is required for a private repository.']);
+        if ($data['repository_type'] === 'public' && $data['authentication'] !== 'none') return Redirect::back()->withInput()->withErrors(['authentication'=>'Public repositories do not require private authentication.']);
+        $s->fill(collect($data)->except(['secret'])->all()); $s->enabled = !empty($data['enabled']); $s->run_migrations = !empty($data['run_migrations']); $s->clear_cache = !empty($data['clear_cache']); $s->health_check = !empty($data['health_check']);
+        if ($s->repository_type === 'public') { $s->encrypted_secret = null; $s->secret_fingerprint = null; }
+        if ($s->repository_type === 'public') $s->authentication = 'none';
+        if ($s->authentication !== 'none' && trim((string)($data['secret'] ?? '')) !== '') $updates->saveSecret($s, $data['secret']);
+        $s->save();
+        return Redirect::back()->with('message','Application update settings saved. Test the repository connection before checking for updates.');
+    }
+
+    public function testApplicationRepository(ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        try { $s=$updates->settings(); $result=$updates->fetch($s); return Redirect::back()->with('message','Connection successful. Remote branch is available at '.substr((string)$result['remote'],0,12).'.'); } catch (\Throwable $e) { return Redirect::back()->with('exception',$e->getMessage()); }
+    }
+
+    public function checkApplicationUpdates(ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        try { $s=$updates->settings(); $result=$updates->fetch($s); $s->last_checked_commit=$result['remote']; $s->last_checked_at=now(); $s->last_status=$result['status']; $s->last_message=$result['message']; $s->save(); return Redirect::back()->with('message',$result['message']); } catch (\Throwable $e) { return Redirect::back()->with('exception',$e->getMessage()); }
+    }
+
+    public function deployApplicationUpdate(ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        try { $deployment=$updates->deploy($updates->settings(), (int)session('admin_id')); return Redirect::back()->with('message','Deployment completed successfully at commit '.substr((string)$deployment->deployed_commit,0,12).'.'); } catch (\Throwable $e) { return Redirect::back()->with('exception','Deployment failed: '.$e->getMessage()); }
+    }
+
+    public function rollbackApplicationDeployment($id, ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        try { $deployment=$updates->rollback(ApplicationDeployment::findOrFail((int)$id), (int)session('admin_id')); return Redirect::back()->with('message','Source rollback completed to '.substr((string)$deployment->deployed_commit,0,12).'. Database migrations were not reversed.'); } catch (\Throwable $e) { return Redirect::back()->with('exception',$e->getMessage()); }
+    }
 
     /**
      * Display a listing of the resource.

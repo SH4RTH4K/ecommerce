@@ -181,6 +181,12 @@ Route::delete('/product-code-configuration/{id}', 'ProductCodeConfigurationContr
  Route::get('/site-customization', 'SuperAdminController@siteCustomization');
  Route::get('/homepage-feature-cards', 'SuperAdminController@homepageFeatureCards')->name('admin.homepage-feature-cards');
  Route::post('/homepage-feature-cards', 'SuperAdminController@updateHomepageFeatureCards')->name('admin.homepage-feature-cards.update');
+ Route::get('/admin/system/git-repository', 'SuperAdminController@applicationUpdate')->name('admin.application-update');
+ Route::post('/admin/system/git-repository', 'SuperAdminController@saveApplicationUpdateSettings')->name('admin.application-update.settings');
+ Route::post('/admin/system/git-repository/test', 'SuperAdminController@testApplicationRepository')->name('admin.application-update.test');
+ Route::post('/admin/system/application-update/check', 'SuperAdminController@checkApplicationUpdates')->name('admin.application-update.check');
+ Route::post('/admin/system/application-update/deploy', 'SuperAdminController@deployApplicationUpdate')->name('admin.application-update.deploy');
+ Route::post('/admin/system/application-update/rollback/{id}', 'SuperAdminController@rollbackApplicationDeployment')->name('admin.application-update.rollback');
  Route::get('/banner-management', 'SuperAdminController@bannerManagement')->name('banner.index');
  Route::post('/site-settings', 'SuperAdminController@updateSiteSettings');
  Route::get('/top-bar-management', 'TopBarAdminController@index')->name('admin.top-bar.index');
