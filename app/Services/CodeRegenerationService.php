@@ -20,6 +20,9 @@ class CodeRegenerationService
         $items = [];
         $plannedCodes = [];
         $reservedSequences = [];
+        // These records are being replaced together, so their old codes must
+        // not block the fresh serial range during the dry run.
+        $regeneratingIds = $rows->pluck('entity_id')->map(fn ($id) => (int) $id)->all();
         $nextSequence = max(1, (int) $configuration->sequence_start);
         $hasSequence = $this->hasSequenceComponent($configuration);
         $preservedSequenceCount = 0;
@@ -57,7 +60,7 @@ class CodeRegenerationService
             }
 
             $attempts = 0;
-            while (! $error && $hasSequence && $this->hasCodeConflict($type, $new, (int) $row->entity_id, $plannedCodes)) {
+            while (! $error && $hasSequence && $this->hasCodeConflict($type, $new, (int) $row->entity_id, $plannedCodes, $regeneratingIds)) {
                 if (++$attempts > 10000) {
                     $error = 'No unused sequence number could be allocated for this record.';
                     break;
@@ -79,7 +82,7 @@ class CodeRegenerationService
                 }
             }
 
-            if (! $error && ! $hasSequence && $this->hasCodeConflict($type, $new, (int) $row->entity_id, $plannedCodes)) {
+            if (! $error && ! $hasSequence && $this->hasCodeConflict($type, $new, (int) $row->entity_id, $plannedCodes, $regeneratingIds)) {
                 $error = 'Duplicate proposed code. Add a Numeric Sequence component to this format, then preview again.';
             }
             if (! $error && $new !== '') $plannedCodes[$new] = (int) $row->entity_id;
@@ -128,10 +131,10 @@ class CodeRegenerationService
         $data=[$map[2]=>$code,'updated_at'=>now()]; if ($type === 'product') $data['sku']=$code; DB::table($map[0])->where($map[1],$id)->update($data);
     }
 
-    private function conflict(string $type, string $code, int $id): bool
+    private function conflict(string $type, string $code, int $id, array $regeneratingIds = []): bool
     {
         $map = ['company'=>['companies','id','company_code'],'category'=>['category','category_id','category_code'],'subcategory'=>['sub_category','sub_category_id','subcategory_code'],'brand'=>['manufacturer','manufacturer_id','brand_code'],'series'=>['product_series','id','series_code'],'product'=>['product','id','product_code']][$type];
-        return DB::table($map[0])->where($map[2],$code)->where($map[1],'<>',$id)->exists();
+        return DB::table($map[0])->where($map[2],$code)->whereNotIn($map[1], array_values(array_unique(array_map('intval', $regeneratingIds))))->exists();
     }
 
     private function hasSequenceComponent(ProductCodeConfiguration $configuration): bool
@@ -147,8 +150,8 @@ class CodeRegenerationService
         return $candidate;
     }
 
-    private function hasCodeConflict(string $type, string $code, int $entityId, array $plannedCodes): bool
+    private function hasCodeConflict(string $type, string $code, int $entityId, array $plannedCodes, array $regeneratingIds = []): bool
     {
-        return $code === '' || isset($plannedCodes[$code]) || $this->conflict($type, $code, $entityId);
+        return $code === '' || isset($plannedCodes[$code]) || $this->conflict($type, $code, $entityId, $regeneratingIds);
     }
 }
