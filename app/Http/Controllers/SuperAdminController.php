@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Schema;
 use Session;
 use DB;
 use App\Banner;
@@ -46,12 +47,14 @@ class SuperAdminController extends Controller {
     public function saveApplicationUpdateSettings(Request $request, ApplicationUpdateService $updates)
     {
         $this->authCheck();
-        $data = $request->validate(['enabled'=>'nullable|boolean','repository_type'=>'required|in:public,private','repository_url'=>['required','string','max:255','regex:#^(https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?|git@github\\.com:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\\.git)$#'],'branch'=>'required|regex:/^[A-Za-z0-9._-]{1,100}$/','remote_name'=>'required|regex:/^[A-Za-z0-9._-]{1,50}$/','authentication'=>'required|in:none,ssh,pat','secret'=>'nullable|string|max:10000','dependency_mode'=>'required|in:changed,always,never','run_migrations'=>'nullable|boolean','clear_cache'=>'nullable|boolean','health_check'=>'nullable|boolean']);
+        $data = $request->validate(['enabled'=>'nullable|boolean','repository_type'=>'required|in:public,private','repository_url'=>['required','string','max:255','regex:#^(https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?|git@github\\.com:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\\.git)$#'],'branch'=>'required|regex:/^[A-Za-z0-9._-]{1,100}$/','remote_name'=>'required|regex:/^[A-Za-z0-9._-]{1,50}$/','authentication'=>'required|in:none,ssh,pat','secret'=>'nullable|string|max:10000','dependency_mode'=>'required|in:changed,always,never','public_asset_mode'=>'required|in:auto,laravel_public,cpanel_root','run_migrations'=>'nullable|boolean','clear_cache'=>'nullable|boolean','health_check'=>'nullable|boolean']);
         $s = $updates->settings();
         if ($data['repository_type'] === 'private' && ! in_array($data['authentication'], ['ssh','pat'], true)) return Redirect::back()->withInput()->withErrors(['authentication'=>'Private repositories require SSH Deploy Key or Personal Access Token authentication.']);
         if ($data['repository_type'] === 'private' && trim((string)($data['secret'] ?? '')) === '' && ! $s->encrypted_secret) return Redirect::back()->withInput()->withErrors(['secret'=>'A credential is required for a private repository.']);
         if ($data['repository_type'] === 'public' && $data['authentication'] !== 'none') return Redirect::back()->withInput()->withErrors(['authentication'=>'Public repositories do not require private authentication.']);
-        $s->fill(collect($data)->except(['secret'])->all()); $s->enabled = !empty($data['enabled']); $s->run_migrations = !empty($data['run_migrations']); $s->clear_cache = !empty($data['clear_cache']); $s->health_check = !empty($data['health_check']);
+        $settingsData = collect($data)->except(['secret'])->all();
+        if (! Schema::hasColumn('application_update_settings', 'public_asset_mode')) unset($settingsData['public_asset_mode']);
+        $s->fill($settingsData); $s->enabled = !empty($data['enabled']); $s->run_migrations = !empty($data['run_migrations']); $s->clear_cache = !empty($data['clear_cache']); $s->health_check = !empty($data['health_check']);
         if ($s->repository_type === 'public') { $s->encrypted_secret = null; $s->secret_fingerprint = null; }
         if ($s->repository_type === 'public') $s->authentication = 'none';
         if ($s->authentication !== 'none' && trim((string)($data['secret'] ?? '')) !== '') $updates->saveSecret($s, $data['secret']);
@@ -85,6 +88,19 @@ class SuperAdminController extends Controller {
             return Redirect::back()->with('message', 'Latest GitHub code was pulled into the cPanel checkout successfully.');
         } catch (\Throwable $e) {
             return Redirect::back()->with('exception', 'Pull failed: '.$e->getMessage());
+        }
+    }
+
+    public function publishApplicationPublicAssets(ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        try {
+            $directories = $updates->publishConfiguredPublicAssets($updates->settings());
+            return Redirect::back()->with('message', $directories
+                ? 'Published public assets to the cPanel main folder: '.implode(', ', $directories).'.'
+                : 'Public asset publishing was skipped because this deployment uses Laravel\'s public/ folder.');
+        } catch (\Throwable $e) {
+            return Redirect::back()->with('exception', 'Public asset publishing failed: '.$e->getMessage());
         }
     }
 

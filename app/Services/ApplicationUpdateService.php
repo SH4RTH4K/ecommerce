@@ -7,6 +7,7 @@ use App\Models\ApplicationUpdateSetting;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Process\Process;
 
 class ApplicationUpdateService
@@ -94,6 +95,11 @@ class ApplicationUpdateService
         }
     }
 
+    public function publishConfiguredPublicAssets(ApplicationUpdateSetting $settings): array
+    {
+        return app(PublicAssetPublisher::class)->publishForMode($this->publicAssetMode($settings));
+    }
+
     public function deploy(ApplicationUpdateSetting $settings, int $adminId, bool $discardLocalChanges = false): ApplicationDeployment
     {
         $handle = $this->lock();
@@ -116,6 +122,9 @@ class ApplicationUpdateService
                 $deployment->deployed_commit = trim($this->git(['rev-parse', 'HEAD'])['output']);
                 $deployment->migration_status = 'not_run'; $deployment->dependency_status = 'not_run'; $deployment->static_status = 'not_applicable';
                 if ($settings->run_migrations) { $this->artisan('migrate', '--force'); $deployment->migration_status = 'successful'; }
+                $settings->refresh();
+                $publishedDirectories = $this->publishConfiguredPublicAssets($settings);
+                if ($publishedDirectories) { $deployment->static_status = 'published'; $deployment->safe_log .= "\nPublished public assets to the cPanel document root: ".implode(', ', $publishedDirectories).'.'; }
                 if ($settings->clear_cache) { $this->artisan('optimize:clear'); $deployment->safe_log .= "\nCache cleared."; }
                 if ($settings->health_check) { $this->healthCheck(); $deployment->health_status = 'passed'; }
                 else $deployment->health_status = 'skipped';
@@ -142,6 +151,7 @@ class ApplicationUpdateService
     private function gitOrFail(array $args, string $message): void { $r=$this->git($args,false); if($r['code']!==0) throw new \RuntimeException($message); }
     private function artisan(string ...$args): void { $p=new Process(array_merge([PHP_BINARY, base_path('artisan')],$args),base_path(),null,null,300);$p->run();if($p->getExitCode()!==0)throw new \RuntimeException('Approved deployment task failed.'); }
     private function healthCheck(): void { DB::select('SELECT 1'); if(!app()->bound('router'))throw new \RuntimeException('Application health check failed.'); }
+    private function publicAssetMode(ApplicationUpdateSetting $settings): string { return Schema::hasColumn('application_update_settings', 'public_asset_mode') ? ((string) $settings->public_asset_mode ?: 'auto') : 'auto'; }
     private function safeError(string $error): string { return preg_replace('/(?:token|password|secret|private.?key|authorization)[^\s]*/i', '[REDACTED]', substr($error,0,2000)); }
     private function lock() { $path=storage_path('app/'.self::LOCK_FILE);$h=fopen($path,'c');if(!$h||!flock($h,LOCK_EX|LOCK_NB))throw new \RuntimeException('Another application deployment is already in progress.');return $h; }
 }

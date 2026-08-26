@@ -3,6 +3,7 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/lucenttechbd/public_html/
     - /usr/local/bin/ea-php83 $DEPLOYPATH/artisan migrate --force
+    - /usr/local/bin/ea-php83 $DEPLOYPATH/artisan public-assets:publish --cpanel-root
     - /usr/local/bin/ea-php83 $DEPLOYPATH/artisan optimize:clear
     - /usr/local/bin/ea-php83 $DEPLOYPATH/artisan route:cache
     - /usr/local/bin/ea-php83 $DEPLOYPATH/artisan view:cache
