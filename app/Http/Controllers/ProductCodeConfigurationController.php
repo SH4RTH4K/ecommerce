@@ -475,6 +475,8 @@ class ProductCodeConfigurationController extends Controller
             'components.*.is_required' => 'nullable|boolean',
         ]);
 
+        $this->validatePreviewContextHierarchy($request);
+
         $configuration = null;
         $codeType = $this->normalizeCodeType($request->input('code_type', 'product'));
         if ($request->filled('configuration_id')) {
@@ -835,14 +837,80 @@ class ProductCodeConfigurationController extends Controller
 
     private function previewContextDefaults($companies, $branches, $categories, $subcategories, $brands, $series): array
     {
+        $categoriesById = $categories->keyBy('category_id');
+        $brandsById = $brands->keyBy('manufacturer_id');
+        $companiesById = $companies->keyBy('id');
+
+        // Start from a child record where possible so the selected parent and child
+        // always describe a real relationship. Selecting each list independently
+        // can otherwise create invalid examples such as an Access Control category
+        // paired with a 4K Monitor subcategory.
+        $subcategory = $subcategories->first(function ($item) use ($categoriesById) {
+            $category = $categoriesById->get($item->category_id);
+
+            return $category
+                && trim((string) data_get($category, 'category_code')) !== ''
+                && trim((string) data_get($item, 'subcategory_code')) !== '';
+        });
+        $category = $subcategory
+            ? $categoriesById->get($subcategory->category_id)
+            : $this->firstCodedRecord($categories, 'category_code');
+
+        $productSeries = $series->first(function ($item) use ($brandsById) {
+            $brand = $brandsById->get($item->manufacturer_id);
+
+            return $brand
+                && trim((string) data_get($brand, 'brand_code')) !== ''
+                && trim((string) data_get($item, 'series_code')) !== '';
+        });
+        $brand = $productSeries
+            ? $brandsById->get($productSeries->manufacturer_id)
+            : $this->firstCodedRecord($brands, 'brand_code');
+        $company = $brand && ! empty($brand->company_id)
+            ? $companiesById->get($brand->company_id)
+            : null;
+
         return [
-            'company_id' => $this->firstCodedRecordId($companies, 'company_code', 'id'),
+            'company_id' => $company && trim((string) data_get($company, 'company_code')) !== ''
+                ? (int) $company->id
+                : $this->firstCodedRecordId($companies, 'company_code', 'id'),
             'branch_id' => $this->firstCodedRecordId($branches, 'code', 'id'),
-            'category_id' => $this->firstCodedRecordId($categories, 'category_code', 'category_id'),
-            'subcategory_id' => $this->firstCodedRecordId($subcategories, 'subcategory_code', 'sub_category_id'),
-            'manufacturer_id' => $this->firstCodedRecordId($brands, 'brand_code', 'manufacturer_id'),
-            'series_id' => $this->firstCodedRecordId($series, 'series_code', 'id'),
+            'category_id' => $category ? (int) $category->category_id : null,
+            'subcategory_id' => $subcategory ? (int) $subcategory->sub_category_id : null,
+            'manufacturer_id' => $brand ? (int) $brand->manufacturer_id : null,
+            'series_id' => $productSeries ? (int) $productSeries->id : null,
         ];
+    }
+
+    private function validatePreviewContextHierarchy(Request $request): void
+    {
+        if ($request->filled('category_id') && $request->filled('subcategory_id')) {
+            $belongsToCategory = DB::table('sub_category')
+                ->where('sub_category_id', $request->integer('subcategory_id'))
+                ->where('category_id', $request->integer('category_id'))
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if (! $belongsToCategory) {
+                throw ValidationException::withMessages([
+                    'subcategory_id' => 'The selected subcategory does not belong to the selected category.',
+                ]);
+            }
+        }
+
+        if ($request->filled('manufacturer_id') && $request->filled('series_id')) {
+            $belongsToBrand = DB::table('product_series')
+                ->where('id', $request->integer('series_id'))
+                ->where('manufacturer_id', $request->integer('manufacturer_id'))
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if (! $belongsToBrand) {
+                throw ValidationException::withMessages([
+                    'series_id' => 'The selected series does not belong to the selected brand.',
+                ]);
+            }
+        }
     }
 
     private function previewWarnings(array $snapshot, $companies, $branches, $categories, $subcategories, $brands, $series): array
@@ -984,9 +1052,7 @@ class ProductCodeConfigurationController extends Controller
 
     private function firstCodedRecordId($records, string $codeField, string $idField): ?int
     {
-        $record = $records->first(static function ($item) use ($codeField) {
-            return trim((string) data_get($item, $codeField)) !== '';
-        });
+        $record = $this->firstCodedRecord($records, $codeField);
 
         if (! $record) {
             return null;
@@ -994,6 +1060,13 @@ class ProductCodeConfigurationController extends Controller
 
         $id = data_get($record, $idField);
         return $id !== null && $id !== '' ? (int) $id : null;
+    }
+
+    private function firstCodedRecord($records, string $codeField)
+    {
+        return $records->first(static function ($item) use ($codeField) {
+            return trim((string) data_get($item, $codeField)) !== '';
+        });
     }
 
     private function buildDraftConfiguration(Request $request, ?ProductCodeConfiguration $existing = null): ProductCodeConfiguration

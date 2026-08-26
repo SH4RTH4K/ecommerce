@@ -147,8 +147,20 @@
 .pcc-table textarea{min-height:70px}
 .pcc-row-tools{display:flex;gap:6px;flex-wrap:wrap}
 .pcc-row-tools .btn{margin:0}
+.pcc-component-list{display:grid;gap:12px;margin-top:14px}
+.pcc-component-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:start;padding:14px;border:1px solid #dce7ed;border-radius:11px;background:#f9fcfe;box-shadow:0 3px 10px rgba(14,56,76,.04)}
+.pcc-component-field{min-width:0}
+.pcc-component-type{grid-column:span 2}.pcc-component-position{grid-column:span 1}.pcc-component-static{grid-column:span 3}.pcc-component-format{grid-column:span 3}.pcc-component-required{grid-column:span 1}.pcc-component-actions{grid-column:span 2}
+.pcc-component-field>label,.pcc-component-field>.pcc-field-label{display:block;margin:0 0 6px;color:#315468;font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.pcc-component-field input,.pcc-component-field select,.pcc-component-field textarea{display:block;width:100%;max-width:100%;box-sizing:border-box;margin:0}
+.pcc-component-field input,.pcc-component-field select{height:38px}
+.pcc-component-field textarea{min-height:72px;resize:vertical}
+.pcc-component-required .ch-check{display:flex;align-items:center;gap:7px;min-height:36px;margin:0!important;padding:0 8px;border:1px solid #dce7ed;border-radius:7px;background:#fff;font-weight:600}
+.pcc-component-required .ch-check input{width:auto;height:auto;margin:0}
+.pcc-component-actions .pcc-row-tools{min-height:38px;align-items:center}
+.pcc-component-actions .btn{display:inline-flex;align-items:center;gap:5px}
 .pcc-small{font-size:12px;color:#607684;line-height:1.4}
-.pcc-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.pcc-history-grid{display:grid;grid-template-columns:1fr;gap:18px}
 .pcc-pre{max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#f8fbfd;border:1px solid #dbe7ee;border-radius:8px;padding:10px;font-size:12px;line-height:1.45;color:#355063}
 .pcc-flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 18px}
 .pcc-flow-step{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #dce7ed;border-radius:10px;background:#fff;color:#607684;font:inherit;font-size:12px;line-height:1.3;text-align:left;cursor:pointer}
@@ -162,13 +174,14 @@
 .pcc-safety{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:11px 13px;border:1px solid #f0d49c;border-radius:9px;background:#fff9ec;color:#76521a;font-size:12px;line-height:1.45}.pcc-safety i{margin-top:2px}
 .pcc-table-wrap{scrollbar-color:#b8d1dc #f5f9fb}.pcc-table th{background:#f4f8fa;color:#315468;font-size:12px;white-space:nowrap}.pcc-table td input,.pcc-table td select,.pcc-table td textarea{max-width:100%;box-sizing:border-box}
 .pcc-intro{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;margin-bottom:18px}.pcc-intro-card{background:#fff;border:1px solid #dce7ed;border-radius:12px;padding:18px;box-shadow:0 5px 18px rgba(14,56,76,.05)}.pcc-intro-card h2{margin:0 0 7px;color:#123f61;font-size:18px}.pcc-intro-card p{margin:0;color:#607684;line-height:1.55}.pcc-checklist{margin:0;padding:0;list-style:none}.pcc-checklist li{display:flex;gap:9px;align-items:flex-start;margin:8px 0;color:#315468;font-size:13px}.pcc-checklist i{color:#1988ad;margin-top:2px}.pcc-stage-label{display:flex;align-items:center;gap:8px;margin:0 0 9px;color:#123f61;font-size:13px;font-weight:800}.pcc-stage-label .stage-number{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#0f6b8f;color:#fff}.pcc-policy-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.pcc-policy-option{position:relative;display:block;margin:0!important;padding:12px 12px 12px 36px!important;border:1px solid #d7e4eb;border-radius:10px;background:#fff;cursor:pointer;font-weight:400!important;line-height:1.35}.pcc-policy-option input{position:absolute;left:13px;top:15px}.pcc-policy-option strong{display:block;color:#214e67;margin-bottom:3px}.pcc-policy-option small{display:block;color:#758995;font-size:11px}.pcc-policy-option.recommended{border-color:#8bc6dc;background:#f2fbfe}.pcc-policy-help{margin:10px 0 0;color:#607684;font-size:12px;line-height:1.45}
-.pcc{max-width:1380px;margin:0 auto!important;float:none!important}.pcc-wizard-tabs,.pcc-utility-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.pcc-wizard-tab,.pcc-utility-tab{border:1px solid #cbdfe9;background:#fff;color:#315468;border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;cursor:pointer}.pcc-wizard-tab .number{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;margin-right:6px;background:#e7f1f6;color:#0f6b8f}.pcc-wizard-tab.active,.pcc-utility-tab.active{background:#0f6b8f;border-color:#0f6b8f;color:#fff}.pcc-wizard-tab.active .number{background:#fff;color:#0f6b8f}.pcc-wizard-panel{display:none}.pcc-wizard-panel.active{display:block}.pcc-current-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pcc-current-metric{border:1px solid #dce7ed;border-radius:10px;padding:12px;background:#f9fcfe}.pcc-current-metric span{display:block;font-size:11px;color:#758995;text-transform:uppercase;letter-spacing:.04em}.pcc-current-metric strong{display:block;margin-top:4px;color:#123f61;word-break:break-word}.pcc-sample-list{margin:14px 0 0;padding:0;list-style:none;border-top:1px solid #e4edf2}.pcc-sample-list li{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #e4edf2;color:#315468}.pcc-sample-list code{color:#0f6b8f}.pcc-mode-switch{display:flex;gap:8px;margin:0 0 16px}.pcc-mode-switch button{border:1px solid #cbdfe9;border-radius:8px;background:#fff;color:#315468;padding:8px 12px;font-weight:700;cursor:pointer}.pcc-mode-switch button.active{background:#e8f7fc;border-color:#1988ad;color:#0b5d80}.pcc-simple-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px;border:1px solid #dce7ed;border-radius:11px;background:#f9fcfe}.pcc-simple-grid label{display:block;font-weight:700;color:#315468}.pcc-simple-grid input,.pcc-simple-grid select{width:100%;height:38px;box-sizing:border-box;margin:6px 0 0}.pcc-step-actions{display:flex;justify-content:space-between;gap:10px;margin-top:20px;padding-top:15px;border-top:1px solid #e4edf2}.pcc-step-actions .right{display:flex;gap:8px}.pcc-danger-zone{margin-top:18px;padding:14px;border:1px solid #edb0a8;border-radius:10px;background:#fff5f4}.pcc-danger-zone h3{margin:0 0 5px;color:#9d2e21}.pcc-danger-zone p{margin:0 0 10px;color:#7b4b46;font-size:12px}.pcc-utility-panel{display:none}.pcc-utility-panel.active{display:block}.pcc-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.pcc-compare div{padding:10px;border:1px solid #dbe7ee;border-radius:8px;background:#fff}.pcc-compare span{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#758995}.pcc-compare code{display:block;margin-top:4px;color:#0f6b8f;word-break:break-all}.pcc-impact{margin:12px 0;padding:11px 13px;border:1px solid #cbe4d1;border-radius:9px;background:#f5fbf6;color:#275c39;font-size:12px}.pcc-hidden{display:none!important}
+.pcc{width:auto!important;max-width:1380px;box-sizing:border-box;margin:0 auto!important;float:none!important}.pcc-wizard-tabs,.pcc-utility-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.pcc-wizard-tab,.pcc-utility-tab{border:1px solid #cbdfe9;background:#fff;color:#315468;border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;cursor:pointer}.pcc-wizard-tab .number{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;margin-right:6px;background:#e7f1f6;color:#0f6b8f}.pcc-wizard-tab.active,.pcc-utility-tab.active{background:#0f6b8f;border-color:#0f6b8f;color:#fff}.pcc-wizard-tab.active .number{background:#fff;color:#0f6b8f}.pcc-wizard-panel{display:none}.pcc-wizard-panel.active{display:block}.pcc-current-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pcc-current-metric{border:1px solid #dce7ed;border-radius:10px;padding:12px;background:#f9fcfe}.pcc-current-metric span{display:block;font-size:11px;color:#758995;text-transform:uppercase;letter-spacing:.04em}.pcc-current-metric strong{display:block;margin-top:4px;color:#123f61;word-break:break-word}.pcc-sample-list{margin:14px 0 0;padding:0;list-style:none;border-top:1px solid #e4edf2}.pcc-sample-list li{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid #e4edf2;color:#315468}.pcc-sample-list code{color:#0f6b8f}.pcc-mode-switch{display:flex;gap:8px;margin:0 0 16px}.pcc-mode-switch button{border:1px solid #cbdfe9;border-radius:8px;background:#fff;color:#315468;padding:8px 12px;font-weight:700;cursor:pointer}.pcc-mode-switch button.active{background:#e8f7fc;border-color:#1988ad;color:#0b5d80}.pcc-simple-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px;border:1px solid #dce7ed;border-radius:11px;background:#f9fcfe}.pcc-simple-grid label{display:block;font-weight:700;color:#315468}.pcc-simple-grid input,.pcc-simple-grid select{width:100%;height:38px;box-sizing:border-box;margin:6px 0 0}.pcc-step-actions{display:flex;justify-content:space-between;gap:10px;margin-top:20px;padding-top:15px;border-top:1px solid #e4edf2}.pcc-step-actions .right{display:flex;gap:8px}.pcc-danger-zone{margin-top:18px;padding:14px;border:1px solid #edb0a8;border-radius:10px;background:#fff5f4}.pcc-danger-zone h3{margin:0 0 5px;color:#9d2e21}.pcc-danger-zone p{margin:0 0 10px;color:#7b4b46;font-size:12px}.pcc-utility-panel{display:none}.pcc-utility-panel.active{display:block}.pcc-compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.pcc-compare div{padding:10px;border:1px solid #dbe7ee;border-radius:8px;background:#fff}.pcc-compare span{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#758995}.pcc-compare code{display:block;margin-top:4px;color:#0f6b8f;word-break:break-all}.pcc-impact{margin:12px 0;padding:11px 13px;border:1px solid #cbe4d1;border-radius:9px;background:#f5fbf6;color:#275c39;font-size:12px}.pcc-hidden{display:none!important}
 @media(max-width:1050px){.pcc-flow{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:850px){.pcc-flow{grid-template-columns:repeat(2,1fr)}.pcc-section-title{display:block}.pcc-section-title small{text-align:left;display:block;margin-top:5px}}
 @media(max-width:1100px){.pcc-grid{grid-template-columns:1fr}.pcc-history-grid{grid-template-columns:1fr}.pcc-hero{flex-direction:column}.pcc-selector select,.pcc-selector input{min-width:0;width:100%}}
+@media(max-width:1440px){.pcc-responsive-table-wrap{overflow:visible;border:0;box-shadow:none;background:transparent}.pcc-responsive-table{display:block;min-width:0!important;background:transparent}.pcc-responsive-table thead{display:none}.pcc-responsive-table tbody,.pcc-responsive-table tr{display:block}.pcc-responsive-table tr{margin:0 0 12px;border:1px solid #dce7ed;border-radius:10px;background:#fff;box-shadow:0 3px 10px rgba(14,56,76,.04);overflow:hidden}.pcc-responsive-table td{display:grid!important;grid-template-columns:minmax(110px,.55fr) minmax(0,1.45fr);gap:12px;width:auto!important;padding:10px 12px!important;border:0!important;border-bottom:1px solid #edf2f5!important;text-align:left!important;overflow-wrap:anywhere}.pcc-responsive-table td:last-child{border-bottom:0!important}.pcc-responsive-table td:before{content:attr(data-label);color:#607684;font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}.pcc-responsive-table .pcc-empty-cell{display:block!important}.pcc-responsive-table .pcc-empty-cell:before{content:none}.pcc-responsive-table td[data-label="Adjust"]{grid-template-columns:minmax(110px,.55fr) minmax(0,1.45fr)}.pcc-responsive-table details input,.pcc-responsive-table details textarea{display:block;width:100%;box-sizing:border-box;margin:5px 0 10px}}
 @media(max-width:850px){.pcc-intro{grid-template-columns:1fr}.pcc-policy-options{grid-template-columns:1fr}}
 @media(max-width:850px){.pcc-current-grid,.pcc-simple-grid{grid-template-columns:1fr}.pcc-wizard-tab{flex:1 1 42%}}
-@media(max-width:640px){.pcc{padding:16px}.pcc-grid-form{grid-template-columns:1fr}.pcc-flow{grid-template-columns:1fr}.pcc-sticky-actions .btn{width:100%;margin:3px 0}}
+@media(max-width:640px){.pcc{padding:12px}.pcc-hero{padding:18px}.pcc-hero h1{font-size:22px}.pcc-hero .summary{width:100%;min-width:0}.pcc-pill{white-space:normal;overflow-wrap:anywhere}.pcc-body,.pcc-head{padding:14px}.pcc-grid-form,.pcc-component-row{grid-template-columns:1fr}.pcc-component-type,.pcc-component-position,.pcc-component-static,.pcc-component-format,.pcc-component-required,.pcc-component-actions{grid-column:auto}.pcc-flow{grid-template-columns:1fr}.pcc-wizard-tab{flex:1 1 100%}.pcc-mode-switch{display:grid;grid-template-columns:1fr 1fr}.pcc-mode-switch button{width:100%}.pcc-step-actions{display:grid;grid-template-columns:1fr}.pcc-step-actions>*,.pcc-step-actions .right{display:grid;grid-template-columns:1fr;width:100%}.pcc-step-actions .btn,.pcc-sticky-actions .btn,.pcc-selector .btn{width:100%;margin:3px 0}.pcc-compare{grid-template-columns:1fr}.pcc-sample-list li{display:grid;gap:5px}.pcc-component-actions .pcc-row-tools{display:grid;grid-template-columns:1fr 1fr}.pcc-component-actions [data-remove-row]{grid-column:1 / -1;justify-content:center}.pcc-component-actions .btn{justify-content:center}.pcc-responsive-table td,.pcc-responsive-table td[data-label="Adjust"]{grid-template-columns:1fr;gap:4px}}
 </style>
 
 <main id="content" class="span10 pcc">
@@ -388,47 +401,45 @@
                             <button type="button" class="btn btn-small" id="add-component-row"><i class="icon-plus"></i> Add component</button>
                         </div>
 
-                        <div class="pcc-table-wrap">
-                            <table class="table table-bordered table-striped pcc-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width:190px">Component</th>
-                                        <th style="width:85px">Position</th>
-                                        <th style="width:180px">Static value</th>
-                                        <th>Format options</th>
-                                        <th style="width:90px">Required</th>
-                                        <th style="width:150px">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="component-rows">
-                                    @foreach($componentRows as $index => $component)
-                                        <tr data-component-row data-component-index="{{ $index }}">
-                                            <td>
-                                                <select name="components[{{ $index }}][component_type]" required>
-                                                    @foreach($componentLabels as $value => $label)
-                                                        @if(isset($wizardComponentLabels[$value]) || ($component['component_type'] ?? 'sequence') === $value)
-                                                            <option value="{{ $value }}" {{ ($component['component_type'] ?? 'sequence') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                                                        @endif
-                                                    @endforeach
-                                                </select>
-                                            </td>
-                                            <td><input type="number" name="components[{{ $index }}][position]" min="1" max="100" value="{{ $component['position'] ?? ($index + 1) }}" required></td>
-                                            <td><input type="text" name="components[{{ $index }}][static_value]" maxlength="255" value="{{ $component['static_value'] ?? '' }}" placeholder="Optional"></td>
-                                            <td><textarea name="components[{{ $index }}][format_options]" rows="3" placeholder='{"pad": 6, "uppercase": true}'>{{ $component['format_options'] ?? '' }}</textarea></td>
-                                            <td class="text-center">
-                                                <label class="ch-check" style="margin:0"><input type="checkbox" name="components[{{ $index }}][is_required]" value="1" {{ ! empty($component['is_required']) ? 'checked' : '' }}> Yes</label>
-                                            </td>
-                                            <td>
-                                                <div class="pcc-row-tools">
-                                                    <button type="button" class="btn btn-mini" data-move-up><i class="icon-arrow-up"></i></button>
-                                                    <button type="button" class="btn btn-mini" data-move-down><i class="icon-arrow-down"></i></button>
-                                                    <button type="button" class="btn btn-mini btn-danger" data-remove-row><i class="icon-trash"></i></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                        <div class="pcc-component-list" id="component-rows">
+                            @foreach($componentRows as $index => $component)
+                                <div class="pcc-component-row" data-component-row data-component-index="{{ $index }}">
+                                    <div class="pcc-component-field pcc-component-type">
+                                        <label for="component-type-{{ $index }}">Component</label>
+                                        <select id="component-type-{{ $index }}" name="components[{{ $index }}][component_type]" required>
+                                            @foreach($componentLabels as $value => $label)
+                                                @if(isset($wizardComponentLabels[$value]) || ($component['component_type'] ?? 'sequence') === $value)
+                                                    <option value="{{ $value }}" {{ ($component['component_type'] ?? 'sequence') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                @endif
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="pcc-component-field pcc-component-position">
+                                        <label for="component-position-{{ $index }}">Position</label>
+                                        <input id="component-position-{{ $index }}" type="number" name="components[{{ $index }}][position]" min="1" max="100" value="{{ $component['position'] ?? ($index + 1) }}" required>
+                                    </div>
+                                    <div class="pcc-component-field pcc-component-static">
+                                        <label for="component-static-{{ $index }}">Static value</label>
+                                        <input id="component-static-{{ $index }}" type="text" name="components[{{ $index }}][static_value]" maxlength="255" value="{{ $component['static_value'] ?? '' }}" placeholder="Optional">
+                                    </div>
+                                    <div class="pcc-component-field pcc-component-format">
+                                        <label for="component-format-{{ $index }}">Format options</label>
+                                        <textarea id="component-format-{{ $index }}" name="components[{{ $index }}][format_options]" rows="3" placeholder='{"pad": 6, "uppercase": true}'>{{ $component['format_options'] ?? '' }}</textarea>
+                                    </div>
+                                    <div class="pcc-component-field pcc-component-required">
+                                        <span class="pcc-field-label">Required</span>
+                                        <label class="ch-check"><input type="checkbox" name="components[{{ $index }}][is_required]" value="1" {{ ! empty($component['is_required']) ? 'checked' : '' }}> Yes</label>
+                                    </div>
+                                    <div class="pcc-component-field pcc-component-actions">
+                                        <span class="pcc-field-label">Actions</span>
+                                        <div class="pcc-row-tools">
+                                            <button type="button" class="btn btn-mini" data-move-up aria-label="Move component up"><i class="icon-arrow-up"></i><span>Up</span></button>
+                                            <button type="button" class="btn btn-mini" data-move-down aria-label="Move component down"><i class="icon-arrow-down"></i><span>Down</span></button>
+                                            <button type="button" class="btn btn-mini btn-danger" data-remove-row aria-label="Remove component"><i class="icon-trash"></i><span>Remove</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                         </div>
                         <div class="pcc-step-actions"><button type="button" class="btn" data-wizard-back>Back</button><div class="right"><button type="button" class="btn btn-primary" data-wizard-next>Continue to existing codes <i class="icon-arrow-right"></i></button></div></div>
@@ -492,7 +503,7 @@
                             <select id="preview-subcategory_id" name="subcategory_id" form="product-code-configuration-form">
                                 <option value="">Choose subcategory</option>
                                 @foreach($subcategories as $subcategory)
-                                    <option value="{{ $subcategory->sub_category_id }}" {{ (string) $previewDefaults['subcategory_id'] === (string) $subcategory->sub_category_id ? 'selected' : '' }}>{{ $subcategory->sub_category_name }}{{ $subcategory->subcategory_code ? ' - '.$subcategory->subcategory_code : '' }}</option>
+                                    <option value="{{ $subcategory->sub_category_id }}" data-category-id="{{ $subcategory->category_id }}" {{ (string) $previewDefaults['subcategory_id'] === (string) $subcategory->sub_category_id ? 'selected' : '' }}>{{ $subcategory->sub_category_name }}{{ $subcategory->subcategory_code ? ' - '.$subcategory->subcategory_code : '' }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -510,7 +521,7 @@
                             <select id="preview-series_id" name="series_id" form="product-code-configuration-form">
                                 <option value="">Choose series</option>
                                 @foreach($series as $productSeries)
-                                    <option value="{{ $productSeries->id }}" {{ (string) $previewDefaults['series_id'] === (string) $productSeries->id ? 'selected' : '' }}>{{ $productSeries->name }}{{ $productSeries->series_code ? ' - '.$productSeries->series_code : '' }}</option>
+                                    <option value="{{ $productSeries->id }}" data-manufacturer-id="{{ $productSeries->manufacturer_id }}" {{ (string) $previewDefaults['series_id'] === (string) $productSeries->id ? 'selected' : '' }}>{{ $productSeries->name }}{{ $productSeries->series_code ? ' - '.$productSeries->series_code : '' }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -584,8 +595,8 @@
     <section class="pcc-section pcc-utility-panel" id="utility-sequences">
         <h3>Sequence Management - {{ $selectedCodeTypeLabel }}</h3>
         <div class="pcc-small">View the live counters for this code type, correct the next generated number, or reset a scope with an audit reason.</div>
-        <div class="pcc-table-wrap" style="margin-top:12px">
-            <table class="table table-striped table-bordered pcc-table">
+        <div class="pcc-table-wrap pcc-responsive-table-wrap" style="margin-top:12px">
+            <table class="table table-striped table-bordered pcc-table pcc-responsive-table">
                 <thead>
                     <tr>
                         <th>Scope</th>
@@ -605,18 +616,18 @@
                 <tbody>
                     @forelse($sequences as $sequence)
                         <tr>
-                            <td>{{ $sequenceScopes[$sequence->sequence_scope] ?? $sequence->sequence_scope }}</td>
-                            <td>{{ $companyLookup[$sequence->company_id] ?? 'All' }}</td>
-                            <td>{{ $branchLookup[$sequence->branch_id] ?? 'All' }}</td>
-                            <td>{{ $categoryLookup[$sequence->category_id] ?? 'All' }}</td>
-                            <td>{{ $subcategoryLookup[$sequence->subcategory_id] ?? 'All' }}</td>
-                            <td>{{ $brandLookup[$sequence->brand_id] ?? 'All' }}</td>
-                            <td>{{ $seriesLookup[$sequence->series_id] ?? 'All' }}</td>
-                            <td>{{ $sequence->period_key }}</td>
-                            <td>{{ (int) $sequence->last_number }}</td>
-                            <td>{{ (int) $sequence->last_number + 1 }}</td>
-                            <td>{{ optional($sequence->updated_at)->format('Y-m-d H:i') ?: '-' }}</td>
-                            <td>
+                            <td data-label="Scope">{{ $sequenceScopes[$sequence->sequence_scope] ?? $sequence->sequence_scope }}</td>
+                            <td data-label="Company">{{ $companyLookup[$sequence->company_id] ?? 'All' }}</td>
+                            <td data-label="Branch">{{ $branchLookup[$sequence->branch_id] ?? 'All' }}</td>
+                            <td data-label="Category">{{ $categoryLookup[$sequence->category_id] ?? 'All' }}</td>
+                            <td data-label="Subcategory">{{ $subcategoryLookup[$sequence->subcategory_id] ?? 'All' }}</td>
+                            <td data-label="Brand">{{ $brandLookup[$sequence->brand_id] ?? 'All' }}</td>
+                            <td data-label="Series">{{ $seriesLookup[$sequence->series_id] ?? 'All' }}</td>
+                            <td data-label="Period">{{ $sequence->period_key }}</td>
+                            <td data-label="Current">{{ (int) $sequence->last_number }}</td>
+                            <td data-label="Next">{{ (int) $sequence->last_number + 1 }}</td>
+                            <td data-label="Updated">{{ optional($sequence->updated_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                            <td data-label="Adjust">
                                 <details>
                                     <summary>Adjust</summary>
                                     <form method="post" action="{{ url('/product-code-configuration/'.$sequence->id.'/reset-sequence') }}" style="margin-top:10px">
@@ -631,7 +642,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="12">No sequence counters have been created yet.</td></tr>
+                        <tr><td class="pcc-empty-cell" colspan="12">No sequence counters have been created yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -645,8 +656,8 @@
                 <p>Track generated code changes for the selected type over time.</p>
             </div>
             <div class="pcc-body">
-                <div class="pcc-table-wrap">
-                    <table class="table table-striped table-bordered pcc-table" style="min-width:900px">
+                <div class="pcc-table-wrap pcc-responsive-table-wrap">
+                    <table class="table table-striped table-bordered pcc-table pcc-responsive-table" style="min-width:900px">
                         <thead>
                             <tr>
                                 <th>Product</th>
@@ -659,14 +670,14 @@
                         <tbody>
                             @forelse($productCodeHistories as $history)
                                 <tr>
-                                    <td>{{ optional($history->product)->product_name ?: 'Product #'.$history->product_id }}</td>
-                                    <td>{{ $history->old_code ?: '-' }}</td>
-                                    <td>{{ $history->new_code }}</td>
-                                    <td>{{ $history->reason ?: '-' }}</td>
-                                    <td>{{ optional($history->changed_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                                    <td data-label="Product">{{ optional($history->product)->product_name ?: 'Product #'.$history->product_id }}</td>
+                                    <td data-label="Old code">{{ $history->old_code ?: '-' }}</td>
+                                    <td data-label="New code">{{ $history->new_code }}</td>
+                                    <td data-label="Reason">{{ $history->reason ?: '-' }}</td>
+                                    <td data-label="When">{{ optional($history->changed_at)->format('Y-m-d H:i') ?: '-' }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5">No product code history yet.</td></tr>
+                                <tr><td class="pcc-empty-cell" colspan="5">No product code history yet.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -680,8 +691,8 @@
                 <p>See how the template and settings changed for this code type.</p>
             </div>
             <div class="pcc-body">
-                <div class="pcc-table-wrap">
-                    <table class="table table-striped table-bordered pcc-table" style="min-width:900px">
+                <div class="pcc-table-wrap pcc-responsive-table-wrap">
+                    <table class="table table-striped table-bordered pcc-table pcc-responsive-table" style="min-width:900px">
                         <thead>
                             <tr>
                                 <th>Configuration</th>
@@ -694,14 +705,14 @@
                         <tbody>
                             @forelse($configurationHistories as $history)
                                 <tr>
-                                    <td>{{ optional($history->configuration)->name ?: 'Configuration #'.$history->configuration_id }}</td>
-                                    <td><pre class="pcc-pre">{{ $history->old_template ?: '-' }}</pre></td>
-                                    <td><pre class="pcc-pre">{{ $history->new_template ?: '-' }}</pre></td>
-                                    <td>{{ $history->changed_by ? 'Admin #'.$history->changed_by : '-' }}</td>
-                                    <td>{{ optional($history->changed_at)->format('Y-m-d H:i') ?: '-' }}</td>
+                                    <td data-label="Configuration">{{ optional($history->configuration)->name ?: 'Configuration #'.$history->configuration_id }}</td>
+                                    <td data-label="Old template"><pre class="pcc-pre">{{ $history->old_template ?: '-' }}</pre></td>
+                                    <td data-label="New template"><pre class="pcc-pre">{{ $history->new_template ?: '-' }}</pre></td>
+                                    <td data-label="Changed by">{{ $history->changed_by ? 'Admin #'.$history->changed_by : '-' }}</td>
+                                    <td data-label="When">{{ optional($history->changed_at)->format('Y-m-d H:i') ?: '-' }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5">No configuration history yet.</td></tr>
+                                <tr><td class="pcc-empty-cell" colspan="5">No configuration history yet.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -712,26 +723,40 @@
 </main>
 
 <template id="component-row-template">
-    <tr data-component-row data-component-index="__INDEX__">
-        <td>
-            <select name="components[__INDEX__][component_type]" required>
+    <div class="pcc-component-row" data-component-row data-component-index="__INDEX__">
+        <div class="pcc-component-field pcc-component-type">
+            <label for="component-type-__INDEX__">Component</label>
+            <select id="component-type-__INDEX__" name="components[__INDEX__][component_type]" required>
                 @foreach($wizardComponentLabels as $value => $label)
                     <option value="{{ $value }}">{{ $label }}</option>
                 @endforeach
             </select>
-        </td>
-        <td><input type="number" name="components[__INDEX__][position]" min="1" max="100" value="1" required></td>
-        <td><input type="text" name="components[__INDEX__][static_value]" maxlength="255" value="" placeholder="Optional"></td>
-        <td><textarea name="components[__INDEX__][format_options]" rows="3" placeholder='{"pad": 6, "uppercase": true}'></textarea></td>
-        <td class="text-center"><label class="ch-check" style="margin:0"><input type="checkbox" name="components[__INDEX__][is_required]" value="1" checked> Yes</label></td>
-        <td>
+        </div>
+        <div class="pcc-component-field pcc-component-position">
+            <label for="component-position-__INDEX__">Position</label>
+            <input id="component-position-__INDEX__" type="number" name="components[__INDEX__][position]" min="1" max="100" value="1" required>
+        </div>
+        <div class="pcc-component-field pcc-component-static">
+            <label for="component-static-__INDEX__">Static value</label>
+            <input id="component-static-__INDEX__" type="text" name="components[__INDEX__][static_value]" maxlength="255" value="" placeholder="Optional">
+        </div>
+        <div class="pcc-component-field pcc-component-format">
+            <label for="component-format-__INDEX__">Format options</label>
+            <textarea id="component-format-__INDEX__" name="components[__INDEX__][format_options]" rows="3" placeholder='{"pad": 6, "uppercase": true}'></textarea>
+        </div>
+        <div class="pcc-component-field pcc-component-required">
+            <span class="pcc-field-label">Required</span>
+            <label class="ch-check"><input type="checkbox" name="components[__INDEX__][is_required]" value="1" checked> Yes</label>
+        </div>
+        <div class="pcc-component-field pcc-component-actions">
+            <span class="pcc-field-label">Actions</span>
             <div class="pcc-row-tools">
-                <button type="button" class="btn btn-mini" data-move-up><i class="icon-arrow-up"></i></button>
-                <button type="button" class="btn btn-mini" data-move-down><i class="icon-arrow-down"></i></button>
-                <button type="button" class="btn btn-mini btn-danger" data-remove-row><i class="icon-trash"></i></button>
+                <button type="button" class="btn btn-mini" data-move-up aria-label="Move component up"><i class="icon-arrow-up"></i><span>Up</span></button>
+                <button type="button" class="btn btn-mini" data-move-down aria-label="Move component down"><i class="icon-arrow-down"></i><span>Down</span></button>
+                <button type="button" class="btn btn-mini btn-danger" data-remove-row aria-label="Remove component"><i class="icon-trash"></i><span>Remove</span></button>
             </div>
-        </td>
-    </tr>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -779,6 +804,36 @@ document.addEventListener('DOMContentLoaded', function () {
     var proposedPreview = document.getElementById('pcc-proposed-preview-code');
     var impactSummary = document.getElementById('pcc-impact-summary');
     var previewTimer = null;
+    var previewCategory = document.getElementById('preview-category_id');
+    var previewSubcategory = document.getElementById('preview-subcategory_id');
+    var previewBrand = document.getElementById('preview-manufacturer_id');
+    var previewSeries = document.getElementById('preview-series_id');
+
+    function filterPreviewChildren(parent, child, parentAttribute) {
+        if (! parent || ! child) return;
+
+        Array.prototype.slice.call(child.options).forEach(function (option) {
+            if (! option.value) return;
+            var matchesParent = ! parent.value || option.getAttribute(parentAttribute) === parent.value;
+            option.hidden = ! matchesParent;
+            option.disabled = ! matchesParent;
+        });
+
+        var selected = child.options[child.selectedIndex];
+        if (selected && selected.disabled) child.value = '';
+    }
+
+    function selectPreviewParent(child, parent, parentAttribute) {
+        if (! child || ! parent) return;
+        var selected = child.options[child.selectedIndex];
+        var parentId = selected && selected.value ? selected.getAttribute(parentAttribute) : null;
+        if (parentId && parent.value !== parentId) parent.value = parentId;
+    }
+
+    function syncPreviewContextOptions() {
+        filterPreviewChildren(previewCategory, previewSubcategory, 'data-category-id');
+        filterPreviewChildren(previewBrand, previewSeries, 'data-manufacturer-id');
+    }
 
     function syncSeparator() {
         var value = separatorMode.value === '__custom__' ? customSeparator.value : separatorMode.value;
@@ -910,7 +965,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function addRow(values) {
         var rowIndex = nextIndex++;
         var html = template.innerHTML.replace(/__INDEX__/g, rowIndex);
-        var wrapper = document.createElement('tbody');
+        var wrapper = document.createElement('div');
         wrapper.innerHTML = html.trim();
         var row = wrapper.firstElementChild;
 
@@ -1039,6 +1094,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (previewButton) previewButton.addEventListener('click', runPreview);
     if (wizardPreviewButton) wizardPreviewButton.addEventListener('click', runPreview);
+    if (previewCategory) previewCategory.addEventListener('change', function () {
+        filterPreviewChildren(previewCategory, previewSubcategory, 'data-category-id');
+    });
+    if (previewSubcategory) previewSubcategory.addEventListener('change', function () {
+        selectPreviewParent(previewSubcategory, previewCategory, 'data-category-id');
+        filterPreviewChildren(previewCategory, previewSubcategory, 'data-category-id');
+    });
+    if (previewBrand) previewBrand.addEventListener('change', function () {
+        filterPreviewChildren(previewBrand, previewSeries, 'data-manufacturer-id');
+    });
+    if (previewSeries) previewSeries.addEventListener('change', function () {
+        selectPreviewParent(previewSeries, previewBrand, 'data-manufacturer-id');
+        filterPreviewChildren(previewBrand, previewSeries, 'data-manufacturer-id');
+    });
 
     wizardTabs.forEach(function (tab) {
         tab.addEventListener('click', function () { showWizardStep(Number(tab.getAttribute('data-wizard-go'))); });
@@ -1105,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', function () {
             event.returnValue = '';
         }
     });
+    syncPreviewContextOptions();
     setBuilderMode('simple');
     showWizardStep(1);
 });
