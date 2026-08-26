@@ -44,6 +44,7 @@
     var featureCards=Array.prototype.slice.call(featureArea.querySelectorAll('[data-feature-card]')),featureIndex=0,featureTimer;
     function showFeature(next){if(!featureCards.length)return;featureIndex=(next+featureCards.length)%featureCards.length;featureCards.forEach(function(card,i){card.classList.toggle('is-current',i===featureIndex);});}
     if(featureArea.getAttribute('data-layout')==='SLIDER'&&featureCards.length){showFeature(0);if(featureArea.getAttribute('data-autoplay')==='1'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){featureTimer=setInterval(function(){showFeature(featureIndex+1);},Math.max(3000,parseInt(featureArea.getAttribute('data-interval'),10)*1000||5000));}if(featureArea.getAttribute('data-pause')==='1'){featureArea.addEventListener('mouseenter',function(){clearInterval(featureTimer)});featureArea.addEventListener('mouseleave',function(){if(featureCards.length>1)featureTimer=setInterval(function(){showFeature(featureIndex+1);},Math.max(3000,parseInt(featureArea.getAttribute('data-interval'),10)*1000||5000));});}}
+    featureCards.forEach(function(card){if(card.getAttribute('data-clickable-area')!=='ENTIRE_CARD')return;card.addEventListener('click',function(event){if(event.target.closest('a,button'))return;var href=card.getAttribute('data-card-link');if(!href)return;if(card.getAttribute('data-card-new-tab')==='1')window.open(href,'_blank','noopener');else window.location.assign(href);});});
   }
   var carousel=document.querySelector('[data-carousel]');
   if(!carousel)return;
