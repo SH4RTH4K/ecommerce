@@ -12,7 +12,7 @@ class CodeRegenerationService
 {
     private const TYPES = ['company','category','subcategory','brand','series','product'];
 
-    public function preview(ProductCodeConfiguration $configuration, string $mode = 'UPDATE_ALL', array $selected = [], bool $preserveSequence = true): array
+    public function preview(ProductCodeConfiguration $configuration, string $mode = 'UPDATE_ALL', array $selected = [], bool $preserveSequence = false): array
     {
         $type = strtolower((string) $configuration->code_type);
         if (! in_array($type, self::TYPES, true)) throw ValidationException::withMessages(['code_type' => 'This code type cannot be regenerated.']);
@@ -92,7 +92,7 @@ class CodeRegenerationService
     {
         if (trim($reason) === '') throw ValidationException::withMessages(['reason' => 'A reason is required for code regeneration.']);
         if ($allOrNothing && ($preview['conflicts'] ?? 0) > 0) throw ValidationException::withMessages(['preview' => 'Resolve all conflicts before applying this regeneration.']);
-        $batch = ProductCodeRegenerationBatch::create(['code_type' => $preview['code_type'], 'configuration_id' => $configuration->id, 'configuration_version' => (int) ($configuration->version ?: 1), 'mode' => $preview['mode'], 'preserve_sequence' => true, 'total_records' => $preview['total'], 'skipped_count' => $preview['total'] - $preview['ready'], 'initiated_by' => $adminId, 'status' => 'RUNNING', 'reason' => $reason, 'started_at' => now()]);
+        $batch = ProductCodeRegenerationBatch::create(['code_type' => $preview['code_type'], 'configuration_id' => $configuration->id, 'configuration_version' => (int) ($configuration->version ?: 1), 'mode' => $preview['mode'], 'preserve_sequence' => false, 'total_records' => $preview['total'], 'skipped_count' => $preview['total'] - $preview['ready'], 'initiated_by' => $adminId, 'status' => 'RUNNING', 'reason' => $reason, 'started_at' => now()]);
         DB::transaction(function () use ($configuration, $preview, $reason, $adminId, $batch) {
             foreach ($preview['items'] as $item) {
                 if ($item['status'] !== 'READY' || $item['old_code'] === $item['new_code']) continue;

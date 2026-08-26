@@ -345,7 +345,9 @@ class ProductCodeConfigurationController extends Controller
         $this->requireAdminPermission('view_product_code_configuration');
         $selected = array_map('intval', (array) $request->input('selected', []));
         try {
-            $preview = $regenerator->preview($configuration, $mode, $selected, true);
+            // Regeneration creates a fresh sequence for the new format. Existing
+            // numeric suffixes must not influence the first generated code.
+            $preview = $regenerator->preview($configuration, $mode, $selected, false);
         } catch (\Throwable $exception) {
             Log::error('Product code regeneration preview failed.', [
                 'configuration_id' => $configuration->id,
@@ -380,7 +382,7 @@ class ProductCodeConfigurationController extends Controller
         $validated = $request->validate(['configuration_id' => 'required|integer|exists:product_code_configurations,id', 'mode' => ['required', Rule::in(['UPDATE_ALL','UPDATE_SELECTED'])], 'selected' => 'nullable|array', 'selected.*' => 'integer', 'reason' => 'required|string|max:2000', 'confirmation' => 'required|in:REGENERATE']);
         $this->requireAdminPermission('regenerate_product_code');
         $configuration = ProductCodeConfiguration::with('components')->findOrFail($validated['configuration_id']);
-        $preview = $regenerator->preview($configuration, $validated['mode'], array_map('intval', $validated['selected'] ?? []), true);
+        $preview = $regenerator->preview($configuration, $validated['mode'], array_map('intval', $validated['selected'] ?? []), false);
         $batch = $regenerator->apply($configuration, $preview, $validated['reason'], (int) session('admin_id'), true);
         return redirect()->route('product-code-configuration.index', ['code_type' => $configuration->code_type, 'configuration' => $configuration->id])->with('message', 'Code regeneration completed. Batch #'.$batch->id.' updated '.$batch->success_count.' record(s).');
     }

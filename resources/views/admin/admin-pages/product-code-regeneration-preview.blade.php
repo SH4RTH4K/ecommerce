@@ -12,7 +12,7 @@
             <a class="btn" href="{{ route('product-code-configuration.index', ['code_type' => $configuration->code_type, 'configuration' => $configuration->id]) }}">Back to configuration</a>
         </div>
     @endif
-    <div class="pcc-card"><div class="pcc-head"><h2>Old and proposed codes</h2><p>Existing numeric endings are preserved when unique. Duplicate or missing endings receive the next available sequence during this dry run.</p></div><div class="pcc-body">
+    <div class="pcc-card"><div class="pcc-head"><h2>Old and proposed codes</h2><p>Proposed codes use a fresh sequence for this format, starting at the configured starting number. Existing numeric endings are not reused.</p></div><div class="pcc-body">
         <form method="post" action="{{ route('product-code-configuration.regeneration.apply') }}" onsubmit="return confirm('Type REGENERATE to confirm this controlled code change. Historical transaction snapshots will not be rewritten.')">
             @csrf <input type="hidden" name="configuration_id" value="{{ $configuration->id }}"><input type="hidden" name="mode" value="{{ $mode }}">
             <div class="pcc-table-wrap"><table class="table table-bordered pcc-table" style="min-width:900px"><thead><tr><th>Select</th><th>Name</th><th>Current code</th><th>Proposed code</th><th>Status</th></tr></thead><tbody>
