@@ -69,11 +69,17 @@ class ApplicationUpdateService
         return $this->status($settings);
     }
 
-    public function deploy(ApplicationUpdateSetting $settings, int $adminId): ApplicationDeployment
+    public function deploy(ApplicationUpdateSetting $settings, int $adminId, bool $discardLocalChanges = false): ApplicationDeployment
     {
         $handle = $this->lock();
         try {
             $status = $this->fetch($settings);
+            if ($discardLocalChanges && $status['status'] === 'Local Changes Detected') {
+                // Only tracked source files are reset. Untracked files (uploads,
+                // environment files, and runtime data) are deliberately kept.
+                $this->gitOrFail(['reset', '--hard', 'HEAD'], 'The local tracked changes could not be discarded.');
+                $status = $this->fetch($settings);
+            }
             if ($status['status'] !== 'Update Available') throw new \RuntimeException($status['message']);
             if (! empty($status['local_changes_match_target'])) {
                 $this->gitOrFail(['reset', '--hard', $status['remote']], 'The checkout could not be synchronized with the remote update.');

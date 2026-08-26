@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -379,12 +380,29 @@ class ProductCodeConfigurationController extends Controller
 
     public function applyRegeneration(Request $request, CodeRegenerationService $regenerator)
     {
+        if (! Schema::hasTable('product_code_regeneration_batches')
+            || ! Schema::hasColumn('product_code_histories', 'batch_id')
+            || ! Schema::hasColumn('product_code_histories', 'entity_type')) {
+            return redirect()->route('product-code-configuration.index')
+                ->with('exception', 'Code regeneration is not ready on this server. Deploy the latest database migrations, then try again.');
+        }
+
         $validated = $request->validate(['configuration_id' => 'required|integer|exists:product_code_configurations,id', 'mode' => ['required', Rule::in(['UPDATE_ALL','UPDATE_SELECTED'])], 'selected' => 'nullable|array', 'selected.*' => 'integer', 'reason' => 'required|string|max:2000', 'confirmation' => 'required|in:REGENERATE']);
         $this->requireAdminPermission('regenerate_product_code');
         $configuration = ProductCodeConfiguration::with('components')->findOrFail($validated['configuration_id']);
-        $preview = $regenerator->preview($configuration, $validated['mode'], array_map('intval', $validated['selected'] ?? []), false);
-        $batch = $regenerator->apply($configuration, $preview, $validated['reason'], (int) session('admin_id'), true);
-        return redirect()->route('product-code-configuration.index', ['code_type' => $configuration->code_type, 'configuration' => $configuration->id])->with('message', 'Code regeneration completed. Batch #'.$batch->id.' updated '.$batch->success_count.' record(s).');
+        try {
+            $preview = $regenerator->preview($configuration, $validated['mode'], array_map('intval', $validated['selected'] ?? []), false);
+            $batch = $regenerator->apply($configuration, $preview, $validated['reason'], (int) session('admin_id'), true);
+            return redirect()->route('product-code-configuration.index', ['code_type' => $configuration->code_type, 'configuration' => $configuration->id])->with('message', 'Code regeneration completed. Batch #'.$batch->id.' updated '.$batch->success_count.' record(s).');
+        } catch (\Throwable $exception) {
+            Log::error('Product code regeneration apply failed.', ['configuration_id' => $configuration->id, 'admin_id' => session('admin_id'), 'exception' => $exception]);
+            return redirect()->back()->withInput()->with('exception', 'Code regeneration could not be applied. No changes were made. Review the preview and database migration status, then try again.');
+        }
+    }
+
+    public function regenerationApplyPage()
+    {
+        return redirect()->route('product-code-configuration.index')->with('exception', 'This is an action endpoint. Open the regeneration preview and submit it from there.');
     }
 
     public function preview(Request $request, ProductCodeGenerator $generator)

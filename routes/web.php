@@ -175,6 +175,7 @@ Route::post('/product-code-configuration/preview', 'ProductCodeConfigurationCont
 Route::get('/product-code-configuration/regeneration-preview', 'ProductCodeConfigurationController@regenerationPreview')->name('product-code-configuration.regeneration-preview');
 Route::post('/product-code-configuration/regeneration-preview', 'ProductCodeConfigurationController@regenerationPreview')->name('product-code-configuration.regeneration-preview.post');
 Route::post('/product-code-configuration/regeneration/apply', 'ProductCodeConfigurationController@applyRegeneration')->name('product-code-configuration.regeneration.apply');
+Route::get('/product-code-configuration/regeneration/apply', 'ProductCodeConfigurationController@regenerationApplyPage');
 Route::get('/product-code-configuration/configuration', 'ProductCodeConfigurationController@configuration')->name('product-code-configuration.configuration');
 Route::post('/product-code-configuration/{id}/reset-sequence', 'ProductCodeConfigurationController@resetSequence')->name('product-code-configuration.reset-sequence');
 Route::delete('/product-code-configuration/{id}', 'ProductCodeConfigurationController@destroy')->name('product-code-configuration.destroy');
@@ -186,6 +187,7 @@ Route::delete('/product-code-configuration/{id}', 'ProductCodeConfigurationContr
  Route::post('/admin/system/git-repository/test', 'SuperAdminController@testApplicationRepository')->name('admin.application-update.test');
  Route::post('/admin/system/application-update/check', 'SuperAdminController@checkApplicationUpdates')->name('admin.application-update.check');
  Route::post('/admin/system/application-update/deploy', 'SuperAdminController@deployApplicationUpdate')->name('admin.application-update.deploy');
+ Route::post('/admin/system/application-update/discard-and-deploy', 'SuperAdminController@discardAndDeployApplicationUpdate')->name('admin.application-update.discard-and-deploy');
  Route::post('/admin/system/application-update/rollback/{id}', 'SuperAdminController@rollbackApplicationDeployment')->name('admin.application-update.rollback');
  Route::get('/banner-management', 'SuperAdminController@bannerManagement')->name('banner.index');
  Route::post('/site-settings', 'SuperAdminController@updateSiteSettings');

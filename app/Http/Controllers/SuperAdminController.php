@@ -77,6 +77,18 @@ class SuperAdminController extends Controller {
         try { $deployment=$updates->deploy($updates->settings(), (int)session('admin_id')); return Redirect::back()->with('message','Deployment completed successfully at commit '.substr((string)$deployment->deployed_commit,0,12).'.'); } catch (\Throwable $e) { return Redirect::back()->with('exception','Deployment failed: '.$e->getMessage()); }
     }
 
+    public function discardAndDeployApplicationUpdate(Request $request, ApplicationUpdateService $updates)
+    {
+        $this->authCheck();
+        $request->validate(['confirmation' => 'required|in:DISCARD LOCAL CHANGES']);
+        try {
+            $deployment = $updates->deploy($updates->settings(), (int) session('admin_id'), true);
+            return Redirect::back()->with('message', 'Local tracked changes were discarded and deployment completed successfully at commit '.substr((string) $deployment->deployed_commit, 0, 12).'.');
+        } catch (\Throwable $e) {
+            return Redirect::back()->with('exception', 'Deployment failed: '.$e->getMessage());
+        }
+    }
+
     public function rollbackApplicationDeployment($id, ApplicationUpdateService $updates)
     {
         $this->authCheck();
