@@ -151,7 +151,7 @@ class ApplicationUpdateService
     private function gitOrFail(array $args, string $message): void { $r=$this->git($args,false); if($r['code']!==0) throw new \RuntimeException($message); }
     private function artisan(string ...$args): void { $p=new Process(array_merge([PHP_BINARY, base_path('artisan')],$args),base_path(),null,null,300);$p->run();if($p->getExitCode()!==0)throw new \RuntimeException('Approved deployment task failed.'); }
     private function healthCheck(): void { DB::select('SELECT 1'); if(!app()->bound('router'))throw new \RuntimeException('Application health check failed.'); }
-    private function publicAssetMode(ApplicationUpdateSetting $settings): string { return Schema::hasColumn('application_update_settings', 'public_asset_mode') ? ((string) $settings->public_asset_mode ?: 'auto') : 'auto'; }
+    private function publicAssetMode(ApplicationUpdateSetting $settings): string { $mode = Schema::hasColumn('application_update_settings', 'public_asset_mode') ? ((string) $settings->public_asset_mode ?: 'auto') : 'auto'; return $mode === 'auto' ? (app()->environment('production') ? 'cpanel_root' : 'laravel_public') : $mode; }
     private function safeError(string $error): string { return preg_replace('/(?:token|password|secret|private.?key|authorization)[^\s]*/i', '[REDACTED]', substr($error,0,2000)); }
     private function lock() { $path=storage_path('app/'.self::LOCK_FILE);$h=fopen($path,'c');if(!$h||!flock($h,LOCK_EX|LOCK_NB))throw new \RuntimeException('Another application deployment is already in progress.');return $h; }
 }
