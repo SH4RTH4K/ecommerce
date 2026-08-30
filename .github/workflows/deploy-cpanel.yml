@@ -8,12 +8,14 @@ on:
 
 concurrency:
   group: cpanel-deploy
-  cancel-in-progress: true
+  # Never interrupt an FTP deployment halfway through. A newer push waits and
+  # deploys after the active release finishes.
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
 
     steps:
       - name: Get latest code
@@ -31,7 +33,41 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy over FTP
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer metadata
+        run: composer validate --no-check-publish
+
+      - name: Build production dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Check PHP syntax
+        run: find app bootstrap config database routes -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      # Dependencies go first so new application code is never deployed while
+      # the server still has an older or missing vendor tree.
+      - name: Deploy production dependencies over FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.CPANEL_FTP_SERVER }}
+          username: ${{ secrets.CPANEL_FTP_USERNAME }}
+          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./vendor/
+          server-dir: ${{ secrets.CPANEL_FTP_SERVER_DIR }}vendor/
+          timeout: 600000
+          log-level: standard
+          exclude: |
+            **/.git*
+            **/.git*/**
+
+      - name: Deploy application over FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.CPANEL_FTP_SERVER }}
@@ -56,4 +92,6 @@ jobs:
             **/*.log
             .env
             .env.*
+            php.ini
+            error_log
             vendor.zip
