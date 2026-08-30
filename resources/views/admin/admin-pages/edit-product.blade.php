@@ -176,7 +176,8 @@
                     <div class="control-group hidden-phone">
                         <label class="control-label" for="textarea2" >Product Description</label>
                         <div class="controls">
-                            <textarea name="product_description" class="cleditor" rows="3">{{ $productDescriptionValue }}</textarea>
+                            <textarea name="product_description" class="cleditor product-description-editor" rows="3" data-rich-paste="true">{{ $productDescriptionValue }}</textarea>
+                            <p class="help-block">Paste from Word or another product page. Tables, colors, spacing, and text styles are kept where safe.</p>
                         </div>
                     </div>
                     <div class="control-group">

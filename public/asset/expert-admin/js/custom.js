@@ -302,6 +302,25 @@ function template_functions(){
 	
 	/* ---------- Text editor ---------- */
 	$('.cleditor').cleditor();
+	$('.product-description-editor').each(function () {
+		var field = this;
+		var editor = $(field).data('cleditor');
+		if (!editor || !editor.doc) return;
+
+		$(editor.doc).on('paste', function () {
+			// Let the browser insert the original rich clipboard HTML. The server
+			// applies the authoritative safety filter before the value is stored.
+			setTimeout(function () {
+				if (typeof editor.updateTextArea === 'function') editor.updateTextArea();
+			}, 0);
+		});
+	});
+	$('form').on('submit', function () {
+		$(this).find('.product-description-editor').each(function () {
+			var editor = $(this).data('cleditor');
+			if (editor && typeof editor.updateTextArea === 'function') editor.updateTextArea();
+		});
+	});
 	$('.ws-richtext').cleditor({
 		width: '100%',
 		height: 240,

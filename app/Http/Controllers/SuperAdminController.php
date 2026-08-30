@@ -1076,7 +1076,7 @@ class SuperAdminController extends Controller {
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
         $data['publication_status'] = (int) $request->publication_status;
-        $data['product_description'] = $request->product_description;
+        $data['product_description'] = sanitize_product_description_html($request->input('product_description'));
         $data['short_description'] = $request->short_description;
         $data['key_features'] = json_encode($this->parseList($request->key_features));
         $data['specifications'] = json_encode($this->parseSpecifications($request->specifications));
@@ -1339,7 +1339,7 @@ class SuperAdminController extends Controller {
         $this->setIndustryData($data, $request);
         $data['product_model'] = $request->product_model;
         $data['product_name'] = $request->product_name;
-        $data['product_description'] = $request->product_description;
+        $data['product_description'] = sanitize_product_description_html($request->input('product_description'));
         $data['short_description'] = $request->short_description;
         $data['key_features'] = json_encode($this->parseList($request->key_features));
         $data['specifications'] = json_encode($this->parseSpecifications($request->specifications));

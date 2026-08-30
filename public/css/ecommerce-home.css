@@ -1258,57 +1258,57 @@
 @media(max-width:720px){.hfc-layout-grid{grid-template-columns:1fr;gap:7px!important}.hfc-layout-grid .hfc-store-card{min-height:180px}.hfc-store-card{min-height:170px}.hfc-equal-height.hfc-layout-grid .hfc-store-card,.hfc-equal-height.hfc-layout-stacked .hfc-store-card{height:clamp(180px,52vw,240px);min-height:0}}
 .lt-brand-grid>a{min-width:0}.lt-brand-grid>a>span{flex:0 0 40px}.lt-brand-grid .lt-brand-name{display:block;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;line-height:1.15}
 .lt-brand-grid .lt-brand-initials img{width:100%;height:100%;border-radius:50%;object-fit:contain;background:#fff}
-/* StarTech copied table overrides */
+/* Product description tables: provide a readable fallback while allowing
+   safe inline styles copied from Word or another product page to win. */
+.lt-product-description { overflow-x: auto; }
+.lt-product-description img { max-width: 100%; height: auto; }
 .lt-product-description table, .data-table {
-    border-collapse: collapse !important;
-    width: 100% !important;
-    font-size: 14px !important;
-    color: #333 !important;
-    margin-bottom: 20px !important;
-    font-family: Inter, 'Segoe UI', Arial, sans-serif !important;
-    border: 1px solid #f0f0f0 !important;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: #333;
+    font-family: Inter, 'Segoe UI', Arial, sans-serif;
+    border: 1px solid #f0f0f0;
 }
 .lt-product-description table th, .lt-product-description table td,
 .data-table th, .data-table td {
-    padding: 12px 20px !important;
-    border-bottom: 1px solid #f0f0f0 !important;
-    text-align: left !important;
-    font-weight: 400 !important;
-    vertical-align: top !important;
-    background: #fff !important;
-    transition: background 0.2s ease !important;
-    border-right: none !important;
-    border-left: none !important;
-    margin: 0 !important;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+    vertical-align: top;
+    background: #fff;
+    transition: background 0.2s ease;
+    margin: 0;
 }
 .lt-product-description table tr:last-child th, .lt-product-description table tr:last-child td,
 .data-table tr:last-child th, .data-table tr:last-child td {
-    border-bottom: 0 !important;
+    border-bottom: 0;
 }
 .lt-product-description table td:first-child, .lt-product-description table th:first-child,
 .data-table td.name {
-    width: 25% !important;
-    color: #666 !important;
+    width: 25%;
+    color: #666;
 }
 .lt-product-description table tr:hover th, .lt-product-description table tr:hover td,
 .data-table tr:hover th, .data-table tr:hover td {
-    background: #fafafa !important;
+    background: #fafafa;
 }
 .lt-product-description table thead th, .lt-product-description table thead td,
 .lt-product-description table th[colspan], .lt-product-description table td[colspan],
 .lt-product-description table .heading-row,
 .data-table thead th, .data-table thead td,
 .data-table .heading-row, .data-table th[colspan], .data-table td[colspan] {
-    width: 100% !important;
-    background: #f5f6fb !important;
-    color: #3749bb !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    padding: 12px 20px !important;
-    border-bottom: 1px solid #f0f0f0 !important;
+    background: #f5f6fb;
+    color: #3749bb;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0f0f0;
 }
 .lt-product-description table tr:hover .heading-row, .lt-product-description table tr:hover th[colspan],
 .lt-product-description table tr:hover td[colspan],
 .data-table tr:hover .heading-row, .data-table tr:hover th[colspan], .data-table tr:hover td[colspan] {
-    background: #f5f6fb !important;
+    background: #f5f6fb;
 }
