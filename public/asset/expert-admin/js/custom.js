@@ -311,64 +311,12 @@ function template_functions(){
 		if (!clipboard || typeof clipboard.getData !== 'function') return;
 
 		var html = clipboard.getData('text/html');
-		if (!html || !/<table[\s>]/i.test(html)) return;
-
-		// Parse the clipboard in an inert document, then read text only. None of
-		// the copied page's scripts, styles, links, or images enter the admin page.
-		var clipboardDocument = new DOMParser().parseFromString(html, 'text/html');
-		var tables = Array.prototype.slice.call(clipboardDocument.querySelectorAll('table'));
-		if (!tables.length) return;
-
-		// A copied page can contain price/layout tables around the specification.
-		// The specification table is normally the one with the most data rows.
-		tables.sort(function (left, right) {
-			return right.querySelectorAll('tr').length - left.querySelectorAll('tr').length;
-		});
-
-		function cellLines(cell) {
-			var clone = cell.cloneNode(true);
-			Array.prototype.slice.call(clone.querySelectorAll('br')).forEach(function (br) {
-				br.parentNode.replaceChild(document.createTextNode('\n'), br);
-			});
-			return (clone.textContent || '')
-				.replace(/\u00a0/g, ' ')
-				.split(/\r?\n/)
-				.map(function (line) { return line.replace(/[\t ]+/g, ' ').trim(); })
-				.filter(function (line) { return line !== ''; });
-		}
-
-		var output = [];
-		var sectionCount = 0;
-		var rowCount = 0;
-		Array.prototype.slice.call(tables[0].querySelectorAll('tr')).forEach(function (row) {
-			var cells = Array.prototype.slice.call(row.cells || []);
-			if (!cells.length) return;
-
-			var firstLines = cellLines(cells[0]);
-			var first = firstLines.join(' ').trim();
-			if (!first) return;
-
-			if (cells.length === 1 || Number(cells[0].colSpan || 1) > 1) {
-				output.push('[' + first.replace(/^\[|\]$/g, '') + ']');
-				sectionCount++;
-				return;
-			}
-
-			var valueLines = [];
-			cells.slice(1).forEach(function (cell) {
-				valueLines = valueLines.concat(cellLines(cell));
-			});
-			if (!valueLines.length) return;
-
-			output.push(first + ': ' + valueLines.shift());
-			valueLines.forEach(function (line) { output.push('    ' + line); });
-			rowCount++;
-		});
-
-		if (!rowCount) return;
+		var converter = window.LucentSpecificationPaste;
+		var conversion = converter && converter.normalizeHtml(html);
+		if (!conversion) return;
 
 		event.preventDefault();
-		var normalized = output.join('\n');
+		var normalized = conversion.text;
 		var start = typeof field.selectionStart === 'number' ? field.selectionStart : field.value.length;
 		var end = typeof field.selectionEnd === 'number' ? field.selectionEnd : start;
 		var before = field.value.slice(0, start);
@@ -382,7 +330,7 @@ function template_functions(){
 		var status = document.getElementById('specification-paste-status');
 		if (status) {
 			status.className = 'help-inline text-success';
-			status.textContent = 'Imported ' + rowCount + ' specification rows' + (sectionCount ? ' in ' + sectionCount + ' sections' : '') + '.';
+			status.textContent = 'Imported ' + conversion.rowCount + ' specification rows' + (conversion.sectionCount ? ' in ' + conversion.sectionCount + ' sections' : '') + '.';
 		}
 	});
 
