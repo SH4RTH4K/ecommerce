@@ -141,7 +141,7 @@
 
     @if(!empty($product_details->specifications))
         <div class="lt-description">
-            <h2>Specifications</h2>
+            <h2>Specification</h2>
             <table class="lt-spec-table">
                 @foreach($product_details->specifications as $label => $value)
                     @if(is_array($value))
