@@ -864,7 +864,8 @@
 .lt-description,.lt-warranty{margin-top:22px;padding:26px 28px;border:1px solid #e4ebf1;border-radius:16px;box-shadow:0 8px 22px rgba(11,61,98,.04)}
 .lt-description h2,.lt-warranty h2{margin-bottom:16px;font-size:19px;letter-spacing:-.02em}
 .lt-spec-table th,.lt-spec-table td{padding:12px 14px;border-color:#e4ebf1;font-size:13px}
-.lt-spec-table th{background:#f6f9fb;font-weight:700}
+.lt-spec-table th{background:#fff;font-weight:400}
+.lt-spec-table td{white-space:pre-line;overflow-wrap:anywhere}
 .lt-warranty{background:linear-gradient(135deg,#eff8fc,#fff)}
 .lt-warranty p{margin:0;color:#53687a;font-size:14px;line-height:1.75}
 .lt-feedback-grid{margin-top:22px}
