@@ -265,6 +265,16 @@ class SiteCustomizationTest extends TestCase
                 'header_text' => '#f8fbff',
                 'header_font_family' => 'bengali',
                 'header_font_size' => '18',
+                'key_features_font_family' => 'georgia',
+                'key_features_font_size' => '17',
+                'key_features_text_color' => '#345678',
+                'key_features_heading_color' => '#123456',
+                'specification_font_family' => 'tahoma',
+                'specification_font_size' => '16',
+                'specification_text_color' => '#182736',
+                'specification_label_color' => '#405060',
+                'specification_group_color' => '#506070',
+                'specification_heading_color' => '#607080',
                 'footer_font_family' => 'georgia',
                 'footer_font_size' => '16',
             ]);
@@ -291,6 +301,16 @@ class SiteCustomizationTest extends TestCase
             $this->assertSame('#f8fbff', $decodedTheme['header_text']);
             $this->assertSame('bengali', $decodedTheme['header_font_family']);
             $this->assertSame('18', $decodedTheme['header_font_size']);
+            $this->assertSame('georgia', $decodedTheme['key_features_font_family']);
+            $this->assertSame('17', $decodedTheme['key_features_font_size']);
+            $this->assertSame('#345678', $decodedTheme['key_features_text_color']);
+            $this->assertSame('#123456', $decodedTheme['key_features_heading_color']);
+            $this->assertSame('tahoma', $decodedTheme['specification_font_family']);
+            $this->assertSame('16', $decodedTheme['specification_font_size']);
+            $this->assertSame('#182736', $decodedTheme['specification_text_color']);
+            $this->assertSame('#405060', $decodedTheme['specification_label_color']);
+            $this->assertSame('#506070', $decodedTheme['specification_group_color']);
+            $this->assertSame('#607080', $decodedTheme['specification_heading_color']);
             $this->assertSame('georgia', $decodedTheme['footer_font_family']);
             $this->assertSame('16', $decodedTheme['footer_font_size']);
 
@@ -300,6 +320,16 @@ class SiteCustomizationTest extends TestCase
                 ->assertSee('--theme-header-bg: #112233', false)
                 ->assertSee('--theme-header-font-family: "Noto Sans Bengali"', false)
                 ->assertSee('--theme-header-font-size: 18px', false)
+                ->assertSee('--theme-key-features-font-family: Georgia', false)
+                ->assertSee('--theme-key-features-font-size: 17px', false)
+                ->assertSee('--theme-key-features-text: #345678', false)
+                ->assertSee('--theme-key-features-heading: #123456', false)
+                ->assertSee('--theme-specification-font-family: Tahoma', false)
+                ->assertSee('--theme-specification-font-size: 16px', false)
+                ->assertSee('--theme-specification-text: #182736', false)
+                ->assertSee('--theme-specification-label: #405060', false)
+                ->assertSee('--theme-specification-group: #506070', false)
+                ->assertSee('--theme-specification-heading: #607080', false)
                 ->assertSee('--theme-footer-bg: #0f2233', false)
                 ->assertSee('--theme-footer-font-size: 16px', false)
                 ->assertSee('--theme-button-primary-bg: #123456', false)

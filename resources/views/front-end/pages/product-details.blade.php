@@ -140,7 +140,7 @@
     </div>
 
     @if(!empty($product_details->specifications))
-        <div class="lt-description">
+        <div class="lt-description lt-specification">
             <h2>Specification</h2>
             <table class="lt-spec-table">
                 @foreach($product_details->specifications as $label => $value)
@@ -166,7 +166,7 @@
     @endif
 
     @if($product_details->variants->isNotEmpty())
-        <div class="lt-description">
+        <div class="lt-description lt-specification">
             <h2>Available Options</h2>
             <table class="lt-spec-table">
                 <tr>
@@ -186,7 +186,7 @@
     @endif
 
     @if($product_details->industry_profile === 'medicine')
-        <div class="lt-description">
+        <div class="lt-description lt-specification">
             <h2>Medicine Information</h2>
             <table class="lt-spec-table">
                 @if($product_details->generic_name)
@@ -222,7 +222,7 @@
     @endif
 
     @if($product_details->industry_profile === 'food' && ($product_details->allergen_information || $product_details->storage_instructions))
-        <div class="lt-description">
+        <div class="lt-description lt-specification">
             <h2>Food &amp; Storage Information</h2>
             <table class="lt-spec-table">
                 @if($product_details->allergen_information)
@@ -242,7 +242,7 @@
     @endif
 
     @if($product_details->attributeValues->isNotEmpty())
-        <div class="lt-description">
+        <div class="lt-description lt-specification">
             <h2>Product Attributes</h2>
             <table class="lt-spec-table">
                 @foreach($product_details->attributeValues as $attributeValue)

@@ -41,7 +41,7 @@
 .ws-theme-hero-actions .btn{border:0;border-radius:7px;padding:9px 14px}
 .ws-theme-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.9fr);gap:18px;align-items:start}
 .ws-theme-main{display:grid;gap:16px}
-.ws-theme-side{display:grid;gap:16px;position:sticky;top:72px}
+.ws-theme-side{display:grid;gap:16px;position:sticky;top:72px;max-height:calc(100vh - 150px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:0 4px 20px 0}
 .ws-theme-card{background:#fff;border:1px solid #dfe8ed;border-radius:12px;box-shadow:0 4px 16px rgba(30,58,76,.06);overflow:hidden}
 .ws-theme-card-head{padding:16px 18px;border-bottom:1px solid #e7eef2;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 .ws-theme-card-head h3{margin:0;color:#173f56;font-size:17px;line-height:1.25}
@@ -92,7 +92,7 @@
 .ws-theme-status-row span{color:#748391;font-size:11px;font-weight:700}
 .ws-theme-status-row.is-active{border-color:#b9dce9;background:#eef8fb}
 .ws-theme-status-row.is-active span{color:#116381}
-.ws-theme-preview{--preview-shadow:0 18px 35px rgba(7,20,32,.10);overflow:hidden;border-radius:16px;background:var(--theme-page-bg,#fff);border:1px solid var(--theme-card-border,#dfe8ed);box-shadow:var(--preview-shadow)}
+.ws-theme-preview{--preview-shadow:0 18px 35px rgba(7,20,32,.10);container-type:inline-size;overflow:hidden;border-radius:16px;background:var(--theme-page-bg,#fff);border:1px solid var(--theme-card-border,#dfe8ed);box-shadow:var(--preview-shadow)}
 .ws-theme-preview-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--tb-bg,#073451);color:var(--tb-text,#fff);font-size:11px;font-weight:700}
 .ws-theme-preview-topbar a{color:var(--tb-link,#fff);text-decoration:none}
 .ws-theme-preview-topbar a:hover{color:var(--tb-link-hover,#f5821f)}
@@ -133,10 +133,17 @@
 .ws-theme-preview-cta{font-family:var(--theme-pc-builder-font-family,system-ui,sans-serif);font-size:var(--theme-pc-builder-font-size,13px)}
 .ws-theme-preview-nav{font-family:var(--theme-navigation-font-family,system-ui,sans-serif);font-size:var(--theme-navigation-font-size,14px)}
 .ws-theme-preview-card{font-family:var(--theme-cards-font-family,system-ui,sans-serif);font-size:var(--theme-cards-font-size,14px)}
+.ws-theme-preview-features{grid-column:1/-1;padding:12px 14px;border:1px solid var(--theme-card-border,#dfe8ed);border-radius:12px;background:var(--theme-page-bg,#fff);font-family:var(--theme-key-features-font-family,var(--theme-body-font-family,system-ui,sans-serif));font-size:var(--theme-key-features-font-size,13px)}
+.ws-theme-preview-features h4{margin:0 0 7px;color:var(--theme-key-features-heading,var(--theme-heading,#0b3d62));font-family:inherit;font-size:calc(var(--theme-key-features-font-size,13px) + 2px)}
+.ws-theme-preview-features ul{margin:0;padding-left:18px;color:var(--theme-key-features-text,#506474);font:inherit}
+.ws-theme-preview-specification{grid-column:1/-1;padding:12px 14px;border:1px solid var(--theme-card-border,#dfe8ed);border-radius:12px;background:var(--theme-page-bg,#fff);font-family:var(--theme-specification-font-family,var(--theme-body-font-family,system-ui,sans-serif));font-size:var(--theme-specification-font-size,13px)}
+.ws-theme-preview-specification h4{margin:0 0 8px;color:var(--theme-specification-heading,var(--theme-heading,#0b3d62));font-family:inherit;font-size:calc(var(--theme-specification-font-size,13px) + 6px)}
+.ws-theme-preview-specification table{width:100%;border-collapse:collapse;font:inherit}.ws-theme-preview-specification th,.ws-theme-preview-specification td{padding:5px 7px;border:1px solid var(--theme-card-border,#dfe8ed);font:inherit;text-align:left}.ws-theme-preview-specification th{color:var(--theme-specification-label,#666)}.ws-theme-preview-specification td{color:var(--theme-specification-text,#000)}.ws-theme-preview-specification .is-group{color:var(--theme-specification-group,#3749bb)}
 .ws-theme-preview-button{font-family:var(--theme-buttons-font-family,system-ui,sans-serif);font-size:var(--theme-buttons-font-size,14px)}
 .ws-theme-preview-footer{font-family:var(--theme-footer-font-family,system-ui,sans-serif);font-size:var(--theme-footer-font-size,14px)}
 .ws-theme-preview-note{margin-top:10px;padding:10px 12px;border-radius:8px;background:#f6fbfd;border:1px solid #dcebf1;color:#597080;font-size:11px;line-height:1.45}
-@media(max-width:1200px){.ws-theme-layout{grid-template-columns:1fr}.ws-theme-side{position:static}}
+@container (max-width:620px){.ws-theme-preview-header{grid-template-columns:1fr}.ws-theme-preview-actions{justify-content:flex-start}}
+@media(max-width:1200px){.ws-theme-layout{grid-template-columns:1fr}.ws-theme-side{position:static;max-height:none;overflow:visible;scrollbar-gutter:auto;padding-right:0}}
 @media(max-width:900px){.ws-theme-grid{grid-template-columns:1fr}.ws-theme-preview-header{grid-template-columns:1fr}.ws-theme-preview-actions{justify-content:flex-start}}
 @media(max-width:680px){.ws-theme-hero{align-items:flex-start;flex-direction:column}.ws-theme-card-head{flex-direction:column}.ws-theme-card-actions{justify-content:flex-start}.ws-theme-preview-body{grid-template-columns:1fr}}
 </style>
@@ -318,6 +325,14 @@
                                 <p>৳ 4,250</p>
                                 <button type="button" class="ws-theme-preview-button ws-theme-preview-button--secondary">View product</button>
                             </article>
+                            <section class="ws-theme-preview-features">
+                                <h4>Key Features</h4>
+                                <ul><li>Fast performance</li><li>Reliable connectivity</li></ul>
+                            </section>
+                            <section class="ws-theme-preview-specification">
+                                <h4>Specification</h4>
+                                <table><tbody><tr><th class="is-group" colspan="2">Camera Feature</th></tr><tr><th>Image Sensor</th><td>2MP CMOS</td></tr><tr><th>IR Distance</th><td>Up to 30m</td></tr></tbody></table>
+                            </section>
                         </div>
                         <footer class="ws-theme-preview-footer">
                             <strong>Store footer</strong>
@@ -818,6 +833,16 @@
             '--theme-navigation-font-size': resolved.navigation_font_size + 'px',
             '--theme-body-font-family': fontStack(resolved.body_font_family),
             '--theme-body-font-size': resolved.body_font_size + 'px',
+            '--theme-key-features-font-family': resolved.key_features_font_family === 'inherit' ? 'var(--theme-body-font-family)' : fontStack(resolved.key_features_font_family),
+            '--theme-key-features-font-size': resolved.key_features_font_size + 'px',
+            '--theme-key-features-text': resolved.key_features_text_color,
+            '--theme-key-features-heading': resolved.key_features_heading_color,
+            '--theme-specification-font-family': resolved.specification_font_family === 'inherit' ? 'var(--theme-body-font-family)' : fontStack(resolved.specification_font_family),
+            '--theme-specification-font-size': resolved.specification_font_size + 'px',
+            '--theme-specification-text': resolved.specification_text_color,
+            '--theme-specification-label': resolved.specification_label_color,
+            '--theme-specification-group': resolved.specification_group_color,
+            '--theme-specification-heading': resolved.specification_heading_color,
             '--theme-cards-font-family': fontStack(resolved.cards_font_family),
             '--theme-cards-font-size': resolved.cards_font_size + 'px',
             '--theme-buttons-font-family': fontStack(resolved.buttons_font_family),

@@ -97,6 +97,16 @@ class StorefrontThemeService
                     ['key' => 'navigation_font_size', 'label' => 'Category Menu Text Size', 'type' => 'select', 'default' => '14', 'options' => $fontSizes, 'help' => 'Text size in the category menu.'],
                     ['key' => 'body_font_family', 'label' => 'Page Text Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Default font for website pages.'],
                     ['key' => 'body_font_size', 'label' => 'Page Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Default text size for website pages.'],
+                    ['key' => 'key_features_font_family', 'label' => 'Key Features Font', 'type' => 'select', 'default' => 'inherit', 'options' => ['inherit' => 'Use Page Text Font'] + $fontFamilies, 'help' => 'Text in the Key Features panel on product pages.'],
+                    ['key' => 'key_features_font_size', 'label' => 'Key Features Text Size', 'type' => 'select', 'default' => '13', 'options' => $fontSizes, 'help' => 'Base text size in the Key Features panel. The heading remains slightly larger.'],
+                    ['key' => 'key_features_text_color', 'label' => 'Key Features Text Color', 'type' => 'color', 'default' => '#506474', 'help' => 'List text color in the Key Features panel.'],
+                    ['key' => 'key_features_heading_color', 'label' => 'Key Features Heading Color', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Heading color in the Key Features panel.'],
+                    ['key' => 'specification_font_family', 'label' => 'Specification Font', 'type' => 'select', 'default' => 'inherit', 'options' => ['inherit' => 'Use Page Text Font'] + $fontFamilies, 'help' => 'Text in specification and product-information tables.'],
+                    ['key' => 'specification_font_size', 'label' => 'Specification Text Size', 'type' => 'select', 'default' => '13', 'options' => $fontSizes, 'help' => 'Text size for specification groups, labels, and values. The section heading remains larger.'],
+                    ['key' => 'specification_text_color', 'label' => 'Specification Value Color', 'type' => 'color', 'default' => '#000000', 'help' => 'Color of specification values.'],
+                    ['key' => 'specification_label_color', 'label' => 'Specification Label Color', 'type' => 'color', 'default' => '#666666', 'help' => 'Color of labels in the left table column.'],
+                    ['key' => 'specification_group_color', 'label' => 'Specification Group Color', 'type' => 'color', 'default' => '#3749bb', 'help' => 'Color of group headings such as Camera Feature and Warranty.'],
+                    ['key' => 'specification_heading_color', 'label' => 'Specification Heading Color', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Color of the main Specification section heading.'],
                     ['key' => 'cards_font_family', 'label' => 'Product Card Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Product names, prices, and card controls.'],
                     ['key' => 'cards_font_size', 'label' => 'Product Card Text Size', 'type' => 'select', 'default' => '15', 'options' => $fontSizes, 'help' => 'Text size inside product cards.'],
                     ['key' => 'buttons_font_family', 'label' => 'Button Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in website buttons.'],
@@ -347,6 +357,7 @@ class StorefrontThemeService
     public function fontFamilyStacks(): array
     {
         return [
+            'inherit' => 'var(--theme-body-font-family, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Bengali", Arial, sans-serif)',
             'system' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Bengali", "Nirmala UI", Arial, sans-serif',
             'segoe' => '"Segoe UI", "Noto Sans Bengali", "Nirmala UI", Arial, sans-serif',
             'arial' => 'Arial, "Noto Sans Bengali", "Nirmala UI", sans-serif',
@@ -738,6 +749,16 @@ class StorefrontThemeService
             '--theme-navigation-font-size' => (int) $resolved['navigation_font_size'].'px',
             '--theme-body-font-family' => $font($resolved['body_font_family']),
             '--theme-body-font-size' => (int) $resolved['body_font_size'].'px',
+            '--theme-key-features-font-family' => $font($resolved['key_features_font_family'], 'inherit'),
+            '--theme-key-features-font-size' => (int) $resolved['key_features_font_size'].'px',
+            '--theme-key-features-text' => $resolved['key_features_text_color'],
+            '--theme-key-features-heading' => $resolved['key_features_heading_color'],
+            '--theme-specification-font-family' => $font($resolved['specification_font_family'], 'inherit'),
+            '--theme-specification-font-size' => (int) $resolved['specification_font_size'].'px',
+            '--theme-specification-text' => $resolved['specification_text_color'],
+            '--theme-specification-label' => $resolved['specification_label_color'],
+            '--theme-specification-group' => $resolved['specification_group_color'],
+            '--theme-specification-heading' => $resolved['specification_heading_color'],
             '--theme-cards-font-family' => $font($resolved['cards_font_family']),
             '--theme-cards-font-size' => (int) $resolved['cards_font_size'].'px',
             '--theme-buttons-font-family' => $font($resolved['buttons_font_family']),
@@ -962,7 +983,7 @@ class StorefrontThemeService
             case 'boolean':
                 return ['nullable', 'boolean'];
             case 'select':
-                return ['nullable', 'string', Rule::in(array_keys($field['options'] ?? []))];
+                return ['nullable', 'string', Rule::in(array_map('strval', array_keys($field['options'] ?? [])))];
             default:
                 return ['nullable', 'string', 'max:255'];
         }
@@ -981,7 +1002,7 @@ class StorefrontThemeService
 
         if ($type === 'select') {
             $value = trim((string) $value);
-            $options = array_keys($field['options'] ?? []);
+            $options = array_map('strval', array_keys($field['options'] ?? []));
             return in_array($value, $options, true) ? $value : $fallback;
         }
 

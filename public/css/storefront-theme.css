@@ -113,6 +113,46 @@ body{
   font-size:var(--theme-breadcrumbs-font-size,13px);
 }
 
+.lt-key-features,
+.lt-key-features ul,
+.lt-key-features li{
+  color:var(--theme-key-features-text,#506474);
+  font-family:var(--theme-key-features-font-family,var(--theme-body-font-family,inherit));
+  font-size:var(--theme-key-features-font-size,13px);
+}
+
+.lt-key-features h2{
+  color:var(--theme-key-features-heading,var(--theme-heading,var(--navy)));
+  font-family:var(--theme-key-features-font-family,var(--theme-body-font-family,inherit));
+  font-size:calc(var(--theme-key-features-font-size,13px) + 2px);
+}
+
+.lt-specification,
+.lt-specification .lt-spec-table,
+.lt-specification .lt-spec-table th,
+.lt-specification .lt-spec-table td{
+  font-family:var(--theme-specification-font-family,var(--theme-body-font-family,inherit));
+  font-size:var(--theme-specification-font-size,13px);
+}
+
+.lt-specification .lt-spec-table td{
+  color:var(--theme-specification-text,#000);
+}
+
+.lt-specification .lt-spec-table th{
+  color:var(--theme-specification-label,#666);
+}
+
+.lt-specification .lt-spec-table .lt-spec-group th{
+  color:var(--theme-specification-group,#3749bb);
+}
+
+.lt-specification > h2{
+  color:var(--theme-specification-heading,var(--theme-heading,var(--navy)));
+  font-family:var(--theme-specification-font-family,var(--theme-body-font-family,inherit));
+  font-size:calc(var(--theme-specification-font-size,13px) + 6px);
+}
+
 a{
   color:var(--theme-link,var(--navy));
 }
