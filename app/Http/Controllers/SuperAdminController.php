@@ -3633,6 +3633,7 @@ class SuperAdminController extends Controller {
         $section = null;
         $pendingLabel = null;
         $pendingValue = [];
+        $pendingExplicit = false;
 
         $savePending = function () use (&$specifications, &$section, &$pendingLabel, &$pendingValue) {
             if ($pendingLabel === null || $pendingValue === []) {
@@ -3651,20 +3652,31 @@ class SuperAdminController extends Controller {
             }
         };
 
-        foreach ($this->parseList($value) as $line) {
-            $line = trim($line);
+        $resetPending = function () use (&$pendingLabel, &$pendingValue, &$pendingExplicit) {
+            $pendingLabel = null;
+            $pendingValue = [];
+            $pendingExplicit = false;
+        };
+
+        $startPending = function (string $label, array $values = [], bool $explicit = false) use (&$pendingLabel, &$pendingValue, &$pendingExplicit) {
+            $pendingLabel = trim($label);
+            $pendingValue = array_values(array_filter(array_map('trim', $values), fn ($item) => $item !== ''));
+            $pendingExplicit = $explicit;
+        };
+
+        foreach (preg_split('/\r\n|\r|\n/', (string) $value) ?: [] as $rawLine) {
+            $isIndented = preg_match('/^[\t ]+/', $rawLine) === 1;
+            $line = trim($rawLine);
 
             if ($line === '') {
                 $savePending();
-                $pendingLabel = null;
-                $pendingValue = [];
+                $resetPending();
                 continue;
             }
 
             if (preg_match('/^\[(.+)\]$/', $line, $matches)) {
                 $savePending();
-                $pendingLabel = null;
-                $pendingValue = [];
+                $resetPending();
                 $section = trim($matches[1]);
                 if ($section !== '' && !isset($specifications[$section])) {
                     $specifications[$section] = [];
@@ -3672,14 +3684,32 @@ class SuperAdminController extends Controller {
                 continue;
             }
 
+            if ($isIndented && $pendingLabel !== null) {
+                $pendingValue[] = $line;
+                continue;
+            }
+
+            $tabParts = array_values(array_filter(array_map('trim', preg_split('/\t+/', $line) ?: []), fn ($item) => $item !== ''));
+            if (count($tabParts) >= 2) {
+                $savePending();
+                $resetPending();
+                $startPending(array_shift($tabParts), [implode(' ', $tabParts)], true);
+                continue;
+            }
+
             $parts = array_map('trim', explode(':', $line, 2));
             if ($pendingLabel !== null) {
-                // A new title-case line after a value starts the next item. Other
-                // lines are values/continuations for the current item.
-                if ($pendingValue !== [] && count($parts) === 1 && $this->looksLikeSpecificationLabel($line)) {
+                // Explicit "Label: Value" rows and title-case label/value pairs
+                // both remain supported. Indented lines above are always kept
+                // as continuations, even when their text resembles a label.
+                if ($pendingExplicit && $pendingValue !== [] && count($parts) === 2 && $parts[0] !== '') {
                     $savePending();
-                    $pendingLabel = $line;
-                    $pendingValue = [];
+                    $resetPending();
+                    $startPending($parts[0], [$parts[1]], true);
+                } elseif ($pendingValue !== [] && count($parts) === 1 && $this->looksLikeSpecificationLabel($line)) {
+                    $savePending();
+                    $resetPending();
+                    $startPending($line);
                 } else {
                     // Pasted catalog specifications commonly use two lines per
                     // item: "Data Rate" followed by one or more value lines.
@@ -3689,17 +3719,12 @@ class SuperAdminController extends Controller {
             }
 
             if (count($parts) === 2 && $parts[0] !== '') {
-                if ($section !== null) {
-                    $specifications[$section][$parts[0]] = $parts[1];
-                } else {
-                    $specifications[$parts[0]] = $parts[1];
-                }
+                $startPending($parts[0], [$parts[1]], true);
                 continue;
             }
 
             if ($this->looksLikeSpecificationLabel($line)) {
-                $pendingLabel = $line;
-                $pendingValue = [];
+                $startPending($line);
             }
         }
 

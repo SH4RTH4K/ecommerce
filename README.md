@@ -307,7 +307,7 @@ Generate `APP_KEY` only for a new installation. Never replace an existing produc
 
 ### cPanel without Terminal
 
-If your cPanel plan does not include SSH or Terminal access, you can use GitHub Actions to deploy the application files over FTP. The workflow intentionally excludes `vendor/`; upload a compatible `vendor/` directory manually after the code deployment.
+If your cPanel plan does not include SSH or Terminal access, you can use GitHub Actions to deploy over FTP. The workflow validates Composer metadata, builds optimized production dependencies, uploads `vendor/` first, and deploys the application code only after the dependency upload succeeds. Server `.env`, generated `php.ini`, logs, tests, documentation, and local development files are excluded.
 
 To use the automated deploy workflow in `.github/workflows/deploy-cpanel.yml`, add these GitHub repository secrets:
 
@@ -316,9 +316,13 @@ To use the automated deploy workflow in `.github/workflows/deploy-cpanel.yml`, a
 - `CPANEL_FTP_PASSWORD`
 - `CPANEL_FTP_SERVER_DIR`
 
-If your host requires FTPS or a nonstandard port, edit the workflow and change the `protocol` and `port` values. The workflow excludes `vendor/` to keep FTP uploads faster.
+If your host requires FTPS or a nonstandard port, edit the workflow and change the `protocol` and `port` values. Plain FTP does not encrypt credentials in transit; use FTPS when the hosting account supports it.
+
+The FTP workflow cannot execute remote Artisan commands. For releases containing database migrations, use cPanel Git deployment with `.cpanel.yml`, run `php artisan migrate --force` from cPanel Terminal after taking a backup, or arrange an equivalent protected deployment hook with the hosting provider. Never expose a public web-based migration runner.
 
 If you prefer a manual fallback, run `composer install --no-dev --optimize-autoloader` locally with PHP 8.3+ - ideally in the same OS family as the host, such as WSL, Docker, or Linux - then upload the project including `vendor`. Import a prepared database using phpMyAdmin or ask the hosting provider to run migrations. Generate a new-installation key locally with `php artisan key:generate --show` and place it in the server `.env`.
+
+Do not commit cPanel-generated `php.ini` files. Manage host-specific PHP settings with **MultiPHP INI Editor**; the repository's portable `.user.ini` contains only application-level upload and resource limits.
 
 If the host cannot change the document root, keep the Laravel application outside `public_html`, copy only the contents of `public` into `public_html`, and update the two paths in `public_html/index.php`. Never expose `.env`, `vendor`, backups, or the complete application directory publicly.
 

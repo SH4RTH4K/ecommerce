@@ -102,7 +102,8 @@
 
         <script src="{{asset('asset/expert-admin/js/retina.js')}}"></script>
 
-        <script src="{{asset('asset/expert-admin/js/custom.js')}}"></script>
+        <script src="{{ asset('asset/expert-admin/js/specification-paste.js') }}?v={{ filemtime(public_path('asset/expert-admin/js/specification-paste.js')) }}"></script>
+        <script src="{{ asset('asset/expert-admin/js/custom.js') }}?v={{ filemtime(public_path('asset/expert-admin/js/custom.js')) }}"></script>
         <!-- end: JavaScript-->
 
     </body>

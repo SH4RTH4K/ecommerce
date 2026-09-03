@@ -20,6 +20,21 @@ yarn-error.log
 .phpunit.result.cache
 .phpunit.cache/
 
+# Host-generated cPanel/PHP runtime files
+/php.ini
+/error_log
+/ecommerce/
+
+# Runtime uploads are restored from application backups, not Git.
+# Existing version-controlled seed/demo images remain tracked.
+/public/asset/front-end/img/Product_image/
+/public/asset/front-end/img/banners/
+/public/asset/front-end/img/branding/
+/public/asset/front-end/img/payments/
+/public/asset/front-end/img/payment-proofs/
+/public/asset/front-end/img/feature-cards/
+/public/asset/front-end/img/featured-brands/
+
 # Local backups and unrelated legacy copies
 /LBD/
 /Investor/

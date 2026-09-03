@@ -302,6 +302,38 @@ function template_functions(){
 	
 	/* ---------- Text editor ---------- */
 	$('.cleditor').cleditor();
+
+	/* ---------- Specification table paste ---------- */
+	$('#specifications').on('paste', function (event) {
+		var field = this;
+		var originalEvent = event.originalEvent || event;
+		var clipboard = originalEvent.clipboardData || window.clipboardData;
+		if (!clipboard || typeof clipboard.getData !== 'function') return;
+
+		var html = clipboard.getData('text/html');
+		var converter = window.LucentSpecificationPaste;
+		var conversion = converter && converter.normalizeHtml(html);
+		if (!conversion) return;
+
+		event.preventDefault();
+		var normalized = conversion.text;
+		var start = typeof field.selectionStart === 'number' ? field.selectionStart : field.value.length;
+		var end = typeof field.selectionEnd === 'number' ? field.selectionEnd : start;
+		var before = field.value.slice(0, start);
+		var after = field.value.slice(end);
+		var leadingBreak = before && !/\n$/.test(before) ? '\n' : '';
+		var trailingBreak = after && !/^\n/.test(after) ? '\n' : '';
+		field.value = before + leadingBreak + normalized + trailingBreak + after;
+		field.selectionStart = field.selectionEnd = (before + leadingBreak + normalized).length;
+		$(field).trigger('input').trigger('change');
+
+		var status = document.getElementById('specification-paste-status');
+		if (status) {
+			status.className = 'help-inline text-success';
+			status.textContent = 'Imported ' + conversion.rowCount + ' specification rows' + (conversion.sectionCount ? ' in ' + conversion.sectionCount + ' sections' : '') + '.';
+		}
+	});
+
 	$('.product-description-editor').each(function () {
 		var field = this;
 		var editor = $(field).data('cleditor');
