@@ -5,7 +5,7 @@
 <style id="storefront-theme-vars">
 :root{
 @foreach($themeCss as $variable => $value)
-    {{ $variable }}: {{ $value }};
+    {{ $variable }}: {!! str_replace('&quot;', '"', e($value)) !!};
 @endforeach
 }
 </style>

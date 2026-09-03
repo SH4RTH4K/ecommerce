@@ -713,7 +713,8 @@ class StorefrontThemeService
         $resolved = $this->resolved($theme);
         $global = $this->globalPalette($resolved);
         $shadow = $this->rgbaFromHex($global['global_primary'], 0.10);
-        $focusRing = $this->rgbaFromHex($resolved['form_focus_border'], 0.15);
+        $searchFocusRing = $this->rgbaFromHex($resolved['search_focus_border'], 0.15);
+        $formFocusRing = $resolved['form_focus_ring'] ?: $this->rgbaFromHex($resolved['form_focus_border'], 0.15);
         $cardShadow = $resolved['cards_hover_shadow'] ?: '0 10px 30px rgba(11,61,98,.1)';
         $footerBorder = $resolved['footer_border'] ?: '#25445d';
         $fontStacks = $this->fontFamilyStacks();
@@ -723,12 +724,18 @@ class StorefrontThemeService
             '--navy' => $global['global_primary'],
             '--navy-dark' => $global['global_secondary'],
             '--orange' => $global['global_accent'],
-            '--ink' => $global['global_body_text'],
+            '--ink' => $global['global_neutral_dark'],
             '--muted' => $global['global_body_muted'],
             '--line' => $global['global_border'],
             '--soft' => $global['global_neutral_light'],
             '--white' => $global['global_page_background'],
             '--shadow' => '0 10px 30px '.$shadow,
+            '--theme-success' => $global['global_success'],
+            '--theme-warning' => $global['global_warning'],
+            '--theme-danger' => $global['global_danger'],
+            '--theme-info' => $global['global_info'],
+            '--theme-neutral-dark' => $global['global_neutral_dark'],
+            '--theme-neutral-light' => $global['global_neutral_light'],
             '--tb-bg' => $resolved['topbar_background'],
             '--tb-text' => $resolved['topbar_text'],
             '--tb-link' => $resolved['topbar_link'],
@@ -786,7 +793,7 @@ class StorefrontThemeService
             '--theme-search-placeholder' => $resolved['search_placeholder'],
             '--theme-search-border' => $resolved['search_border'],
             '--theme-search-focus-border' => $resolved['search_focus_border'],
-            '--theme-search-focus-ring' => $focusRing,
+            '--theme-search-focus-ring' => $searchFocusRing,
             '--theme-search-button-bg' => $resolved['search_button_background'],
             '--theme-search-button-icon' => $resolved['search_button_icon'],
             '--theme-search-button-hover' => $resolved['search_button_hover'],
@@ -851,7 +858,7 @@ class StorefrontThemeService
             '--theme-form-placeholder' => $resolved['form_placeholder'],
             '--theme-form-border' => $resolved['form_border'],
             '--theme-form-focus-border' => $resolved['form_focus_border'],
-            '--theme-form-focus-ring' => $focusRing,
+            '--theme-form-focus-ring' => $formFocusRing,
             '--theme-form-label' => $resolved['form_label'],
             '--theme-form-required' => $resolved['form_required'],
             '--theme-footer-bg' => $resolved['footer_background'],
@@ -1095,7 +1102,7 @@ class StorefrontThemeService
             'navigation' => [
                 'navigation_background' => $primary,
                 'navigation_text' => $page,
-                'navigation_hover_background' => $this->blendForHover('#0b3d62', 'light'),
+                'navigation_hover_background' => $this->blendForHover($primary, 'light'),
                 'navigation_hover_text' => $page,
                 'navigation_active_background' => $accent,
                 'navigation_active_text' => $page,
@@ -1123,7 +1130,7 @@ class StorefrontThemeService
                 'cards_stock' => $global['global_success'],
                 'cards_rating' => $global['global_warning'],
                 'cards_hover_border' => $accent,
-                'cards_hover_shadow' => '0 10px 30px rgba(11,61,98,.1)',
+                'cards_hover_shadow' => '0 10px 30px '.$this->rgbaFromHex($primary, 0.1),
             ],
             'buttons' => [
                 'button_primary_background' => $primary,
@@ -1146,7 +1153,7 @@ class StorefrontThemeService
                 'button_danger_background' => $global['global_danger'],
                 'button_danger_text' => $page,
                 'button_danger_border' => $global['global_danger'],
-                'button_danger_hover_background' => '#b91c1c',
+                'button_danger_hover_background' => $this->blendForHover($global['global_danger'], 'dark'),
                 'button_danger_hover_text' => $page,
             ],
             'forms' => [

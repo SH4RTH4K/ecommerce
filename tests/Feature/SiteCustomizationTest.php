@@ -112,6 +112,10 @@ class SiteCustomizationTest extends TestCase
             'favicon_resize_width' => '512',
             'favicon_resize_height' => '512',
             'startech_source_import_enabled' => '1',
+            'homepage_featured_products_limit' => '10',
+            'homepage_featured_products_per_row' => '5',
+            'homepage_new_arrivals_limit' => '10',
+            'homepage_new_arrivals_per_row' => '5',
         ], $overrides);
     }
 
@@ -319,8 +323,10 @@ class SiteCustomizationTest extends TestCase
                 ->assertSee('--theme-nav-bg: #123456', false)
                 ->assertSee('--theme-header-bg: #112233', false)
                 ->assertSee('--theme-header-font-family: "Noto Sans Bengali"', false)
+                ->assertDontSee('--theme-header-font-family: &quot;Noto Sans Bengali&quot;', false)
                 ->assertSee('--theme-header-font-size: 18px', false)
                 ->assertSee('--theme-key-features-font-family: Georgia', false)
+                ->assertSee('"Noto Serif Bengali", "Noto Sans Bengali", serif', false)
                 ->assertSee('--theme-key-features-font-size: 17px', false)
                 ->assertSee('--theme-key-features-text: #345678', false)
                 ->assertSee('--theme-key-features-heading: #123456', false)
@@ -371,6 +377,49 @@ class SiteCustomizationTest extends TestCase
             DB::rollBack();
             Cache::forget('site-settings');
         }
+    }
+
+    public function testEveryGeneratedThemeVariableIsConsumedByStorefrontStyles()
+    {
+        $themeService = app(StorefrontThemeService::class);
+        $styles = implode("\n", [
+            file_get_contents(public_path('css/ecommerce-home.css')),
+            file_get_contents(public_path('css/brand-tagline.css')),
+            file_get_contents(public_path('css/top-bar.css')),
+            file_get_contents(public_path('css/storefront-theme.css')),
+        ]);
+
+        foreach (array_keys($themeService->cssVariables($themeService->defaults())) as $variable) {
+            $this->assertNotFalse(
+                strpos($styles, 'var('.$variable),
+                $variable.' is generated but is not consumed by a storefront stylesheet.'
+            );
+        }
+    }
+
+    public function testDerivedThemeValuesMatchTheStorefrontPreviewContract()
+    {
+        $themeService = app(StorefrontThemeService::class);
+        $theme = array_merge($themeService->defaults(), [
+            'global_primary' => '#123456',
+            'global_danger' => '#aa2244',
+            'navigation_use_global' => 1,
+            'cards_use_global' => 1,
+            'buttons_use_global' => 1,
+            'search_use_global' => 0,
+            'search_focus_border' => '#112233',
+            'forms_use_global' => 0,
+            'form_focus_ring' => 'rgba(1,2,3,.4)',
+        ]);
+
+        $variables = $themeService->cssVariables($theme);
+
+        $this->assertSame('#2e4c6a', $variables['--theme-nav-hover-bg']);
+        $this->assertSame('0 10px 30px rgba(18,52,86,0.1)', $variables['--theme-card-hover-shadow']);
+        $this->assertSame('#961e3c', $variables['--theme-button-danger-hover-bg']);
+        $this->assertSame('rgba(17,34,51,0.15)', $variables['--theme-search-focus-ring']);
+        $this->assertSame('rgba(1,2,3,.4)', $variables['--theme-form-focus-ring']);
+        $this->assertSame('#25445d', $variables['--theme-footer-border']);
     }
 
     public function testLogoAndBrowserIconCanBeUploadedTogether()
