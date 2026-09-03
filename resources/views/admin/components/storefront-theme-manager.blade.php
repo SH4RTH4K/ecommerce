@@ -15,6 +15,8 @@
                 'label' => $field['label'] ?? $field['key'],
                 'type' => $field['type'] ?? 'text',
                 'default' => $field['default'] ?? '',
+                'options' => $field['options'] ?? [],
+                'help' => $field['help'] ?? '',
             ];
         }
 
@@ -122,6 +124,17 @@
 .ws-theme-preview-footer{padding:14px;background:var(--theme-footer-bg,#072b47);color:var(--theme-footer-text,#b9ccdc);border-top:1px solid var(--theme-footer-border,rgba(255,255,255,.12))}
 .ws-theme-preview-footer strong{display:block;color:var(--theme-footer-heading,#fff);font-size:13px}
 .ws-theme-preview-footer p{margin:4px 0 0;font-size:11px;line-height:1.45}
+.ws-theme-preview{font-family:var(--theme-body-font-family,system-ui,sans-serif);font-size:var(--theme-body-font-size,14px)}
+.ws-theme-preview-topbar{font-family:var(--theme-topbar-font-family,system-ui,sans-serif);font-size:var(--theme-topbar-font-size,13px)}
+.ws-theme-preview-header{font-family:var(--theme-header-font-family,system-ui,sans-serif);font-size:var(--theme-header-font-size,14px)}
+.ws-theme-preview-search,.ws-theme-preview-search input{font-family:var(--theme-search-font-family,system-ui,sans-serif);font-size:var(--theme-search-font-size,14px)}
+.ws-theme-preview-actions{font-family:var(--theme-actions-font-family,system-ui,sans-serif);font-size:var(--theme-actions-font-size,12px)}
+.ws-theme-preview-badge,.ws-theme-preview-chip{font-family:var(--theme-badges-font-family,system-ui,sans-serif);font-size:var(--theme-badges-font-size,11px)}
+.ws-theme-preview-cta{font-family:var(--theme-pc-builder-font-family,system-ui,sans-serif);font-size:var(--theme-pc-builder-font-size,13px)}
+.ws-theme-preview-nav{font-family:var(--theme-navigation-font-family,system-ui,sans-serif);font-size:var(--theme-navigation-font-size,14px)}
+.ws-theme-preview-card{font-family:var(--theme-cards-font-family,system-ui,sans-serif);font-size:var(--theme-cards-font-size,14px)}
+.ws-theme-preview-button{font-family:var(--theme-buttons-font-family,system-ui,sans-serif);font-size:var(--theme-buttons-font-size,14px)}
+.ws-theme-preview-footer{font-family:var(--theme-footer-font-family,system-ui,sans-serif);font-size:var(--theme-footer-font-size,14px)}
 .ws-theme-preview-note{margin-top:10px;padding:10px 12px;border-radius:8px;background:#f6fbfd;border:1px solid #dcebf1;color:#597080;font-size:11px;line-height:1.45}
 @media(max-width:1200px){.ws-theme-layout{grid-template-columns:1fr}.ws-theme-side{position:static}}
 @media(max-width:900px){.ws-theme-grid{grid-template-columns:1fr}.ws-theme-preview-header{grid-template-columns:1fr}.ws-theme-preview-actions{justify-content:flex-start}}
@@ -132,11 +145,11 @@
     <div class="ws-theme-hero">
         <div>
             <small>Storefront visual system</small>
-            <h2>Theme & Colors</h2>
-            <p>Keep the current brand combination or adjust each storefront section independently. Presets provide a quick start, then every section can be refined and previewed live.</p>
+            <h2>Website Colors, Fonts and Text Sizes</h2>
+            <p>Choose a ready-made style or change the colors, fonts, and text sizes used on each part of the website.</p>
         </div>
         <div class="ws-theme-hero-actions">
-            <button type="button" class="btn btn-warning" data-theme-reset-all><i class="icon-refresh"></i> Reset all colors</button>
+            <button type="button" class="btn btn-warning" data-theme-reset-all><i class="icon-refresh"></i> Restore all defaults</button>
         </div>
     </div>
 
@@ -145,19 +158,19 @@
             <div class="ws-theme-card">
                 <div class="ws-theme-card-head">
                     <div>
-                        <h3>Preset starter</h3>
-                        <p>Choose a starting palette, then fine-tune any part of the storefront theme.</p>
+                        <h3>Quick Style</h3>
+                        <p>Choose a ready-made color style, then adjust individual website sections below.</p>
                     </div>
                     <div class="ws-theme-card-actions">
-                        <button type="button" class="btn btn-mini" data-theme-reset-preset>Reset preset</button>
+                        <button type="button" class="btn btn-mini" data-theme-reset-preset>Restore quick style</button>
                     </div>
                 </div>
                 <div class="ws-theme-card-body">
                     <div class="ws-theme-grid ws-theme-grid--single">
                         <div class="ws-theme-field" data-theme-field-row="preset" data-theme-field-type="select" data-theme-default="{{ $themeDefaults['preset'] ?? 'lucent-tech-bd' }}">
                             <div class="ws-theme-field-head">
-                                <label for="storefront-theme-preset">Theme preset</label>
-                                <button type="button" class="btn btn-mini" data-theme-reset-field="preset" data-theme-default="{{ $themeDefaults['preset'] ?? 'lucent-tech-bd' }}">Reset</button>
+                                <label for="storefront-theme-preset">Choose a quick style</label>
+                                <button type="button" class="btn btn-mini" data-theme-reset-field="preset" data-theme-default="{{ $themeDefaults['preset'] ?? 'lucent-tech-bd' }}">Use default</button>
                             </div>
                             <select id="storefront-theme-preset" name="storefront_theme[preset]" data-theme-input="preset">
                                 @foreach($themePresets as $presetKey => $presetLabel)
@@ -174,7 +187,7 @@
                             </div>
                             <div class="ws-theme-summary" data-theme-preset-summary>
                                 <strong data-theme-preset-name>{{ $themePresets[$themePresetValue] ?? ($themePresets[$themeDefaults['preset'] ?? 'lucent-tech-bd'] ?? 'Current preset') }}</strong>
-                                <span>Use this as a shortcut when you want a fast brand refresh before editing individual colors.</span>
+                                <span>Use this shortcut for a quick website color refresh before editing individual colors.</span>
                             </div>
                         </div>
                     </div>
@@ -233,7 +246,7 @@
                                 <p>{{ $group['description'] }}</p>
                             </div>
                             <div class="ws-theme-card-actions">
-                                <button type="button" class="btn btn-mini" data-theme-reset-section="{{ $sectionKey }}">Reset section</button>
+                                <button type="button" class="btn btn-mini" data-theme-reset-section="{{ $sectionKey }}">Restore section defaults</button>
                             </div>
                         </div>
                         <div class="ws-theme-card-body">
@@ -379,6 +392,7 @@
     var themeGroups = @json($themeSchema);
     var themePresets = @json($themePresets);
     var themePresetPalettes = @json($themePresetPalettes);
+    var themeFontStacks = @json(app(\App\Services\StorefrontThemeService::class)->fontFamilyStacks());
     var defaultPreset = themeDefaults.preset || 'lucent-tech-bd';
     var presetSelect = manager.querySelector('[data-theme-preset-select]');
     var presetName = manager.querySelector('[data-theme-preset-name]');
@@ -390,6 +404,10 @@
     var fieldResetButtons = manager.querySelectorAll('[data-theme-reset-field]');
     var themeFieldSelector = '[data-theme-input], [data-theme-picker], [data-theme-toggle]';
     var themeSections = Object.keys(themeGroups);
+
+    function fontStack(key) {
+        return themeFontStacks[key] || themeFontStacks.system || 'system-ui, sans-serif';
+    }
 
     function isTruthy(value) {
         return value === true || value === 1 || value === '1' || value === 'true' || value === 'on';
@@ -784,6 +802,32 @@
             '--tb-text': resolved.topbar_text,
             '--tb-link': resolved.topbar_link,
             '--tb-link-hover': resolved.topbar_link_hover,
+            '--theme-topbar-font-family': fontStack(resolved.topbar_font_family),
+            '--theme-topbar-font-size': resolved.topbar_font_size + 'px',
+            '--theme-header-font-family': fontStack(resolved.header_font_family),
+            '--theme-header-font-size': resolved.header_font_size + 'px',
+            '--theme-search-font-family': fontStack(resolved.search_font_family),
+            '--theme-search-font-size': resolved.search_font_size + 'px',
+            '--theme-actions-font-family': fontStack(resolved.actions_font_family),
+            '--theme-actions-font-size': resolved.actions_font_size + 'px',
+            '--theme-badges-font-family': fontStack(resolved.badges_font_family),
+            '--theme-badges-font-size': resolved.badges_font_size + 'px',
+            '--theme-pc-builder-font-family': fontStack(resolved.pc_builder_font_family),
+            '--theme-pc-builder-font-size': resolved.pc_builder_font_size + 'px',
+            '--theme-navigation-font-family': fontStack(resolved.navigation_font_family),
+            '--theme-navigation-font-size': resolved.navigation_font_size + 'px',
+            '--theme-body-font-family': fontStack(resolved.body_font_family),
+            '--theme-body-font-size': resolved.body_font_size + 'px',
+            '--theme-cards-font-family': fontStack(resolved.cards_font_family),
+            '--theme-cards-font-size': resolved.cards_font_size + 'px',
+            '--theme-buttons-font-family': fontStack(resolved.buttons_font_family),
+            '--theme-buttons-font-size': resolved.buttons_font_size + 'px',
+            '--theme-forms-font-family': fontStack(resolved.forms_font_family),
+            '--theme-forms-font-size': resolved.forms_font_size + 'px',
+            '--theme-footer-font-family': fontStack(resolved.footer_font_family),
+            '--theme-footer-font-size': resolved.footer_font_size + 'px',
+            '--theme-breadcrumbs-font-family': fontStack(resolved.breadcrumbs_font_family),
+            '--theme-breadcrumbs-font-size': resolved.breadcrumbs_font_size + 'px',
             '--theme-page-bg': resolved.body_background,
             '--theme-body-text': resolved.body_text,
             '--theme-muted': resolved.body_muted,

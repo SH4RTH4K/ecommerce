@@ -1760,6 +1760,8 @@ class SuperAdminController extends Controller {
             'seo_image' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
             'footer_description' => 'nullable|string|max:500',
             'copyright_text' => 'nullable|string|max:255',
+            'footer_credit_text' => 'nullable|string|max:120',
+            'footer_credit_url' => ['nullable', 'regex:/^(https?:\/\/|\/|#)/i', 'max:255'],
             'hero_side_title' => 'nullable|string|max:120',
             'hero_side_text' => 'nullable|string|max:240',
             'hero_side_button_text' => 'nullable|string|max:80',
@@ -1780,6 +1782,10 @@ class SuperAdminController extends Controller {
             'development_mode_availability_text' => 'nullable|string|max:255',
             'development_mode_show_admin_login' => 'required|boolean',
             'development_mode_login_button_text' => 'nullable|string|max:100',
+            'homepage_featured_products_limit' => 'required|integer|min:1|max:50',
+            'homepage_featured_products_per_row' => 'required|integer|min:2|max:6',
+            'homepage_new_arrivals_limit' => 'required|integer|min:1|max:50',
+            'homepage_new_arrivals_per_row' => 'required|integer|min:2|max:6',
         ], $themeRules, $this->siteCustomizationPageValidationRules()), array_merge([
             'logo.uploaded' => 'The logo could not be uploaded. Choose a PNG, JPG, or WebP image no larger than 5 MB.',
             'logo.image' => 'The logo must be a valid PNG, JPG, or WebP image.',
@@ -2176,6 +2182,8 @@ class SuperAdminController extends Controller {
             'development_mode_login_button_text' => 'Admin Login',
             'startech_source_import_enabled' => 1,
             'copyright_text' => '',
+            'footer_credit_text' => 'Lucent Tech BD',
+            'footer_credit_url' => '',
             'hero_side_enabled' => 1,
             'hero_side_button_text' => 'Get a quotation',
             'hero_side_url' => '/contact-us',
@@ -2186,6 +2194,10 @@ class SuperAdminController extends Controller {
             'hero_side_2_url' => '#products',
             'hero_side_2_enabled' => 1,
             'hero_side_2_style' => 'ORANGE',
+            'homepage_featured_products_limit' => 20,
+            'homepage_featured_products_per_row' => 5,
+            'homepage_new_arrivals_limit' => 20,
+            'homepage_new_arrivals_per_row' => 5,
         ], $this->siteCustomizationPageDefaults($brandName));
     }
 
@@ -2505,13 +2517,15 @@ class SuperAdminController extends Controller {
             'shop_address', 'business_hours', 'facebook_url', 'instagram_url', 'youtube_url',
             'linkedin_url', 'twitter_url', 'google_analytics_id', 'google_site_verification',
             'default_meta_title', 'default_meta_description', 'meta_keywords', 'robots_directive',
-            'footer_description', 'copyright_text',
+            'footer_description', 'copyright_text', 'footer_credit_text', 'footer_credit_url',
             'development_mode_enabled', 'development_mode_message_type', 'development_mode_title',
             'development_mode_message', 'development_mode_additional_message',
             'development_mode_availability_text', 'development_mode_show_admin_login',
             'development_mode_login_button_text', 'logo_resize_enabled', 'logo_resize_width',
             'logo_resize_height', 'favicon_resize_enabled', 'favicon_resize_width',
             'favicon_resize_height', 'startech_source_import_enabled', 'storefront_theme',
+            'homepage_featured_products_limit', 'homepage_featured_products_per_row',
+            'homepage_new_arrivals_limit', 'homepage_new_arrivals_per_row',
         ], $this->siteCustomizationPageSettingKeys());
     }
 

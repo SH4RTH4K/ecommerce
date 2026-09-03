@@ -6,6 +6,8 @@
     $footerTaglineIsBengali = (bool)preg_match('/[\x{0980}-\x{09FF}]/u', $footerTagline);
     $copyright = isset($siteSettings['copyright_text']) && $siteSettings['copyright_text'] ? $siteSettings['copyright_text'] : '© {year} '.$siteName.'. All rights reserved.';
     $copyright = str_replace('{year}', date('Y'), $copyright);
+    $footerCreditText = trim((string)$siteSettings->get('footer_credit_text', 'Lucent Tech BD'));
+    $footerCreditUrl = trim((string)$siteSettings->get('footer_credit_url', ''));
     $footerLogoPath = $siteLogo ? parse_url($siteLogo, PHP_URL_PATH) : null;
     $footerLogoAvailable = $siteLogo && (preg_match('#^https?://#i', $siteLogo) || ($footerLogoPath && file_exists(public_path(ltrim($footerLogoPath, '/')))));
     $socialLinks = [
@@ -21,5 +23,5 @@
         <div><h3>Customer service</h3><a href="{{ route('orders.track.form') }}">Track your order</a><a href="{{ route('service-claims.form') }}">Warranty &amp; service request</a><a href="#">Warranty policy</a><a href="#">Delivery information</a><a href="#">Returns &amp; refunds</a></div>
         <div><h3>Stay connected</h3><p><i class="fa fa-map-marker"></i> {{ isset($siteSettings['shop_address']) && $siteSettings['shop_address'] ? $siteSettings['shop_address'] : 'Dhaka, Bangladesh' }}</p><p><i class="fa fa-envelope"></i> {{ isset($siteSettings['support_email']) && $siteSettings['support_email'] ? $siteSettings['support_email'] : 'support@example.com' }}</p>@if(isset($siteSettings['business_hours']) && $siteSettings['business_hours'])<p><i class="fa fa-clock-o"></i> {{ $siteSettings['business_hours'] }}</p>@endif<div class="lt-social">@foreach($socialLinks as $key=>$social)@if(isset($siteSettings[$key]) && $siteSettings[$key])<a href="{{ $siteSettings[$key] }}" target="_blank" rel="noopener noreferrer" aria-label="{{ $social[0] }}"><i class="fa {{ $social[1] }}"></i></a>@endif @endforeach</div></div>
     </div>
-    <div class="lt-copyright"><div class="lt-container">{{ $copyright }}</div></div>
+    <div class="lt-copyright"><div class="lt-container"><span>{{ $copyright }}</span>@if($footerCreditText)<span class="lt-footer-credit">Designed and developed by @if($footerCreditUrl)<a href="{{ $footerCreditUrl }}" @if(preg_match('#^https?://#i', $footerCreditUrl)) target="_blank" rel="noopener noreferrer" @endif>{{ $footerCreditText }}</a>@else{{ $footerCreditText }}@endif</span>@endif</div></div>
 </footer>

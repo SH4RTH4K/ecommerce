@@ -11,6 +11,12 @@
         'favicon_resize_width' => 512,
         'favicon_resize_height' => 512,
         'robots_directive' => 'index,follow',
+        'homepage_featured_products_limit' => 20,
+        'homepage_featured_products_per_row' => 5,
+        'homepage_new_arrivals_limit' => 20,
+        'homepage_new_arrivals_per_row' => 5,
+        'footer_credit_text' => 'Lucent Tech BD',
+        'footer_credit_url' => '',
         'development_mode_enabled' => 0,
         'development_mode_message_type' => 'maintenance',
         'development_mode_title' => 'Website Under Development',
@@ -250,9 +256,17 @@
                         <div class="ws-field"><label for="hero_side_2_style">Feature card 2 style</label><select id="hero_side_2_style" name="hero_side_2_style"><option value="BLUE" {{ $setting('hero_side_2_style', $siteCustomizationDefaults['hero_side_2_style']) === 'BLUE' ? 'selected' : '' }}>Blue</option><option value="ORANGE" {{ $setting('hero_side_2_style', $siteCustomizationDefaults['hero_side_2_style']) === 'ORANGE' ? 'selected' : '' }}>Orange</option><option value="LIGHT" {{ $setting('hero_side_2_style', $siteCustomizationDefaults['hero_side_2_style']) === 'LIGHT' ? 'selected' : '' }}>Light</option><option value="DARK" {{ $setting('hero_side_2_style', $siteCustomizationDefaults['hero_side_2_style']) === 'DARK' ? 'selected' : '' }}>Dark</option></select></div>
                         <div class="ws-field"><label class="ws-check"><input type="hidden" name="hero_side_2_enabled" value="0"><input type="checkbox" name="hero_side_2_enabled" value="1" {{ $setting('hero_side_2_enabled', $siteCustomizationDefaults['hero_side_2_enabled']) ? 'checked' : '' }}> Show feature card 2</label></div>
                     </div></div></div>
+                    <div class="ws-card"><div class="ws-card-head"><h2>Homepage product sections</h2><p>Control which flagged products appear in Featured Products and New Arrivals. Product limits are capped at 50.</p></div><div class="ws-card-body"><div class="ws-grid">
+                        <div class="ws-field"><label for="homepage_featured_products_limit">Featured Products count</label><input id="homepage_featured_products_limit" type="number" name="homepage_featured_products_limit" min="1" max="50" step="1" value="{{ $setting('homepage_featured_products_limit', $defaults['homepage_featured_products_limit']) }}"><small class="ws-help">Maximum 50 published products marked as featured.</small><span class="ws-upload-error" role="alert">{{ $errors->first('homepage_featured_products_limit') }}</span></div>
+                        <div class="ws-field"><label for="homepage_featured_products_per_row">Featured Products per row</label><input id="homepage_featured_products_per_row" type="number" name="homepage_featured_products_per_row" min="2" max="6" step="1" value="{{ $setting('homepage_featured_products_per_row', $defaults['homepage_featured_products_per_row']) }}"><small class="ws-help">Desktop cards per row: 2–6. Smaller screens stay responsive.</small><span class="ws-upload-error" role="alert">{{ $errors->first('homepage_featured_products_per_row') }}</span></div>
+                        <div class="ws-field"><label for="homepage_new_arrivals_limit">New Arrivals count</label><input id="homepage_new_arrivals_limit" type="number" name="homepage_new_arrivals_limit" min="1" max="50" step="1" value="{{ $setting('homepage_new_arrivals_limit', $defaults['homepage_new_arrivals_limit']) }}"><small class="ws-help">Maximum 50 published products marked as new arrivals.</small><span class="ws-upload-error" role="alert">{{ $errors->first('homepage_new_arrivals_limit') }}</span></div>
+                        <div class="ws-field"><label for="homepage_new_arrivals_per_row">New Arrivals per row</label><input id="homepage_new_arrivals_per_row" type="number" name="homepage_new_arrivals_per_row" min="2" max="6" step="1" value="{{ $setting('homepage_new_arrivals_per_row', $defaults['homepage_new_arrivals_per_row']) }}"><small class="ws-help">Desktop cards per row: 2–6. Smaller screens stay responsive.</small><span class="ws-upload-error" role="alert">{{ $errors->first('homepage_new_arrivals_per_row') }}</span></div>
+                    </div></div></div>
                     <div class="ws-card"><div class="ws-card-head"><h2>Footer content</h2><p>Information repeated at the bottom of storefront pages.</p></div><div class="ws-card-body"><div class="ws-grid">
                         <div class="ws-field full"><label for="footer_description">Business description</label><textarea id="footer_description" name="footer_description" maxlength="500" rows="4" data-count>{{ $setting('footer_description') }}</textarea><small class="ws-help">Use one or two clear sentences. <span class="ws-counter"></span></small></div>
                         <div class="ws-field full"><label for="copyright_text">Copyright line</label><input id="copyright_text" name="copyright_text" maxlength="255" value="{{ $setting('copyright_text', '© {year} '.$defaults['site_name'].'. All rights reserved.') }}"><small class="ws-help">Use <code>{year}</code> to keep the year current automatically.</small></div>
+                        <div class="ws-field"><label for="footer_credit_text">Designed and developed by</label><input id="footer_credit_text" name="footer_credit_text" maxlength="120" value="{{ $setting('footer_credit_text', $defaults['footer_credit_text']) }}"><small class="ws-help">This text appears after “Designed and developed by”. Leave blank to hide the credit.</small></div>
+                        <div class="ws-field"><label for="footer_credit_url">Developer link</label><input id="footer_credit_url" name="footer_credit_url" maxlength="255" value="{{ $setting('footer_credit_url', $defaults['footer_credit_url']) }}" placeholder="https://example.com"><small class="ws-help">Use an HTTPS URL, site path, or anchor. The developer text becomes clickable.</small><span class="ws-upload-error" role="alert">{{ $errors->first('footer_credit_url') }}</span></div>
                     </div></div></div>
                     <div class="ws-card">
                         <div class="ws-card-head">
@@ -512,6 +526,8 @@ document.addEventListener('DOMContentLoaded',function(){
         setTextValue('business_hours','');
         setTextValue('footer_description','');
         setTextValue('copyright_text','© {year} '+(defaults.site_name||'Ecommerce')+'. All rights reserved.');
+        setTextValue('footer_credit_text',defaults.footer_credit_text||'Lucent Tech BD');
+        setTextValue('footer_credit_url',defaults.footer_credit_url||'');
         setTextValue('hero_side_title','');
         setTextValue('hero_side_text','');
         [
@@ -581,6 +597,10 @@ document.addEventListener('DOMContentLoaded',function(){
         setTextValue('development_mode_availability_text','');
         setCheckboxValue('development_mode_show_admin_login',true);
         setTextValue('development_mode_login_button_text',defaults.development_mode_login_button_text||'Admin Login');
+        setTextValue('homepage_featured_products_limit',String(defaults.homepage_featured_products_limit||20));
+        setTextValue('homepage_featured_products_per_row',String(defaults.homepage_featured_products_per_row||5));
+        setTextValue('homepage_new_arrivals_limit',String(defaults.homepage_new_arrivals_limit||20));
+        setTextValue('homepage_new_arrivals_per_row',String(defaults.homepage_new_arrivals_per_row||5));
         if(window.storefrontThemeManager&&typeof window.storefrontThemeManager.resetAll==='function')window.storefrontThemeManager.resetAll();
         ['logo','favicon','seo_image'].forEach(function(key){setAssetRemoval(key,true)});
         document.querySelectorAll('.ws-upload.has-error,.ws-field.has-error').forEach(function(node){node.classList.remove('has-error')});

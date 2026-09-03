@@ -176,6 +176,7 @@ class SiteCustomizationTest extends TestCase
             ->get('/site-customization')->assertStatus(200)
             ->assertSee('Store setup')->assertSee('Business identity')
             ->assertSee('Contact &amp; location',false)->assertSee('Theme &amp; colors',false)->assertSee('Search &amp; sharing',false)
+            ->assertSee('Section Typography')->assertSee('Header Text Size')
             ->assertSee('How this tab works',false)
             ->assertSee('Public page copy',false)
             ->assertSee('Live About page preview',false)
@@ -262,6 +263,10 @@ class SiteCustomizationTest extends TestCase
                 'header_use_global' => '0',
                 'header_background' => '#112233',
                 'header_text' => '#f8fbff',
+                'header_font_family' => 'bengali',
+                'header_font_size' => '18',
+                'footer_font_family' => 'georgia',
+                'footer_font_size' => '16',
             ]);
 
             $response = $this->withSession(['admin_id' => $admin->admin_id, 'admin_name' => $admin->admin_name])
@@ -284,12 +289,19 @@ class SiteCustomizationTest extends TestCase
             $this->assertSame(0, $decodedTheme['header_use_global']);
             $this->assertSame('#112233', $decodedTheme['header_background']);
             $this->assertSame('#f8fbff', $decodedTheme['header_text']);
+            $this->assertSame('bengali', $decodedTheme['header_font_family']);
+            $this->assertSame('18', $decodedTheme['header_font_size']);
+            $this->assertSame('georgia', $decodedTheme['footer_font_family']);
+            $this->assertSame('16', $decodedTheme['footer_font_size']);
 
             Cache::forget('site-settings');
             $this->get('/')->assertOk()
                 ->assertSee('--theme-nav-bg: #123456', false)
                 ->assertSee('--theme-header-bg: #112233', false)
+                ->assertSee('--theme-header-font-family: "Noto Sans Bengali"', false)
+                ->assertSee('--theme-header-font-size: 18px', false)
                 ->assertSee('--theme-footer-bg: #0f2233', false)
+                ->assertSee('--theme-footer-font-size: 16px', false)
                 ->assertSee('--theme-button-primary-bg: #123456', false)
                 ->assertSee('lt-startech-menu', false);
         } finally {

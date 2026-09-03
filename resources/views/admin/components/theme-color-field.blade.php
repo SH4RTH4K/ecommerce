@@ -12,7 +12,7 @@
     <div class="ws-theme-field-head">
         <label for="{{ $fieldId }}{{ $fieldType === 'color' ? '-picker' : '' }}">{{ $fieldLabel }}</label>
         @if($fieldType !== 'boolean')
-            <button type="button" class="btn btn-mini" data-theme-reset-field="{{ $fieldKey }}" data-theme-default="{{ $field['default'] ?? '' }}">Reset</button>
+            <button type="button" class="btn btn-mini" data-theme-reset-field="{{ $fieldKey }}" data-theme-default="{{ $field['default'] ?? '' }}">Use default</button>
         @endif
     </div>
 

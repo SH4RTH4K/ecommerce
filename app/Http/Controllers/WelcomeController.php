@@ -19,18 +19,31 @@ class WelcomeController extends Controller
     public function index(HomepageFeatureCardService $featureCards)
     {
         $categoryTree = app(StorefrontNavbarService::class)->categoryTree();
+        $homepageSettings = DB::table('site_settings')
+            ->whereIn('setting_key', [
+                'homepage_featured_products_limit',
+                'homepage_featured_products_per_row',
+                'homepage_new_arrivals_limit',
+                'homepage_new_arrivals_per_row',
+            ])
+            ->pluck('setting_value', 'setting_key');
+
+        $featuredProductsLimit = max(1, min(50, (int) ($homepageSettings->get('homepage_featured_products_limit') ?: 20)));
+        $featuredProductsPerRow = max(2, min(6, (int) ($homepageSettings->get('homepage_featured_products_per_row') ?: 5)));
+        $newArrivalsLimit = max(1, min(50, (int) ($homepageSettings->get('homepage_new_arrivals_limit') ?: 20)));
+        $newArrivalsPerRow = max(2, min(6, (int) ($homepageSettings->get('homepage_new_arrivals_per_row') ?: 5)));
 
         // top_product is the legacy schema's featured flag.
         $featuredProducts = Product::where('publication_status', 1)
             ->where('top_product', 1)
             ->latest()
-            ->limit(10)
+            ->limit($featuredProductsLimit)
             ->get();
 
         $newArrivals = Product::where('publication_status', 1)
             ->where('is_new_arrival', 1)
             ->latest()
-            ->limit(10)
+            ->limit($newArrivalsLimit)
             ->get();
 
         $latestProducts = Product::where('publication_status', 1)
@@ -79,6 +92,10 @@ class WelcomeController extends Controller
             'featuredProducts',
             'newArrivals',
             'latestProducts',
+            'featuredProductsLimit',
+            'featuredProductsPerRow',
+            'newArrivalsLimit',
+            'newArrivalsPerRow',
             'brands',
             'banners', 'homepageFeatureCards', 'featuredBrandIcons', 'featuredBrandImages'
         ));

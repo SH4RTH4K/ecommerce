@@ -141,7 +141,13 @@ document.addEventListener('DOMContentLoaded',function(){
     function update(){var all=boxes(),checked=all.filter(function(box){return box.checked;});counter.textContent=checked.length+' selected';button.disabled=checked.length===0;selectAll.checked=all.length>0&&checked.length===all.length;selectAll.indeterminate=checked.length>0&&checked.length<all.length;}
     selectAll.addEventListener('change',function(){boxes().forEach(function(box){box.checked=selectAll.checked;});update();});
     form.addEventListener('change',function(event){if(event.target.classList.contains('subcategory-checkbox'))update();});
-    form.addEventListener('submit',function(event){var count=boxes().filter(function(box){return box.checked;}).length;if(!count||!confirm('Delete '+count+' selected subcategor'+(count===1?'y':'ies')+'? Subcategories assigned to products will be skipped.'))event.preventDefault();});
+    form.addEventListener('submit',function(event){
+        // The row actions share this form for their formaction/formmethod. Only
+        // apply bulk validation when the bulk-delete button submitted the form.
+        if(event.submitter!==button)return;
+        var count=boxes().filter(function(box){return box.checked;}).length;
+        if(!count||!confirm('Delete '+count+' selected subcategor'+(count===1?'y':'ies')+'? Subcategories assigned to products will be skipped.'))event.preventDefault();
+    });
     update();
 });
 </script>

@@ -116,10 +116,10 @@
         <section id="offers" class="lt-section lt-products-section">
             <div class="lt-container">
                 <div class="lt-section-heading"><div><span>Chosen for you</span><h2>Featured Products</h2></div><div class="lt-tabs" role="tablist"><button class="is-active" data-tab-button="featured" role="tab" aria-selected="true">Featured</button><button data-tab-button="latest" role="tab" aria-selected="false">Latest</button></div></div>
-                <div class="lt-product-grid" data-tab-panel="featured">
+                <div class="lt-product-grid" data-tab-panel="featured" style="--lt-product-columns: {{ $featuredProductsPerRow }};">
                     @forelse($featuredProducts as $product) @include('partials.product-card', ['product' => $product]) @empty <div class="lt-empty">No products are marked as featured yet. Set <code>top_product</code> for products in admin/data.</div> @endforelse
                 </div>
-                <div class="lt-product-grid" data-tab-panel="latest" hidden>
+                <div class="lt-product-grid" data-tab-panel="latest" hidden style="--lt-product-columns: {{ $featuredProductsPerRow }};">
                     @forelse($latestProducts as $product) @include('partials.product-card', ['product' => $product]) @empty <div class="lt-empty">Published products will appear here.</div> @endforelse
                 </div>
             </div>
@@ -129,7 +129,7 @@
 
         <section id="latest-offers" class="lt-section lt-container">
             <div class="lt-section-heading"><div><span>Just landed</span><h2>New Arrivals</h2></div></div>
-            <div class="lt-product-grid">
+            <div class="lt-product-grid" style="--lt-product-columns: {{ $newArrivalsPerRow }};">
                 @forelse($newArrivals as $product) @include('partials.product-card', ['product' => $product]) @empty <div class="lt-empty">No products are marked as new arrivals yet. Admin/data flagging is required.</div> @endforelse
             </div>
         </section>

@@ -10,10 +10,13 @@ class StorefrontThemeService
 
     public function fieldGroups(): array
     {
+        $fontFamilies = $this->fontFamilyOptions();
+        $fontSizes = $this->fontSizeOptions();
+
         return [
             'branding' => [
-                'label' => 'Logo Variants',
-                'description' => 'Choose which logo file the storefront should prefer on light or dark backgrounds.',
+                'label' => 'Logo Settings',
+                'description' => 'Choose the logo used in different parts of the website.',
                 'fields' => [
                     [
                         'key' => 'logo_variant',
@@ -52,8 +55,8 @@ class StorefrontThemeService
                 ],
             ],
             'global' => [
-                'label' => 'Global Brand Palette',
-                'description' => 'These colors drive the default storefront palette and any section using the global theme.',
+                'label' => 'Main Website Colors',
+                'description' => 'Set the main colors used across the website. Other sections can follow these colors automatically.',
                 'fields' => [
                     ['key' => 'preset', 'label' => 'Theme Preset', 'type' => 'select', 'default' => self::DEFAULT_PRESET, 'options' => $this->presetOptions(), 'help' => 'A preset fills the theme controls with a curated palette.'],
                     ['key' => 'global_primary', 'label' => 'Primary Color', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Main brand color used for headings and primary accents.'],
@@ -74,12 +77,44 @@ class StorefrontThemeService
                     ['key' => 'global_border', 'label' => 'Border Color', 'type' => 'color', 'default' => '#e4eaf0', 'help' => 'Default border color for cards and panels.'],
                 ],
             ],
+            'typography' => [
+                'label' => 'Text Size and Font',
+                'description' => 'Change the font style and text size for each part of the website.',
+                'fields' => [
+                    ['key' => 'topbar_font_family', 'label' => 'Announcement Bar Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in the announcement and contact strip.'],
+                    ['key' => 'topbar_font_size', 'label' => 'Announcement Bar Text Size', 'type' => 'select', 'default' => '13', 'options' => $fontSizes, 'help' => 'Text size in the announcement and contact strip.'],
+                    ['key' => 'header_font_family', 'label' => 'Header Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Logo tagline and header text.'],
+                    ['key' => 'header_font_size', 'label' => 'Header Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Main text size in the website header.'],
+                    ['key' => 'search_font_family', 'label' => 'Search Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in the search box and suggestions.'],
+                    ['key' => 'search_font_size', 'label' => 'Search Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Text size in the search box and suggestions.'],
+                    ['key' => 'actions_font_family', 'label' => 'Wishlist, Account and Cart Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text beside the wishlist, account, compare, and cart icons.'],
+                    ['key' => 'actions_font_size', 'label' => 'Wishlist, Account and Cart Text Size', 'type' => 'select', 'default' => '12', 'options' => $fontSizes, 'help' => 'Text size beside the header action icons.'],
+                    ['key' => 'badges_font_family', 'label' => 'Cart and Compare Badge Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in cart, compare, and discount badges.'],
+                    ['key' => 'badges_font_size', 'label' => 'Cart and Compare Badge Text Size', 'type' => 'select', 'default' => '11', 'options' => $fontSizes, 'help' => 'Text size in counters and badges.'],
+                    ['key' => 'pc_builder_font_family', 'label' => 'PC Builder Button Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in the PC Builder button.'],
+                    ['key' => 'pc_builder_font_size', 'label' => 'PC Builder Button Text Size', 'type' => 'select', 'default' => '13', 'options' => $fontSizes, 'help' => 'Text size in the PC Builder button.'],
+                    ['key' => 'navigation_font_family', 'label' => 'Category Menu Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in the category menu and dropdown.'],
+                    ['key' => 'navigation_font_size', 'label' => 'Category Menu Text Size', 'type' => 'select', 'default' => '14', 'options' => $fontSizes, 'help' => 'Text size in the category menu.'],
+                    ['key' => 'body_font_family', 'label' => 'Page Text Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Default font for website pages.'],
+                    ['key' => 'body_font_size', 'label' => 'Page Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Default text size for website pages.'],
+                    ['key' => 'cards_font_family', 'label' => 'Product Card Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Product names, prices, and card controls.'],
+                    ['key' => 'cards_font_size', 'label' => 'Product Card Text Size', 'type' => 'select', 'default' => '15', 'options' => $fontSizes, 'help' => 'Text size inside product cards.'],
+                    ['key' => 'buttons_font_family', 'label' => 'Button Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in website buttons.'],
+                    ['key' => 'buttons_font_size', 'label' => 'Button Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Text size inside website buttons.'],
+                    ['key' => 'forms_font_family', 'label' => 'Form Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in input boxes, labels, and forms.'],
+                    ['key' => 'forms_font_size', 'label' => 'Form Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Text size in input boxes, labels, and forms.'],
+                    ['key' => 'footer_font_family', 'label' => 'Footer Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in footer links and information.'],
+                    ['key' => 'footer_font_size', 'label' => 'Footer Text Size', 'type' => 'select', 'default' => '16', 'options' => $fontSizes, 'help' => 'Text size in the website footer.'],
+                    ['key' => 'breadcrumbs_font_family', 'label' => 'Breadcrumb Font', 'type' => 'select', 'default' => 'system', 'options' => $fontFamilies, 'help' => 'Text in the page path shown above content.'],
+                    ['key' => 'breadcrumbs_font_size', 'label' => 'Breadcrumb Text Size', 'type' => 'select', 'default' => '13', 'options' => $fontSizes, 'help' => 'Text size in the page path shown above content.'],
+                ],
+            ],
             'topbar' => [
-                'label' => 'Top Bar',
-                'description' => 'Controls the announcement and contact strip at the very top of the storefront.',
+                'label' => 'Announcement Bar',
+                'description' => 'Controls the message and contact strip at the top of the website.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'topbar_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'topbar_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'topbar_background', 'label' => 'Background Color', 'type' => 'color', 'default' => '#073451', 'help' => 'Top bar background.'],
                     ['key' => 'topbar_text', 'label' => 'Text Color', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Top bar text color.'],
                     ['key' => 'topbar_link', 'label' => 'Link Color', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Top bar link color.'],
@@ -87,11 +122,11 @@ class StorefrontThemeService
                 ],
             ],
             'header' => [
-                'label' => 'Main Header',
-                'description' => 'Logo, search, wishlist, account, compare, cart, and PC Builder area.',
+                'label' => 'Website Header',
+                'description' => 'Controls the logo, search box, wishlist, account, compare, cart, and PC Builder area.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'header_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'header_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'header_background', 'label' => 'Header Background', 'type' => 'color', 'default' => '#0b2742', 'help' => 'Header surface color.'],
                     ['key' => 'header_text', 'label' => 'Header Text', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Header text color.'],
                     ['key' => 'header_link', 'label' => 'Header Link', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Header link color.'],
@@ -102,10 +137,10 @@ class StorefrontThemeService
             ],
             'search' => [
                 'label' => 'Search Box',
-                'description' => 'Search field surface, text, and button colors.',
+                'description' => 'Controls the search box background, text, border, and button colors.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'search_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'search_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'search_background', 'label' => 'Search Background', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Search field background.'],
                     ['key' => 'search_text', 'label' => 'Search Text', 'type' => 'color', 'default' => '#152536', 'help' => 'Search field text color.'],
                     ['key' => 'search_placeholder', 'label' => 'Search Placeholder', 'type' => 'color', 'default' => '#7b8a97', 'help' => 'Placeholder text color.'],
@@ -117,11 +152,11 @@ class StorefrontThemeService
                 ],
             ],
             'actions' => [
-                'label' => 'Header Actions',
-                'description' => 'Wishlist, Account, Compare, and Cart controls.',
+                'label' => 'Wishlist, Account and Cart',
+                'description' => 'Controls the wishlist, account, compare, and cart icons and text.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'actions_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'actions_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'actions_icon', 'label' => 'Icon Color', 'type' => 'color', 'default' => '#f5821f', 'help' => 'Action icon color.'],
                     ['key' => 'actions_text', 'label' => 'Text Color', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Action text color.'],
                     ['key' => 'actions_hover', 'label' => 'Hover Color', 'type' => 'color', 'default' => '#f5821f', 'help' => 'Action hover color.'],
@@ -129,11 +164,11 @@ class StorefrontThemeService
                 ],
             ],
             'badges' => [
-                'label' => 'Badges / Counters',
-                'description' => 'Compare and cart count indicators.',
+                'label' => 'Cart and Compare Badges',
+                'description' => 'Controls the small number badges shown on cart and compare items.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'badges_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'badges_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'badges_background', 'label' => 'Badge Background', 'type' => 'color', 'default' => '#f5821f', 'help' => 'Counter background color.'],
                     ['key' => 'badges_text', 'label' => 'Badge Text', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Counter text color.'],
                     ['key' => 'badges_border', 'label' => 'Badge Border', 'type' => 'color', 'default' => '#f5821f', 'help' => 'Counter border color.'],
@@ -141,10 +176,10 @@ class StorefrontThemeService
             ],
             'pc_builder' => [
                 'label' => 'PC Builder Button',
-                'description' => 'Independent CTA styling for the PC Builder button.',
+                'description' => 'Controls the colors of the PC Builder button.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'pc_builder_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'pc_builder_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'pc_builder_background', 'label' => 'Background', 'type' => 'color', 'default' => '#f5821f', 'help' => 'PC Builder button background.'],
                     ['key' => 'pc_builder_text', 'label' => 'Text', 'type' => 'color', 'default' => '#ffffff', 'help' => 'PC Builder button text.'],
                     ['key' => 'pc_builder_icon', 'label' => 'Icon', 'type' => 'color', 'default' => '#ffffff', 'help' => 'PC Builder icon color.'],
@@ -154,11 +189,11 @@ class StorefrontThemeService
                 ],
             ],
             'navigation' => [
-                'label' => 'Category Navigation',
-                'description' => 'The main category strip and dropdown menu.',
+                'label' => 'Category Menu',
+                'description' => 'Controls the main category menu and its dropdown list.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'navigation_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'navigation_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'navigation_background', 'label' => 'Navigation Background', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Navigation background color.'],
                     ['key' => 'navigation_text', 'label' => 'Navigation Text', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Navigation text color.'],
                     ['key' => 'navigation_hover_background', 'label' => 'Navigation Hover Background', 'type' => 'color', 'default' => $this->blendForHover('#0b3d62', 'light'), 'help' => 'Hover background color.'],
@@ -172,11 +207,11 @@ class StorefrontThemeService
                 ],
             ],
             'body' => [
-                'label' => 'Page Body',
-                'description' => 'Overall page surface, text, and link colors.',
+                'label' => 'Page Content',
+                'description' => 'Controls the main page background, text, headings, and links.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'body_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'body_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'body_background', 'label' => 'Page Background', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Page background color.'],
                     ['key' => 'body_text', 'label' => 'Main Text Color', 'type' => 'color', 'default' => '#152536', 'help' => 'Default body text color.'],
                     ['key' => 'body_muted', 'label' => 'Muted Text Color', 'type' => 'color', 'default' => '#667787', 'help' => 'Muted body text color.'],
@@ -187,10 +222,10 @@ class StorefrontThemeService
             ],
             'cards' => [
                 'label' => 'Product Cards',
-                'description' => 'Catalog card surfaces, price colors, and hover treatment.',
+                'description' => 'Controls product card backgrounds, borders, prices, badges, and hover effects.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'cards_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'cards_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'cards_background', 'label' => 'Card Background', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Card background color.'],
                     ['key' => 'cards_border', 'label' => 'Card Border', 'type' => 'color', 'default' => '#e4eaf0', 'help' => 'Card border color.'],
                     ['key' => 'cards_title', 'label' => 'Product Name', 'type' => 'color', 'default' => '#152536', 'help' => 'Card title color.'],
@@ -205,11 +240,11 @@ class StorefrontThemeService
                 ],
             ],
             'buttons' => [
-                'label' => 'Button Theme',
-                'description' => 'Reusable button colors for primary, secondary, accent, and danger actions.',
+                'label' => 'Buttons',
+                'description' => 'Controls the colors of primary, secondary, accent, and danger buttons.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'buttons_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'buttons_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'button_primary_background', 'label' => 'Primary Background', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Primary button background.'],
                     ['key' => 'button_primary_text', 'label' => 'Primary Text', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Primary button text.'],
                     ['key' => 'button_primary_border', 'label' => 'Primary Border', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Primary button border.'],
@@ -235,11 +270,11 @@ class StorefrontThemeService
                 ],
             ],
             'forms' => [
-                'label' => 'Form Colors',
-                'description' => 'Search, login, checkout, and contact form appearance.',
+                'label' => 'Forms and Input Boxes',
+                'description' => 'Controls the appearance of search, login, checkout, and contact forms.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'forms_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'forms_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'form_input_background', 'label' => 'Input Background', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Input surface color.'],
                     ['key' => 'form_input_text', 'label' => 'Input Text', 'type' => 'color', 'default' => '#152536', 'help' => 'Input text color.'],
                     ['key' => 'form_placeholder', 'label' => 'Placeholder', 'type' => 'color', 'default' => '#7b8a97', 'help' => 'Placeholder text color.'],
@@ -252,10 +287,10 @@ class StorefrontThemeService
             ],
             'footer' => [
                 'label' => 'Footer Colors',
-                'description' => 'Footer background, links, and bottom bar colors.',
+                'description' => 'Controls the footer background, text, links, icons, and bottom strip.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'footer_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'footer_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'footer_background', 'label' => 'Footer Background', 'type' => 'color', 'default' => '#072b47', 'help' => 'Footer background color.'],
                     ['key' => 'footer_heading', 'label' => 'Footer Heading', 'type' => 'color', 'default' => '#ffffff', 'help' => 'Footer heading color.'],
                     ['key' => 'footer_text', 'label' => 'Footer Text', 'type' => 'color', 'default' => '#b9ccdc', 'help' => 'Footer text color.'],
@@ -268,11 +303,11 @@ class StorefrontThemeService
                 ],
             ],
             'breadcrumbs' => [
-                'label' => 'Breadcrumb Colors',
-                'description' => 'Optional breadcrumb strip colors for catalog pages.',
+                'label' => 'Page Path Colors',
+                'description' => 'Controls the colors of the page path shown above catalog content.',
                 'use_global' => true,
                 'fields' => [
-                    ['key' => 'breadcrumbs_use_global', 'label' => 'Use Global Theme', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, the section uses the global palette.'],
+                    ['key' => 'breadcrumbs_use_global', 'label' => 'Use Main Website Colors', 'type' => 'boolean', 'default' => 1, 'help' => 'When enabled, this section follows Main Website Colors.'],
                     ['key' => 'breadcrumbs_background', 'label' => 'Breadcrumb Background', 'type' => 'color', 'default' => '#f7fbfe', 'help' => 'Breadcrumb background color.'],
                     ['key' => 'breadcrumbs_text', 'label' => 'Breadcrumb Text', 'type' => 'color', 'default' => '#667787', 'help' => 'Breadcrumb text color.'],
                     ['key' => 'breadcrumbs_link', 'label' => 'Breadcrumb Link', 'type' => 'color', 'default' => '#0b3d62', 'help' => 'Breadcrumb link color.'],
@@ -294,6 +329,42 @@ class StorefrontThemeService
             'light-technology' => 'Light Technology',
             'minimal' => 'Minimal',
         ];
+    }
+
+    public function fontFamilyOptions(): array
+    {
+        return [
+            'system' => 'System UI (recommended)',
+            'segoe' => 'Segoe UI',
+            'arial' => 'Arial',
+            'tahoma' => 'Tahoma',
+            'bengali' => 'Noto Sans Bengali',
+            'georgia' => 'Georgia (serif)',
+            'mono' => 'Monospace',
+        ];
+    }
+
+    public function fontFamilyStacks(): array
+    {
+        return [
+            'system' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Bengali", "Nirmala UI", Arial, sans-serif',
+            'segoe' => '"Segoe UI", "Noto Sans Bengali", "Nirmala UI", Arial, sans-serif',
+            'arial' => 'Arial, "Noto Sans Bengali", "Nirmala UI", sans-serif',
+            'tahoma' => 'Tahoma, "Noto Sans Bengali", "Nirmala UI", Arial, sans-serif',
+            'bengali' => '"Noto Sans Bengali", "Nirmala UI", "Vrinda", "Segoe UI", sans-serif',
+            'georgia' => 'Georgia, "Noto Serif Bengali", "Noto Sans Bengali", serif',
+            'mono' => '"Courier New", "Noto Sans Bengali", monospace',
+        ];
+    }
+
+    public function fontSizeOptions(): array
+    {
+        $sizes = [];
+        foreach (range(10, 22) as $size) {
+            $sizes[(string) $size] = $size.' px';
+        }
+
+        return $sizes;
     }
 
     public function presetPalettes(): array
@@ -634,6 +705,8 @@ class StorefrontThemeService
         $focusRing = $this->rgbaFromHex($resolved['form_focus_border'], 0.15);
         $cardShadow = $resolved['cards_hover_shadow'] ?: '0 10px 30px rgba(11,61,98,.1)';
         $footerBorder = $resolved['footer_border'] ?: '#25445d';
+        $fontStacks = $this->fontFamilyStacks();
+        $font = static fn ($key, $fallback = 'system') => $fontStacks[$key] ?? $fontStacks[$fallback];
 
         return [
             '--navy' => $global['global_primary'],
@@ -649,6 +722,32 @@ class StorefrontThemeService
             '--tb-text' => $resolved['topbar_text'],
             '--tb-link' => $resolved['topbar_link'],
             '--tb-link-hover' => $resolved['topbar_link_hover'],
+            '--theme-topbar-font-family' => $font($resolved['topbar_font_family']),
+            '--theme-topbar-font-size' => (int) $resolved['topbar_font_size'].'px',
+            '--theme-header-font-family' => $font($resolved['header_font_family']),
+            '--theme-header-font-size' => (int) $resolved['header_font_size'].'px',
+            '--theme-search-font-family' => $font($resolved['search_font_family']),
+            '--theme-search-font-size' => (int) $resolved['search_font_size'].'px',
+            '--theme-actions-font-family' => $font($resolved['actions_font_family']),
+            '--theme-actions-font-size' => (int) $resolved['actions_font_size'].'px',
+            '--theme-badges-font-family' => $font($resolved['badges_font_family']),
+            '--theme-badges-font-size' => (int) $resolved['badges_font_size'].'px',
+            '--theme-pc-builder-font-family' => $font($resolved['pc_builder_font_family']),
+            '--theme-pc-builder-font-size' => (int) $resolved['pc_builder_font_size'].'px',
+            '--theme-navigation-font-family' => $font($resolved['navigation_font_family']),
+            '--theme-navigation-font-size' => (int) $resolved['navigation_font_size'].'px',
+            '--theme-body-font-family' => $font($resolved['body_font_family']),
+            '--theme-body-font-size' => (int) $resolved['body_font_size'].'px',
+            '--theme-cards-font-family' => $font($resolved['cards_font_family']),
+            '--theme-cards-font-size' => (int) $resolved['cards_font_size'].'px',
+            '--theme-buttons-font-family' => $font($resolved['buttons_font_family']),
+            '--theme-buttons-font-size' => (int) $resolved['buttons_font_size'].'px',
+            '--theme-forms-font-family' => $font($resolved['forms_font_family']),
+            '--theme-forms-font-size' => (int) $resolved['forms_font_size'].'px',
+            '--theme-footer-font-family' => $font($resolved['footer_font_family']),
+            '--theme-footer-font-size' => (int) $resolved['footer_font_size'].'px',
+            '--theme-breadcrumbs-font-family' => $font($resolved['breadcrumbs_font_family']),
+            '--theme-breadcrumbs-font-size' => (int) $resolved['breadcrumbs_font_size'].'px',
             '--theme-page-bg' => $resolved['body_background'],
             '--theme-body-text' => $resolved['body_text'],
             '--theme-muted' => $resolved['body_muted'],
