@@ -58,7 +58,7 @@
                                         <div class="lt-subcategory-dropdown" aria-label="{{ $subCategoryLabel }} brands">
                                             <a class="lt-nested-title" href="{{ url('/product-by-sub-category/'.$subCategory->sub_category_id) }}">All {{ $subCategoryLabel }}</a>
                                             @foreach($subCategoryBrands as $manufacturer)
-                                                <a href="{{ url('/all-manufacturer-by-id/'.$manufacturer->manufacturer_id) }}">{{ $manufacturer->manufacturer_name }}</a>
+                                                <a href="{{ url('/all-manufacturer-by-id/'.$manufacturer->manufacturer_id).'?'.http_build_query(['category_id' => $categoryId, 'sub_category_id' => $subCategory->sub_category_id]) }}">{{ $manufacturer->manufacturer_name }}</a>
                                             @endforeach
                                         </div>
                                     @endif

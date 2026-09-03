@@ -188,19 +188,43 @@ class WelcomeController extends Controller
         return view('front-end.pages.product-by-sub-category', compact('products', 'manufacturers', 'search_by_sub_category_name'));
     }
     
-    public function allManufacturerById($manufacturer_id)
+    public function allManufacturerById(Request $request, $manufacturer_id)
     {
         $manufacturer = Manufacturer::where('publication_status', 1)->findOrFail($manufacturer_id);
-        $all_manufacturer_by_id=DB::table('product')
+        $categoryId = $request->integer('category_id');
+        $subCategoryId = $request->integer('sub_category_id');
+        $subCategory = null;
+
+        if ($subCategoryId) {
+            $subCategory = DB::table('sub_category')
+                ->where('sub_category_id', $subCategoryId)
+                ->where('publication_status', 1)
+                ->first();
+            abort_unless($subCategory, 404);
+            if ($categoryId && (int) $subCategory->category_id !== $categoryId) abort(404);
+            $categoryId = (int) $subCategory->category_id;
+        }
+
+        $productQuery = DB::table('product')
                 ->whereNull('deleted_at')
                 ->where('manufacturer_id',$manufacturer_id)
-                ->where('publication_status',1)
+                ->where('publication_status',1);
+
+        if ($categoryId) $productQuery->where('category_id', $categoryId);
+        if ($subCategory) {
+            $productQuery->where(function ($query) use ($subCategoryId, $subCategory) {
+                $query->where('sub_category', (string) $subCategoryId)
+                    ->orWhere('sub_category', $subCategory->sub_category_name);
+            });
+        }
+
+        $all_manufacturer_by_id=$productQuery
                 ->select('product.*')
                 ->selectRaw(Product::sellingPriceSql().' as selling_price')
                 ->selectRaw('CASE WHEN offer_price IS NOT NULL AND offer_price < regular_price THEN 1 ELSE 0 END as has_offer')
                 ->latest()
                 ->get();
-        return view('front-end.pages.manufacturer-by-id', compact('all_manufacturer_by_id', 'manufacturer'));
+        return view('front-end.pages.manufacturer-by-id', compact('all_manufacturer_by_id', 'manufacturer', 'subCategory'));
     }
     
     public function searchProduct(Request $request)
