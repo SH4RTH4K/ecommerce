@@ -1,5 +1,6 @@
 @extends('admin.admin-master')
 @section('admin_main_content')
+<link rel="stylesheet" href="{{ asset('css/admin-list-filters.css') }}?v={{ filemtime(public_path('css/admin-list-filters.css')) }}">
 <div id="content" class="span10">
 
 
@@ -32,7 +33,7 @@
     @include('admin.components.data-transfer',['resource'=>'categories'])
 
     @php
-        $featuredCategoryIds = $all_category_info->where('is_featured', 1)->pluck('category_id')->map(fn ($id) => (int) $id)->all();
+        $featuredCategoryIds = $featured_category_info->where('is_featured', 1)->pluck('category_id')->map(fn ($id) => (int) $id)->all();
     @endphp
     <div class="box" style="margin-bottom:20px">
         <div class="box-header" data-original-title>
@@ -50,14 +51,14 @@
                 </div>
                 <div id="featured-category-order" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:42px;margin:0 0 12px;padding:8px;border:1px dashed #cbd7df;border-radius:4px;background:#f8fafb">
                     <span class="muted" data-order-empty {{ count($featuredCategoryIds) ? 'style=display:none' : '' }}>No categories selected yet.</span>
-                    @foreach($all_category_info->where('publication_status', 1)->where('is_featured', 1)->sortBy('display_order') as $category)
+                    @foreach($featured_category_info->where('publication_status', 1)->where('is_featured', 1)->sortBy('display_order') as $category)
                         <button type="button" class="featured-order-item" draggable="true" data-id="{{ $category->category_id }}" style="border:1px solid #c8d4dc;border-radius:3px;padding:6px 9px;background:#fff;cursor:grab">
                             <i class="fa fa-arrows" aria-hidden="true"></i> {{ $category->category_name }}
                         </button>
                     @endforeach
                 </div>
                 <div id="featured-category-options" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:300px;overflow:auto;padding:4px">
-                    @foreach($all_category_info->where('publication_status', 1) as $category)
+                    @foreach($featured_category_info->where('publication_status', 1) as $category)
                         <label class="featured-category-option" data-name="{{ strtolower($category->category_name) }}" style="border:1px solid #ddd;border-radius:3px;padding:8px;background:#fafafa;cursor:pointer">
                             <input type="checkbox" name="featured_category_ids[]" value="{{ $category->category_id }}" {{ in_array((int) $category->category_id, $featuredCategoryIds, true) ? 'checked' : '' }}>
                             @if($category->icon_image)<img src="{{ asset($category->icon_image) }}" alt="" style="width:16px;height:16px;object-fit:contain;vertical-align:middle">@else<i class="fa {{ $category->icon_class ?: 'fa-folder-open' }}"></i>@endif
@@ -80,9 +81,17 @@
                     <a href="#" class="btn-close"><i class="halflings-icon remove"></i></a>
                 </div>
             </div>
-            <div class="box-content">
+            <div class="box-content admin-filtered-list">
+                <form class="admin-list-filters" method="get" action="{{ url('/manage-category') }}">
+                    <label class="admin-filter-search">Search<input type="search" name="search" value="{{ request('search') }}" placeholder="Name, code, or category ID"></label>
+                    <label>Status<select name="status"><option value="">All statuses</option><option value="1" {{ request('status')==='1'?'selected':'' }}>Published</option><option value="0" {{ request('status')==='0'?'selected':'' }}>Unpublished</option></select></label>
+                    <label>Featured<select name="featured"><option value="">All categories</option><option value="1" {{ request('featured')==='1'?'selected':'' }}>Featured</option><option value="0" {{ request('featured')==='0'?'selected':'' }}>Not featured</option></select></label>
+                    <label>Navigation<select name="navbar"><option value="">All navigation states</option><option value="1" {{ request('navbar')==='1'?'selected':'' }}>Shown in navigation</option><option value="0" {{ request('navbar')==='0'?'selected':'' }}>Hidden from navigation</option></select></label>
+                    <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-category') }}">Clear</a></div>
+                    <span class="admin-filter-result">{{ $all_category_info->count() }} matching categories</span>
+                </form>
                 <form id="bulk-category-form" method="post" action="{{ url('/manage-category/bulk-delete') }}">{{ csrf_field() }}
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="bulk-category-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button><span id="bulk-category-count" class="muted">0 selected</span></div>
+                <div class="admin-bulk-actions" style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="bulk-category-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button><span id="bulk-category-count" class="muted">0 selected</span></div>
                 <table class="table table-striped table-bordered bootstrap-datatable datatable">
                     <thead>
                         <tr>

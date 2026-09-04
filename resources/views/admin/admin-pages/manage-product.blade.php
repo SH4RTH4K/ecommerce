@@ -1,5 +1,6 @@
 @extends('admin.admin-master')
 @section('admin_main_content')
+<link rel="stylesheet" href="{{ asset('css/admin-list-filters.css') }}?v={{ filemtime(public_path('css/admin-list-filters.css')) }}">
 <div id="content" class="span10">
 
 
@@ -49,9 +50,21 @@
                     <a href="#" class="btn-close"><i class="halflings-icon remove"></i></a>
                 </div>
             </div>
-            <div class="box-content">
+            <div class="box-content admin-filtered-list">
+                <form class="admin-list-filters" method="get" action="{{ url('/manage-product') }}" id="product-filter-form">
+                    <label class="admin-filter-search">Search<input type="search" name="search" value="{{ request('search') }}" placeholder="Name, model, SKU, barcode, or ID"></label>
+                    <label>Category<select name="category_id" id="product-filter-category"><option value="">All categories</option>@foreach($filterCategories as $category)<option value="{{ $category->category_id }}" {{ (string)request('category_id')===(string)$category->category_id?'selected':'' }}>{{ $category->category_name }}</option>@endforeach</select></label>
+                    <label>Subcategory<select name="sub_category_id" id="product-filter-subcategory"><option value="">All subcategories</option>@foreach($filterSubcategories as $subcategory)<option value="{{ $subcategory->sub_category_id }}" data-category-id="{{ $subcategory->category_id }}" {{ (string)request('sub_category_id')===(string)$subcategory->sub_category_id?'selected':'' }}>{{ $subcategory->sub_category_name }}</option>@endforeach</select></label>
+                    <label>Manufacturer<select name="manufacturer_id"><option value="">All manufacturers</option>@foreach($filterManufacturers as $manufacturer)<option value="{{ $manufacturer->manufacturer_id }}" {{ (string)request('manufacturer_id')===(string)$manufacturer->manufacturer_id?'selected':'' }}>{{ $manufacturer->manufacturer_name }}</option>@endforeach</select></label>
+                    <label>Publication<select name="status"><option value="">All statuses</option><option value="1" {{ request('status')==='1'?'selected':'' }}>Published</option><option value="0" {{ request('status')==='0'?'selected':'' }}>Unpublished</option></select></label>
+                    <label>Stock condition<select name="stock"><option value="">All stock conditions</option>@foreach($productConditions as $condition)<option value="{{ $condition }}" {{ request('stock')===$condition?'selected':'' }}>{{ $condition }}</option>@endforeach</select></label>
+                    <label>Featured<select name="featured"><option value="">All products</option><option value="1" {{ request('featured')==='1'?'selected':'' }}>Featured</option><option value="0" {{ request('featured')==='0'?'selected':'' }}>Not featured</option></select></label>
+                    <label>New arrival<select name="new_arrival"><option value="">All products</option><option value="1" {{ request('new_arrival')==='1'?'selected':'' }}>New arrivals</option><option value="0" {{ request('new_arrival')==='0'?'selected':'' }}>Not new</option></select></label>
+                    <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-product') }}">Clear</a></div>
+                    <span class="admin-filter-result">{{ $all_product->count() }} matching products</span>
+                </form>
                 <form id="bulk-product-form" method="post" action="{{ url('/manage-product/bulk-delete') }}">{{ csrf_field() }}
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                <div class="admin-bulk-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
                     <button id="bulk-product-publish" type="submit" class="btn btn-success" formaction="{{ url('/manage-product/bulk-publication') }}" name="publication_status" value="1" disabled><i class="halflings-icon white thumbs-up"></i> Publish selected</button>
                     <button id="bulk-product-unpublish" type="submit" class="btn btn-warning" formaction="{{ url('/manage-product/bulk-publication') }}" name="publication_status" value="0" disabled><i class="halflings-icon white thumbs-down"></i> Unpublish selected</button>
                     <button id="bulk-product-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button>
@@ -136,6 +149,20 @@
 @include('admin.components.bulk-delete-script',['formId'=>'bulk-product-form','selectAllId'=>'select-all-products','buttonId'=>'bulk-product-button','counterId'=>'bulk-product-count','itemLabel'=>'products'])
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var categoryFilter = document.getElementById('product-filter-category');
+    var subcategoryFilter = document.getElementById('product-filter-subcategory');
+    function filterSubcategories() {
+        var categoryId = categoryFilter ? categoryFilter.value : '';
+        if (!subcategoryFilter) return;
+        Array.prototype.slice.call(subcategoryFilter.options).forEach(function (option) {
+            if (!option.value) return;
+            option.hidden = !!categoryId && option.getAttribute('data-category-id') !== categoryId;
+        });
+        var selected = subcategoryFilter.options[subcategoryFilter.selectedIndex];
+        if (selected && selected.hidden) subcategoryFilter.value = '';
+    }
+    if (categoryFilter) categoryFilter.addEventListener('change', filterSubcategories);
+    filterSubcategories();
     var form = document.getElementById('bulk-product-form');
     var publish = document.getElementById('bulk-product-publish');
     var unpublish = document.getElementById('bulk-product-unpublish');

@@ -1,5 +1,6 @@
 @extends('admin.admin-master')
 @section('admin_main_content')
+<link rel="stylesheet" href="{{ asset('css/admin-list-filters.css') }}?v={{ filemtime(public_path('css/admin-list-filters.css')) }}">
 <div id="content" class="span10">
 
 
@@ -50,10 +51,18 @@
                     <a href="#" class="btn-close"><i class="halflings-icon remove"></i></a>
                 </div>
             </div>
-            <div class="box-content">
+            <div class="box-content admin-filtered-list">
+                <form class="admin-list-filters" method="get" action="{{ url('/manage-subCategory') }}">
+                    <label class="admin-filter-search">Search<input type="search" name="search" value="{{ request('search') }}" placeholder="Subcategory, code, parent, or ID"></label>
+                    <label>Parent category<select name="category_id"><option value="">All categories</option>@foreach($categories as $category)<option value="{{ $category->category_id }}" {{ (string)request('category_id')===(string)$category->category_id?'selected':'' }}>{{ $category->category_name }}</option>@endforeach</select></label>
+                    <label>Status<select name="status"><option value="">All statuses</option><option value="1" {{ request('status')==='1'?'selected':'' }}>Published</option><option value="0" {{ request('status')==='0'?'selected':'' }}>Unpublished</option></select></label>
+                    <label>Navbar<select name="navbar"><option value="">All navbar states</option><option value="1" {{ request('navbar')==='1'?'selected':'' }}>Shown in navbar</option><option value="0" {{ request('navbar')==='0'?'selected':'' }}>Hidden from navbar</option></select></label>
+                    <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-subCategory') }}">Clear</a></div>
+                    <span class="admin-filter-result">{{ $category_details->count() }} matching subcategories</span>
+                </form>
                 <form id="bulk-subcategory-form" method="post" action="{{ url('/manage-subCategory/bulk-delete') }}">
                 {{ csrf_field() }}
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <div class="admin-bulk-actions" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
                     <button id="bulk-delete-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button>
                     <span id="selected-subcategory-count" class="muted">0 selected</span>
                 </div>

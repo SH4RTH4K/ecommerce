@@ -255,11 +255,31 @@ class SuperAdminController extends Controller {
         return Redirect::to('/add-category');
     }
 
-    public function manageCategory() {
+    public function manageCategory(Request $request) {
         $this->authCheck();
-        $all_category = Category::orderBy('display_order')->orderBy('category_name')->get();
+        $categoryQuery = Category::query();
+        $search = trim((string) $request->query('search'));
+        if ($search !== '') {
+            $categoryQuery->where(function ($query) use ($search) {
+                $query->where('category_name', 'like', '%'.$search.'%')
+                    ->orWhere('category_code', 'like', '%'.$search.'%');
+                if (ctype_digit($search)) $query->orWhere('category_id', (int) $search);
+            });
+        }
+        if (in_array((string) $request->query('status'), ['0', '1'], true)) {
+            $categoryQuery->where('publication_status', (int) $request->query('status'));
+        }
+        if (in_array((string) $request->query('featured'), ['0', '1'], true)) {
+            $categoryQuery->where('is_featured', (int) $request->query('featured'));
+        }
+        if (Schema::hasColumn('category', 'show_in_navigation') && in_array((string) $request->query('navbar'), ['0', '1'], true)) {
+            $categoryQuery->where('show_in_navigation', (int) $request->query('navbar'));
+        }
+        $all_category = $categoryQuery->orderBy('display_order')->orderBy('category_name')->get();
+        $featured_category_info = Category::orderBy('display_order')->orderBy('category_name')->get();
         $manage_category = view('admin.admin-pages.manage-category')
-                ->with('all_category_info', $all_category);
+                ->with('all_category_info', $all_category)
+                ->with('featured_category_info', $featured_category_info);
         return view('admin.admin-master')
                         ->with('admin_main_content', $manage_category);
     }
@@ -487,14 +507,28 @@ class SuperAdminController extends Controller {
         return Redirect::to('/add-subCategory');
     }
 
-    public function manageSubCategory() {
+    public function manageSubCategory(Request $request) {
         $this->authCheck();
-        $category_details = DB::table('sub_category as s')
+        $subcategoryQuery = DB::table('sub_category as s')
                 ->join('category as c', 's.category_id', '=', 'c.category_id')
                 ->whereNull('s.deleted_at')
                 ->whereNull('c.deleted_at')
-                ->select('s.*', 'c.category_name')
-                ->get();
+                ->select('s.*', 'c.category_name');
+        $search = trim((string) $request->query('search'));
+        if ($search !== '') {
+            $subcategoryQuery->where(function ($query) use ($search) {
+                $query->where('s.sub_category_name', 'like', '%'.$search.'%')
+                    ->orWhere('s.subcategory_code', 'like', '%'.$search.'%')
+                    ->orWhere('c.category_name', 'like', '%'.$search.'%');
+                if (ctype_digit($search)) $query->orWhere('s.sub_category_id', (int) $search);
+            });
+        }
+        if ($request->filled('category_id')) $subcategoryQuery->where('s.category_id', (int) $request->query('category_id'));
+        if (in_array((string) $request->query('status'), ['0', '1'], true)) $subcategoryQuery->where('s.publication_status', (int) $request->query('status'));
+        if (Schema::hasColumn('sub_category', 'show_in_navbar') && in_array((string) $request->query('navbar'), ['0', '1'], true)) {
+            $subcategoryQuery->where('s.show_in_navbar', (int) $request->query('navbar'));
+        }
+        $category_details = $subcategoryQuery->orderBy('c.category_name')->orderBy('s.display_order')->orderBy('s.sub_category_name')->get();
         $categories = Category::orderBy('category_name')
                 ->get();
 //        $all_subCategory = DB::table('sub_category')
@@ -1409,15 +1443,42 @@ class SuperAdminController extends Controller {
     
     
     
-    public function manageProduct(StarTechCatalogImporter $importer)
+    public function manageProduct(Request $request, StarTechCatalogImporter $importer)
     {
         $this->authCheck();
-        $all_product=Product::query()->select('product.*')->selectRaw(\App\Product::sellingPriceSql().' selling_price')->orderBy('id','DESC')->get();
+        $productQuery = Product::query()->select('product.*')->selectRaw(\App\Product::sellingPriceSql().' selling_price');
+        $search = trim((string) $request->query('search'));
+        if ($search !== '') {
+            $productQuery->where(function ($query) use ($search) {
+                $query->where('product_name', 'like', '%'.$search.'%')
+                    ->orWhere('product_model', 'like', '%'.$search.'%')
+                    ->orWhere('product_code', 'like', '%'.$search.'%')
+                    ->orWhere('sku', 'like', '%'.$search.'%')
+                    ->orWhere('barcode', 'like', '%'.$search.'%');
+                if (ctype_digit($search)) $query->orWhere('id', (int) $search);
+            });
+        }
+        if ($request->filled('category_id')) $productQuery->where('category_id', (int) $request->query('category_id'));
+        if ($request->filled('sub_category_id')) $productQuery->where('sub_category', (string) $request->query('sub_category_id'));
+        if ($request->filled('manufacturer_id')) $productQuery->where('manufacturer_id', (string) $request->query('manufacturer_id'));
+        if (in_array((string) $request->query('status'), ['0', '1'], true)) $productQuery->where('publication_status', (int) $request->query('status'));
+        if ($request->filled('stock')) $productQuery->where('product_condition', (string) $request->query('stock'));
+        if (in_array((string) $request->query('featured'), ['0', '1'], true)) $productQuery->where('top_product', (int) $request->query('featured'));
+        if (in_array((string) $request->query('new_arrival'), ['0', '1'], true)) $productQuery->where('is_new_arrival', (int) $request->query('new_arrival'));
+        $all_product = $productQuery->orderBy('id','DESC')->get();
+        $filterCategories = Category::orderBy('category_name')->get(['category_id','category_name']);
+        $filterSubcategories = DB::table('sub_category')->whereNull('deleted_at')->orderBy('sub_category_name')->get(['sub_category_id','category_id','sub_category_name']);
+        $filterManufacturers = DB::table('manufacturer')->whereNull('deleted_at')->orderBy('manufacturer_name')->get(['manufacturer_id','manufacturer_name']);
+        $productConditions = Product::query()->whereNotNull('product_condition')->where('product_condition','<>','')->distinct()->orderBy('product_condition')->pluck('product_condition');
         $productImportCategories = collect($importer->categoryMap())
             ->mapWithKeys(fn (array $meta, string $slug) => [$slug => $meta['name']])
             ->all();
         $manage_product = view('admin.admin-pages.manage-product')
                 ->with('all_product', $all_product)
+                ->with('filterCategories', $filterCategories)
+                ->with('filterSubcategories', $filterSubcategories)
+                ->with('filterManufacturers', $filterManufacturers)
+                ->with('productConditions', $productConditions)
                 ->with('productImportCategories', $productImportCategories)
                 ->with('startechProductImportState', session('startech_product_import_state'));
         return view('admin.admin-master')
@@ -2871,6 +2932,11 @@ class SuperAdminController extends Controller {
             ->orderBy('category.category_name')->orderBy('catalog_attributes.display_order')->orderBy('catalog_attributes.name');
         if($request->filled('category_id')) $query->where('catalog_attributes.category_id',$request->category_id);
         if($request->filled('search')) $query->where(function($q)use($request){$term='%'.trim($request->search).'%';$q->where('catalog_attributes.name','like',$term)->orWhere('catalog_attributes.slug','like',$term);});
+        if(in_array((string)$request->query('input_type'),['select','multiselect','text'],true)) $query->where('catalog_attributes.input_type',$request->query('input_type'));
+        if(in_array((string)$request->query('filterable'),['0','1'],true)) $query->where('catalog_attributes.is_filterable',(int)$request->query('filterable'));
+        if(in_array((string)$request->query('comparable'),['0','1'],true)) $query->where('catalog_attributes.is_comparable',(int)$request->query('comparable'));
+        if($request->query('usage')==='used') $query->whereExists(function($q){$q->select(DB::raw(1))->from('product_attribute_values as pav_filter')->whereRaw('pav_filter.attribute_id = catalog_attributes.id');});
+        if($request->query('usage')==='unused') $query->whereNotExists(function($q){$q->select(DB::raw(1))->from('product_attribute_values as pav_filter')->whereRaw('pav_filter.attribute_id = catalog_attributes.id');});
         $attributes=$query->get();
         $categoryStats=DB::table('catalog_attributes')->select('category_id',DB::raw('COUNT(*) as attribute_count'),DB::raw('SUM(is_filterable) as filter_count'),DB::raw('SUM(is_comparable) as compare_count'))->groupBy('category_id')->get()->keyBy('category_id');
         return view('admin.admin-pages.catalog-attributes',compact('categories','attributes','categoryStats'));
