@@ -60,21 +60,27 @@
                     <label>Stock condition<select name="stock"><option value="">All stock conditions</option>@foreach($productConditions as $condition)<option value="{{ $condition }}" {{ request('stock')===$condition?'selected':'' }}>{{ $condition }}</option>@endforeach</select></label>
                     <label>Featured<select name="featured"><option value="">All products</option><option value="1" {{ request('featured')==='1'?'selected':'' }}>Featured</option><option value="0" {{ request('featured')==='0'?'selected':'' }}>Not featured</option></select></label>
                     <label>New arrival<select name="new_arrival"><option value="">All products</option><option value="1" {{ request('new_arrival')==='1'?'selected':'' }}>New arrivals</option><option value="0" {{ request('new_arrival')==='0'?'selected':'' }}>Not new</option></select></label>
-                    <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-product') }}">Clear</a></div>
-                    <span class="admin-filter-result">{{ $all_product->count() }} matching products</span>
+                    <div class="admin-filter-footer">
+                        <output class="admin-filter-result" aria-live="polite"><strong>{{ number_format($all_product->count()) }}</strong> {{ \Illuminate\Support\Str::plural('product', $all_product->count()) }} found</output>
+                        <div class="admin-filter-actions">
+                            <button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button>
+                            <a class="btn" href="{{ url('/manage-product') }}">Clear filters</a>
+                        </div>
+                    </div>
                 </form>
                 <form id="bulk-product-form" method="post" action="{{ url('/manage-product/bulk-delete') }}">{{ csrf_field() }}
-                <div class="admin-bulk-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                <div class="admin-bulk-actions">
                     <button id="bulk-product-publish" type="submit" class="btn btn-success" formaction="{{ url('/manage-product/bulk-publication') }}" name="publication_status" value="1" disabled><i class="halflings-icon white thumbs-up"></i> Publish selected</button>
                     <button id="bulk-product-unpublish" type="submit" class="btn btn-warning" formaction="{{ url('/manage-product/bulk-publication') }}" name="publication_status" value="0" disabled><i class="halflings-icon white thumbs-down"></i> Unpublish selected</button>
                     <button id="bulk-product-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button>
                     <span id="bulk-product-count" class="muted">0 selected</span>
                 </div>
                 </form>
-                <table class="table table-striped table-bordered bootstrap-datatable datatable">
+                <div class="admin-table-scroll" role="region" aria-label="Products" tabindex="0">
+                <table class="table table-striped table-bordered bootstrap-datatable datatable admin-catalog-table admin-product-table">
                     <thead>
                         <tr>
-                            <th style="width:32px"><input type="checkbox" id="select-all-products" aria-label="Select all products"></th>
+                            <th class="admin-select-column"><input type="checkbox" id="select-all-products" aria-label="Select all products on this page"></th>
                             <th>ID</th>
                             <th>Product Name</th>
                             <th>Product Code</th>
@@ -88,60 +94,40 @@
                     </thead> 
 
                     <tbody>
-                        <?php
-                        foreach ($all_product as $vproduct) 
-                            {
-                        
-                        ?>
+                        @foreach ($all_product as $vproduct)
                         <tr>
                             <td><input type="checkbox" class="bulk-row-checkbox" name="product_ids[]" value="{{ $vproduct->id }}" form="bulk-product-form" aria-label="Select {{ $vproduct->product_name }}"></td>
-                            <td>{{$vproduct->id}}</td>
-                            <td class="center">{{$vproduct->product_name}}</td>
-                            <td class="center">{{ $vproduct->product_code ?: $vproduct->sku ?: '—' }}</td>
-                            <td class="center">{{$vproduct->barcode ?: '—'}}</td>
-                            <td class="center">{{$vproduct->regular_price}}</td>
-                            <td class="center">{{$vproduct->offer_price !== null && $vproduct->offer_price < $vproduct->regular_price ? $vproduct->offer_price : '—'}}</td>
-                            <td class="center"><img src="{{asset($vproduct->product_image)}}" width="50" height="50"></td>
+                            <td class="admin-id-cell">{{ $vproduct->id }}</td>
+                            <td class="admin-product-name">{{ $vproduct->product_name }}</td>
+                            <td class="admin-code-cell">{{ $vproduct->product_code ?: $vproduct->sku ?: '—' }}</td>
+                            <td class="admin-code-cell">{{ $vproduct->barcode ?: '—' }}</td>
+                            <td class="admin-price-cell">{{ number_format((float) $vproduct->regular_price, 2) }}</td>
+                            <td class="admin-price-cell">{{ $vproduct->offer_price !== null && $vproduct->offer_price < $vproduct->regular_price ? number_format((float) $vproduct->offer_price, 2) : '—' }}</td>
+                            <td class="admin-image-cell"><img src="{{ $vproduct->image_url }}" width="50" height="50" loading="lazy" alt="{{ $vproduct->product_name }}"></td>
                             <td class="center">
-                                <?php
-                                if($vproduct->publication_status==1)
-                                {
-                                ?>
+                                @if($vproduct->publication_status == 1)
                                 <span class="label label-success">Published</span>
-                                <?php
-                                }
-                                else{
-                                ?>
+                                @else
                                 <span class="label label-important">Unpublished</span>
-                                <?php
-                                }
-                                ?>
+                                @endif
                             </td>
-                            <td class="center">
-                                <?php
-                                if($vproduct->publication_status==1)
-                                {
-                                ?>
-                                <form method="post" action="{{ URL::to('/unpublished-product/'.$vproduct->id) }}" style="display:inline">{{ csrf_field() }}<button type="submit" class="btn btn-danger" aria-label="Unpublish product"><i class="halflings-icon white thumbs-down"></i></button></form>
-                                <?php
-                                }
-                                else{
-                                ?>
-                                <form method="post" action="{{ URL::to('/published-product/'.$vproduct->id) }}" style="display:inline">{{ csrf_field() }}<button type="submit" class="btn btn-success" aria-label="Publish product"><i class="halflings-icon white thumbs-up"></i></button></form>
-                                <?php
-                                }
-                                ?>
-                                <a class="btn btn-info" href="{{URL::to('/edit-product/'.$vproduct->id)}}">
+                            <td class="admin-actions-cell">
+                                <div class="admin-row-actions">
+                                @if($vproduct->publication_status == 1)
+                                <form method="post" action="{{ URL::to('/unpublished-product/'.$vproduct->id) }}">{{ csrf_field() }}<button type="submit" class="btn btn-danger" title="Unpublish" aria-label="Unpublish {{ $vproduct->product_name }}"><i class="halflings-icon white thumbs-down"></i></button></form>
+                                @else
+                                <form method="post" action="{{ URL::to('/published-product/'.$vproduct->id) }}">{{ csrf_field() }}<button type="submit" class="btn btn-success" title="Publish" aria-label="Publish {{ $vproduct->product_name }}"><i class="halflings-icon white thumbs-up"></i></button></form>
+                                @endif
+                                <a class="btn btn-info" href="{{URL::to('/edit-product/'.$vproduct->id)}}" title="Edit" aria-label="Edit {{ $vproduct->product_name }}">
                                     <i class="halflings-icon white edit"></i>  
                                 </a>
-                                <form method="post" action="{{ URL::to('/delete-product/'.$vproduct->id) }}" style="display:inline">{{ csrf_field() }}<button type="submit" class="btn btn-danger" onclick="return checkDelete()" aria-label="Delete product"><i class="halflings-icon white trash"></i></button></form>
+                                <form method="post" action="{{ URL::to('/delete-product/'.$vproduct->id) }}">{{ csrf_field() }}<button type="submit" class="btn btn-danger" onclick="return checkDelete()" title="Delete" aria-label="Delete {{ $vproduct->product_name }}"><i class="halflings-icon white trash"></i></button></form>
+                                </div>
                             </td>
                         </tr>
-                        <?php
-                            }
-                        ?>
+                        @endforeach
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div><!--/span-->
     </div><!--/row-->

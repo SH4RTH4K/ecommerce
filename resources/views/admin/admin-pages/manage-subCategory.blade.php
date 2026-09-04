@@ -57,8 +57,10 @@
                     <label>Parent category<select name="category_id"><option value="">All categories</option>@foreach($categories as $category)<option value="{{ $category->category_id }}" {{ (string)request('category_id')===(string)$category->category_id?'selected':'' }}>{{ $category->category_name }}</option>@endforeach</select></label>
                     <label>Status<select name="status"><option value="">All statuses</option><option value="1" {{ request('status')==='1'?'selected':'' }}>Published</option><option value="0" {{ request('status')==='0'?'selected':'' }}>Unpublished</option></select></label>
                     <label>Navbar<select name="navbar"><option value="">All navbar states</option><option value="1" {{ request('navbar')==='1'?'selected':'' }}>Shown in navbar</option><option value="0" {{ request('navbar')==='0'?'selected':'' }}>Hidden from navbar</option></select></label>
-                    <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-subCategory') }}">Clear</a></div>
-                    <span class="admin-filter-result">{{ $category_details->count() }} matching subcategories</span>
+                    <div class="admin-filter-footer">
+                        <output class="admin-filter-result" aria-live="polite"><strong>{{ number_format($category_details->count()) }}</strong> {{ \Illuminate\Support\Str::plural('subcategory', $category_details->count()) }} found</output>
+                        <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-subCategory') }}">Clear filters</a></div>
+                    </div>
                 </form>
                 <form id="bulk-subcategory-form" method="post" action="{{ url('/manage-subCategory/bulk-delete') }}">
                 {{ csrf_field() }}

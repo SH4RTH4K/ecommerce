@@ -1,1 +1,37 @@
-.admin-filtered-list .dataTables_filter{display:none}.admin-list-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end;margin:0 0 14px;padding:14px;border:1px solid #dce6ec;border-radius:7px;background:#f7fafc}.admin-list-filters label{display:flex;flex-direction:column;gap:5px;margin:0;color:#526b7d;font-size:12px;font-weight:700}.admin-list-filters input,.admin-list-filters select{box-sizing:border-box;width:100%;height:37px;margin:0;padding:7px 9px;border:1px solid #cbd9e5;border-radius:5px;background:#fff;color:#29485f}.admin-list-filters .admin-filter-search{grid-column:span 2}.admin-filter-actions{display:flex;align-items:center;gap:7px;min-height:37px}.admin-filter-result{align-self:center;color:#718493;font-size:12px;white-space:nowrap}.admin-active-filter{display:inline-block;margin-left:5px;padding:2px 7px;border-radius:10px;background:#e6f1f8;color:#256186;font-size:11px}.admin-list-filters+.admin-bulk-actions{margin-top:0!important}@media(max-width:700px){.admin-list-filters{grid-template-columns:1fr 1fr}.admin-list-filters .admin-filter-search{grid-column:1/-1}.admin-filter-actions{grid-column:1/-1}}
+.admin-filtered-list .dataTables_filter{display:none}
+.admin-list-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end;margin:0 0 16px;padding:16px 18px;border:1px solid #dce6ec;border-radius:8px;background:#f7fafc;box-shadow:0 1px 2px rgba(18,63,97,.03)}
+.admin-list-filters label{display:flex;flex-direction:column;gap:6px;margin:0;color:#526b7d;font-size:12px;font-weight:700;line-height:1.25}
+.admin-list-filters input,.admin-list-filters select{box-sizing:border-box;width:100%;height:38px;margin:0;padding:7px 10px;border:1px solid #cbd9e5;border-radius:5px;background:#fff;color:#29485f;box-shadow:none}
+.admin-list-filters input:focus,.admin-list-filters select:focus{border-color:#2d8bd2;box-shadow:0 0 0 3px rgba(45,139,210,.12);outline:0}
+.admin-list-filters .admin-filter-search{grid-column:span 2}
+.admin-filter-footer{display:flex;grid-column:1/-1;align-items:center;justify-content:space-between;gap:12px;padding-top:13px;border-top:1px solid #dfe8ee}
+.admin-filter-actions{display:flex;align-items:center;gap:8px;min-height:38px}
+.admin-filter-actions .btn{box-sizing:border-box;margin:0;white-space:nowrap}
+.admin-filter-result{display:inline-flex;align-items:baseline;gap:5px;margin:0;padding:6px 10px;border:1px solid #cfe0eb;border-radius:15px;color:#526b7d;background:#fff;font-size:12px;line-height:1;white-space:nowrap}
+.admin-filter-result strong{color:#123f61;font-size:14px}
+.admin-active-filter{display:inline-block;margin-left:5px;padding:2px 7px;border-radius:10px;background:#e6f1f8;color:#256186;font-size:11px}
+.admin-bulk-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border:1px solid #e1e8ed;border-radius:7px;background:#fbfcfd}
+.admin-bulk-actions .btn{margin:0}
+.admin-bulk-actions .muted{margin-left:auto;white-space:nowrap}
+.admin-table-scroll{width:100%;overflow-x:auto;border:1px solid #dce4e9;border-radius:6px}
+.admin-table-scroll:focus{outline:3px solid rgba(45,139,210,.16);outline-offset:2px}
+.admin-table-scroll .admin-catalog-table{min-width:1120px;margin:0;border:0}
+.admin-catalog-table th{color:#334f62;background:#f4f7f9;vertical-align:middle}
+.admin-catalog-table td{vertical-align:middle}
+.admin-catalog-table .admin-select-column{width:34px;text-align:center}
+.admin-catalog-table .admin-id-cell{width:48px;color:#657b89;font-variant-numeric:tabular-nums}
+.admin-catalog-table .admin-product-name{min-width:300px;color:#273f50;font-weight:600;line-height:1.4;text-align:left}
+.admin-catalog-table .admin-code-cell{min-width:150px;color:#536b7a;font-family:Consolas,"Liberation Mono",monospace;font-size:12px;text-align:left;white-space:nowrap}
+.admin-catalog-table .admin-price-cell{min-width:82px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.admin-catalog-table .admin-image-cell{width:72px;text-align:center}
+.admin-catalog-table .admin-image-cell img{box-sizing:border-box;width:54px;height:54px;padding:3px;border:1px solid #e5eaed;border-radius:5px;background:#fff;object-fit:contain}
+.admin-catalog-table .admin-actions-cell{width:128px}
+.admin-row-actions{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.admin-row-actions form{display:inline-flex;margin:0}
+.admin-row-actions .btn{box-sizing:border-box;display:inline-grid;place-items:center;width:34px;height:32px;margin:0;padding:0}
+.admin-empty-state{padding:42px 20px!important;color:#718493;text-align:center!important}
+.admin-empty-state i,.admin-empty-state strong,.admin-empty-state span{display:block}
+.admin-empty-state i{margin-bottom:8px;font-size:24px}.admin-empty-state strong{margin-bottom:4px;color:#36566b;font-size:14px}
+.admin-list-filters+.admin-bulk-actions{margin-top:0!important}
+@media(max-width:900px){.admin-list-filters{grid-template-columns:1fr 1fr}.admin-list-filters .admin-filter-search{grid-column:1/-1}}
+@media(max-width:700px){.admin-list-filters{grid-template-columns:1fr;padding:14px}.admin-list-filters .admin-filter-search{grid-column:auto}.admin-filter-footer{align-items:stretch;flex-direction:column}.admin-filter-actions{width:100%}.admin-filter-actions .btn{flex:1;text-align:center}.admin-bulk-actions .muted{width:100%;margin-left:0}.admin-bulk-actions .btn{flex:1}.admin-table-scroll .admin-catalog-table{min-width:980px}}

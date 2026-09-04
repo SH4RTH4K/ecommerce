@@ -87,8 +87,10 @@
                     <label>Status<select name="status"><option value="">All statuses</option><option value="1" {{ request('status')==='1'?'selected':'' }}>Published</option><option value="0" {{ request('status')==='0'?'selected':'' }}>Unpublished</option></select></label>
                     <label>Featured<select name="featured"><option value="">All categories</option><option value="1" {{ request('featured')==='1'?'selected':'' }}>Featured</option><option value="0" {{ request('featured')==='0'?'selected':'' }}>Not featured</option></select></label>
                     <label>Navigation<select name="navbar"><option value="">All navigation states</option><option value="1" {{ request('navbar')==='1'?'selected':'' }}>Shown in navigation</option><option value="0" {{ request('navbar')==='0'?'selected':'' }}>Hidden from navigation</option></select></label>
-                    <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-category') }}">Clear</a></div>
-                    <span class="admin-filter-result">{{ $all_category_info->count() }} matching categories</span>
+                    <div class="admin-filter-footer">
+                        <output class="admin-filter-result" aria-live="polite"><strong>{{ number_format($all_category_info->count()) }}</strong> {{ \Illuminate\Support\Str::plural('category', $all_category_info->count()) }} found</output>
+                        <div class="admin-filter-actions"><button type="submit" class="btn btn-primary"><i class="icon-filter icon-white"></i> Apply filters</button><a class="btn" href="{{ url('/manage-category') }}">Clear filters</a></div>
+                    </div>
                 </form>
                 <form id="bulk-category-form" method="post" action="{{ url('/manage-category/bulk-delete') }}">{{ csrf_field() }}
                 <div class="admin-bulk-actions" style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="bulk-category-button" type="submit" class="btn btn-danger" disabled><i class="halflings-icon white trash"></i> Delete selected</button><span id="bulk-category-count" class="muted">0 selected</span></div>
