@@ -76,20 +76,19 @@
                     <span id="bulk-product-count" class="muted">0 selected</span>
                 </div>
                 </form>
-                <div class="admin-table-scroll" role="region" aria-label="Products" tabindex="0">
                 <table class="table table-striped table-bordered bootstrap-datatable datatable admin-catalog-table admin-product-table">
                     <thead>
                         <tr>
                             <th class="admin-select-column"><input type="checkbox" id="select-all-products" aria-label="Select all products on this page"></th>
-                            <th>ID</th>
-                            <th>Product Name</th>
-                            <th>Product Code</th>
-                            <th>Barcode</th>
-                            <th>Regular Price</th>
-                            <th>Offer Price</th>
-                            <th>Product Image</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th class="admin-col-id">ID</th>
+                            <th class="admin-col-name">Product Name</th>
+                            <th class="admin-col-code">Product Code</th>
+                            <th class="admin-col-barcode">Barcode</th>
+                            <th class="admin-col-regular-price">Regular Price</th>
+                            <th class="admin-col-offer-price">Offer Price</th>
+                            <th class="admin-col-image">Image</th>
+                            <th class="admin-col-status">Status</th>
+                            <th class="admin-col-actions">Actions</th>
                         </tr>
                     </thead> 
 
@@ -97,21 +96,21 @@
                         @foreach ($all_product as $vproduct)
                         <tr>
                             <td><input type="checkbox" class="bulk-row-checkbox" name="product_ids[]" value="{{ $vproduct->id }}" form="bulk-product-form" aria-label="Select {{ $vproduct->product_name }}"></td>
-                            <td class="admin-id-cell">{{ $vproduct->id }}</td>
+                            <td class="admin-id-cell admin-col-id">{{ $vproduct->id }}</td>
                             <td class="admin-product-name">{{ $vproduct->product_name }}</td>
-                            <td class="admin-code-cell">{{ $vproduct->product_code ?: $vproduct->sku ?: '—' }}</td>
-                            <td class="admin-code-cell">{{ $vproduct->barcode ?: '—' }}</td>
-                            <td class="admin-price-cell">{{ number_format((float) $vproduct->regular_price, 2) }}</td>
-                            <td class="admin-price-cell">{{ $vproduct->offer_price !== null && $vproduct->offer_price < $vproduct->regular_price ? number_format((float) $vproduct->offer_price, 2) : '—' }}</td>
-                            <td class="admin-image-cell"><img src="{{ $vproduct->image_url }}" width="50" height="50" loading="lazy" alt="{{ $vproduct->product_name }}"></td>
-                            <td class="center">
+                            <td class="admin-code-cell admin-col-code">{{ $vproduct->product_code ?: $vproduct->sku ?: '—' }}</td>
+                            <td class="admin-code-cell admin-col-barcode">{{ $vproduct->barcode ?: '—' }}</td>
+                            <td class="admin-price-cell admin-col-regular-price">{{ number_format((float) $vproduct->regular_price, 2) }}</td>
+                            <td class="admin-price-cell admin-col-offer-price">{{ $vproduct->offer_price !== null && $vproduct->offer_price < $vproduct->regular_price ? number_format((float) $vproduct->offer_price, 2) : '—' }}</td>
+                            <td class="admin-image-cell admin-col-image"><img src="{{ $vproduct->image_url }}" width="50" height="50" loading="lazy" alt="{{ $vproduct->product_name }}"></td>
+                            <td class="center admin-col-status">
                                 @if($vproduct->publication_status == 1)
                                 <span class="label label-success">Published</span>
                                 @else
                                 <span class="label label-important">Unpublished</span>
                                 @endif
                             </td>
-                            <td class="admin-actions-cell">
+                            <td class="admin-actions-cell admin-col-actions">
                                 <div class="admin-row-actions">
                                 @if($vproduct->publication_status == 1)
                                 <form method="post" action="{{ URL::to('/unpublished-product/'.$vproduct->id) }}">{{ csrf_field() }}<button type="submit" class="btn btn-danger" title="Unpublish" aria-label="Unpublish {{ $vproduct->product_name }}"><i class="halflings-icon white thumbs-down"></i></button></form>
@@ -127,7 +126,7 @@
                         </tr>
                         @endforeach
                     </tbody>
-                </table></div>
+                </table>
             </div>
         </div><!--/span-->
     </div><!--/row-->
