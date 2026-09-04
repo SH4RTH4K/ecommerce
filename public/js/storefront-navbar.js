@@ -4,6 +4,35 @@
     var nav = document.querySelector('[data-navbar-items]');
     if (!nav) return;
 
+    var layoutRoot = nav.closest('[data-navbar-layout]') || document.getElementById('main-menu');
+
+    // A flex-wrap row naturally leaves an orphan item on the final row. When
+    // the administrator chooses an exact maximum row count, distribute the
+    // items evenly so (for example) 16 items become two rows of eight.
+    function balanceWrappedRows() {
+        if (!layoutRoot) return;
+        var items = Array.prototype.slice.call(nav.querySelectorAll(':scope > [data-navbar-item]'));
+        items.forEach(function (item) {
+            item.style.flexBasis = '';
+            item.style.maxWidth = '';
+        });
+        layoutRoot.classList.remove('nav-balanced-rows');
+
+        var wraps = layoutRoot.classList.contains('nav-row-wrap') || layoutRoot.classList.contains('nav-row-auto');
+        var maxRows = parseInt(layoutRoot.getAttribute('data-max-rows'), 10);
+        if (!wraps || window.innerWidth <= 1200 || !items.length || maxRows < 2 || maxRows > 3) return;
+
+        var itemsPerRow = Math.ceil(items.length / maxRows);
+        var columnGap = parseFloat(window.getComputedStyle(nav).columnGap) || 0;
+        var availableWidth = nav.clientWidth - (columnGap * (itemsPerRow - 1));
+        var itemWidth = Math.max(1, availableWidth / itemsPerRow);
+        items.forEach(function (item) {
+            item.style.flexBasis = itemWidth + 'px';
+            item.style.maxWidth = itemWidth + 'px';
+        });
+        layoutRoot.classList.add('nav-balanced-rows');
+    }
+
     function closeSubmenus(except) {
         nav.querySelectorAll('.lt-category-item.is-open').forEach(function (item) {
             if (item === except) return;
@@ -131,7 +160,14 @@
         if (openButton) openButton.focus();
     });
 
+    var resizeFrame;
+    window.addEventListener('resize', function () {
+        window.cancelAnimationFrame(resizeFrame);
+        resizeFrame = window.requestAnimationFrame(balanceWrappedRows);
+    });
+
     window.requestAnimationFrame(function () {
+        balanceWrappedRows();
         var root = nav.closest('[data-navbar]') || document.getElementById('main-menu');
         if (root) root.classList.remove('lt-navbar-pending');
     });

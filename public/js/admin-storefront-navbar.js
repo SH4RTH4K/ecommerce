@@ -62,6 +62,19 @@
         preview.innerHTML = '';
         currentRows.forEach(function (row) { var item = document.createElement('span'); item.textContent = labelFor(row); preview.appendChild(item); });
         if (!currentRows.length) { var empty = document.createElement('span'); empty.textContent = 'No navbar items enabled'; preview.appendChild(empty); }
+
+        var maxRows = parseInt(layoutValue('max_rows'), 10);
+        if (!isMobile && layoutValue('row_mode') !== 'SINGLE_ROW' && maxRows >= 2 && maxRows <= 3 && currentRows.length) {
+            var itemsPerRow = Math.ceil(currentRows.length / maxRows);
+            var basis = 'calc(' + (100 / itemsPerRow) + '% - ' + ((gap * (itemsPerRow - 1)) / itemsPerRow) + 'px)';
+            preview.querySelectorAll('span').forEach(function (item) {
+                item.style.flex = '0 0 ' + basis;
+                item.style.maxWidth = basis;
+                item.style.minWidth = '0';
+                item.style.overflow = 'hidden';
+                item.style.textOverflow = 'ellipsis';
+            });
+        }
         document.getElementById('snb-count').textContent = currentRows.length;
         window.requestAnimationFrame(function () {
             var overflowing = !isMobile && preview.scrollWidth > preview.clientWidth + 2;

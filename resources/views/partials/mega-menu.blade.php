@@ -40,7 +40,7 @@
             @if($category)
                 <div class="lt-category-item {{ $isActiveCategory ? 'is-active' : '' }} {{ $subCategories->isNotEmpty() ? 'has-children' : '' }}"
                      data-navbar-item data-navbar-order="{{ $item->priority }}" data-category-id="{{ $categoryId }}">
-                    <a class="lt-category-link" href="{{ url('/product-by-category/'.$categoryId) }}" @if($isActiveCategory) aria-current="page" @endif>
+                    <a class="lt-category-link" href="{{ url('/product-by-category/'.$categoryId) }}" title="{{ $item->label() }}" @if($isActiveCategory) aria-current="page" @endif>
                         <span>{{ $item->label() }}</span>
                     </a>
                     @if($subCategories->isNotEmpty())
