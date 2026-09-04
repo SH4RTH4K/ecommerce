@@ -28,7 +28,7 @@
         ];
     }
 
-    $themePresetValue = old('storefront_theme.preset', $theme['preset'] ?? ($themeDefaults['preset'] ?? 'lucent-tech-bd'));
+    $themePresetValue = old('storefront_theme.preset', $theme['preset'] ?? ($themeDefaults['preset'] ?? 'default'));
 @endphp
 
 <style>
@@ -75,7 +75,7 @@
 .ws-theme-presets{display:flex;flex-wrap:wrap;gap:8px}
 .ws-theme-preset-button{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #d9e4ea;border-radius:999px;background:#fff;color:#355164;font-size:12px;font-weight:700}
 .ws-theme-preset-button.is-active{background:#eaf6fa;border-color:#b9dce9;color:#116381}
-.ws-theme-preset-swatch{width:10px;height:10px;border-radius:999px;display:inline-block;flex:0 0 10px;border:1px solid rgba(0,0,0,.08)}
+.ws-theme-preset-swatch{width:24px;height:12px;border-radius:999px;display:inline-block;flex:0 0 24px;border:1px solid rgba(0,0,0,.1)}
 .ws-theme-summary{margin-top:10px;padding:10px 12px;border-radius:8px;background:#f6fbfd;border:1px solid #dcebf1;color:#355164;font-size:12px;line-height:1.45}
 .ws-theme-summary strong{color:#173f56}
 .ws-theme-contrast-list{display:grid;gap:10px}
@@ -178,12 +178,12 @@
                 </div>
                 <div class="ws-theme-card-body">
                     <div class="ws-theme-grid ws-theme-grid--single">
-                        <div class="ws-theme-field" data-theme-field-row="preset" data-theme-field-type="select" data-theme-default="{{ $themeDefaults['preset'] ?? 'lucent-tech-bd' }}">
+                        <div class="ws-theme-field" data-theme-field-row="preset" data-theme-field-type="select" data-theme-default="{{ $themeDefaults['preset'] ?? 'default' }}">
                             <div class="ws-theme-field-head">
                                 <label for="storefront-theme-preset">Choose a quick style</label>
-                                <button type="button" class="btn btn-mini" data-theme-reset-field="preset" data-theme-default="{{ $themeDefaults['preset'] ?? 'lucent-tech-bd' }}">Use default</button>
+                                <button type="button" class="btn btn-mini" data-theme-reset-field="preset" data-theme-default="{{ $themeDefaults['preset'] ?? 'default' }}">Use default</button>
                             </div>
-                            <select id="storefront-theme-preset" name="storefront_theme[preset]" data-theme-input="preset">
+                            <select id="storefront-theme-preset" name="storefront_theme[preset]" data-theme-input="preset" data-theme-preset-select>
                                 @foreach($themePresets as $presetKey => $presetLabel)
                                     <option value="{{ $presetKey }}" {{ (string) $themePresetValue === (string) $presetKey ? 'selected' : '' }}>{{ $presetLabel }}</option>
                                 @endforeach
@@ -191,13 +191,13 @@
                             <div class="ws-theme-presets" style="margin-top:10px">
                                 @foreach($themePresets as $presetKey => $presetLabel)
                                     <button type="button" class="ws-theme-preset-button {{ (string) $themePresetValue === (string) $presetKey ? 'is-active' : '' }}" data-theme-apply-preset="{{ $presetKey }}">
-                                        <span class="ws-theme-preset-swatch" style="background: {{ $themePresetPalettes[$presetKey]['global_primary'] ?? '#0b3d62' }}"></span>
+                                        <span class="ws-theme-preset-swatch" style="background: linear-gradient(90deg, {{ $themePresetPalettes[$presetKey]['global_primary'] ?? '#0b3d62' }} 0 33%, {{ $themePresetPalettes[$presetKey]['global_secondary'] ?? '#072b47' }} 33% 66%, {{ $themePresetPalettes[$presetKey]['global_accent'] ?? '#f5821f' }} 66% 100%)"></span>
                                         <span>{{ $presetLabel }}</span>
                                     </button>
                                 @endforeach
                             </div>
                             <div class="ws-theme-summary" data-theme-preset-summary>
-                                <strong data-theme-preset-name>{{ $themePresets[$themePresetValue] ?? ($themePresets[$themeDefaults['preset'] ?? 'lucent-tech-bd'] ?? 'Current preset') }}</strong>
+                                <strong data-theme-preset-name>{{ $themePresets[$themePresetValue] ?? ($themePresets[$themeDefaults['preset'] ?? 'default'] ?? 'Current preset') }}</strong>
                                 <span>Use this shortcut for a quick website color refresh before editing individual colors.</span>
                             </div>
                         </div>
@@ -414,7 +414,7 @@
     var themePresets = @json($themePresets);
     var themePresetPalettes = @json($themePresetPalettes);
     var themeFontStacks = @json(app(\App\Services\StorefrontThemeService::class)->fontFamilyStacks());
-    var defaultPreset = themeDefaults.preset || 'lucent-tech-bd';
+    var defaultPreset = themeDefaults.preset || 'default';
     var presetSelect = manager.querySelector('[data-theme-preset-select]');
     var presetName = manager.querySelector('[data-theme-preset-name]');
     var presetButtons = manager.querySelectorAll('[data-theme-apply-preset]');

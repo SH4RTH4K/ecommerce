@@ -172,6 +172,32 @@ class SiteCustomizationTest extends TestCase
         return array_merge(app(StorefrontThemeService::class)->defaults(), $overrides);
     }
 
+    public function testQuickStylesProvideTenDistinctPalettesWithoutTheDuplicateLucentPreset()
+    {
+        $service = app(StorefrontThemeService::class);
+        $options = $service->presetOptions();
+        $palettes = $service->presetPalettes();
+
+        $this->assertCount(10, $options);
+        $this->assertArrayNotHasKey('lucent-tech-bd', $options);
+        $this->assertSame(array_keys($options), array_keys($palettes));
+        $this->assertSame('default', $service->defaults()['preset']);
+
+        $signatures = [];
+        foreach ($palettes as $key => $palette) {
+            $signatures[$key] = implode('|', [
+                $palette['global_primary'],
+                $palette['global_secondary'],
+                $palette['global_accent'],
+                $palette['global_page_background'],
+                $palette['global_body_text'],
+            ]);
+        }
+
+        $this->assertCount(10, array_unique($signatures));
+        $this->assertSame('default', $service->normalize(['preset' => 'lucent-tech-bd'])['preset']);
+    }
+
     public function testModernSettingsWorkspaceRendersAllBusinessSections()
     {
         $admin=$this->settingsAdmin();
@@ -260,7 +286,7 @@ class SiteCustomizationTest extends TestCase
             Cache::forget('site-settings');
 
             $theme = $this->storefrontThemePayload([
-                'preset' => 'blue-orange',
+                'preset' => 'royal-purple',
                 'global_primary' => '#123456',
                 'global_secondary' => '#0f2233',
                 'global_accent' => '#f5821f',
@@ -309,7 +335,7 @@ class SiteCustomizationTest extends TestCase
             $this->assertNotEmpty($storedTheme);
 
             $decodedTheme = json_decode($storedTheme, true);
-            $this->assertSame('blue-orange', $decodedTheme['preset']);
+            $this->assertSame('royal-purple', $decodedTheme['preset']);
             $this->assertSame('#123456', $decodedTheme['global_primary']);
             $this->assertSame('#0f2233', $decodedTheme['global_secondary']);
             $this->assertSame(0, $decodedTheme['header_use_global']);
