@@ -28,8 +28,11 @@ class StorefrontNavbarService
             'custom_max_width' => 1320,
             'minimum_height' => 42,
             'item_gap' => 0,
+            'row_gap' => 0,
             'padding_x' => 8,
             'padding_y' => 8,
+            'item_padding_x' => 8,
+            'item_padding_y' => 8,
             'font_size_desktop' => 14,
             'font_size_tablet' => 13,
             'font_size_mobile' => 14,
@@ -78,6 +81,19 @@ class StorefrontNavbarService
     public function normalizeLayout(array $input): array
     {
         $defaults = $this->defaultLayout();
+
+        // Older saved layouts used the outer navbar padding for item padding.
+        // Carry those values forward until the administrator changes them.
+        if (! array_key_exists('item_padding_x', $input)) {
+            $input['item_padding_x'] = $input['padding_x'] ?? $defaults['item_padding_x'];
+        }
+        if (! array_key_exists('item_padding_y', $input)) {
+            $input['item_padding_y'] = $input['padding_y'] ?? $defaults['item_padding_y'];
+        }
+        if (! array_key_exists('row_gap', $input)) {
+            $input['row_gap'] = $input['item_gap'] ?? $defaults['row_gap'];
+        }
+
         $layout = array_replace($defaults, $input);
         $enum = function ($key, array $allowed) use (&$layout, $defaults) {
             $value = strtoupper(trim((string) ($layout[$key] ?? '')));
@@ -118,7 +134,9 @@ class StorefrontNavbarService
         $enum('hover_style', ['TEXT', 'UNDERLINE', 'BACKGROUND', 'TEXT_UNDERLINE']);
         foreach ([
             ['custom_max_width', 800, 1800], ['minimum_height', 32, 80], ['item_gap', 0, 40],
-            ['padding_x', 0, 30], ['padding_y', 0, 30], ['font_size_desktop', 11, 24],
+            ['row_gap', 0, 40],
+            ['padding_x', 0, 30], ['padding_y', 0, 30], ['item_padding_x', 0, 40],
+            ['item_padding_y', 0, 30], ['font_size_desktop', 11, 24],
             ['font_size_tablet', 10, 22], ['font_size_mobile', 12, 24], ['minimum_item_width', 50, 240],
             ['tablet_item_gap', 0, 40], ['dropdown_width', 200, 500], ['border_width', 0, 4],
             ['border_radius', 0, 12], ['item_radius', 0, 12],

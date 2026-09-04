@@ -8,8 +8,11 @@
     $navbarStyle = implode(';', [
         '--navbar-min-height:'.(int) ($navbarLayout['minimum_height'] ?? 42).'px',
         '--navbar-gap:'.(int) ($navbarLayout['item_gap'] ?? 0).'px',
+        '--navbar-row-gap:'.(int) ($navbarLayout['row_gap'] ?? $navbarLayout['item_gap'] ?? 0).'px',
         '--navbar-padding-x:'.(int) ($navbarLayout['padding_x'] ?? 8).'px',
         '--navbar-padding-y:'.(int) ($navbarLayout['padding_y'] ?? 8).'px',
+        '--navbar-item-padding-x:'.(int) ($navbarLayout['item_padding_x'] ?? $navbarLayout['padding_x'] ?? 8).'px',
+        '--navbar-item-padding-y:'.(int) ($navbarLayout['item_padding_y'] ?? $navbarLayout['padding_y'] ?? 8).'px',
         '--navbar-font-size:'.(int) ($navbarLayout['font_size_desktop'] ?? 14).'px',
         '--navbar-font-size-tablet:'.(int) ($navbarLayout['font_size_tablet'] ?? 13).'px',
         '--navbar-font-size-mobile:'.(int) ($navbarLayout['font_size_mobile'] ?? 14).'px',

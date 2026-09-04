@@ -810,7 +810,8 @@ body{max-width:100%;overflow-x:hidden}
 .lt-startech-menu.nav-container-content-width .lt-category-nav{width:min(1320px,calc(100% - 32px));max-width:none;margin-left:auto;margin-right:auto}
 .lt-startech-menu.nav-container-custom-max-width .lt-category-nav{width:min(var(--navbar-custom-width,1320px),calc(100% - 32px));max-width:none}
 .lt-startech-menu .lt-category-nav{
-  gap:var(--navbar-gap,0);
+  column-gap:var(--navbar-gap,0);
+  row-gap:var(--navbar-row-gap,0);
   min-height:var(--navbar-min-height,42px);
   padding:var(--navbar-padding-y,8px) var(--navbar-padding-x,8px);
   align-items:stretch;
@@ -840,7 +841,7 @@ body{max-width:100%;overflow-x:hidden}
 .lt-startech-menu.nav-width-equal-width .lt-category-item[data-navbar-item]{flex:1 1 0;min-width:var(--navbar-min-item-width,80px)}
 .lt-startech-menu.nav-wrap-no-wrap .lt-category-link span{white-space:nowrap}
 .lt-startech-menu.nav-wrap-allow-wrap .lt-category-link span{white-space:normal}
-.lt-startech-menu .lt-category-link{text-align:var(--navbar-item-text-align,center);padding:var(--navbar-padding-y,8px) var(--navbar-padding-x,8px);border-radius:var(--navbar-item-radius,0)}
+.lt-startech-menu .lt-category-link{font-size:inherit;font-weight:inherit;text-align:var(--navbar-item-text-align,center);padding:var(--navbar-item-padding-y,8px) var(--navbar-item-padding-x,8px);border-radius:var(--navbar-item-radius,0)}
 .lt-startech-menu .lt-nav-submenu-toggle{padding-top:var(--navbar-padding-y,8px);padding-bottom:var(--navbar-padding-y,8px);border-radius:var(--navbar-item-radius,0)}
 .lt-startech-menu.nav-active-none .lt-category-item.is-active>.lt-category-link{color:inherit;box-shadow:none}
 .lt-startech-menu.nav-active-background .lt-category-item.is-active>.lt-category-link{background:var(--theme-nav-active-bg,var(--orange));color:var(--theme-nav-active-text,#fff);box-shadow:none}
@@ -855,7 +856,7 @@ body{max-width:100%;overflow-x:hidden}
 .lt-startech-menu[data-dropdown-width="fixed"] .lt-category-dropdown{min-width:var(--navbar-dropdown-width,260px);max-width:var(--navbar-dropdown-width,260px)}
 .lt-startech-menu[data-dropdown-width="mega_menu_width"] .lt-category-dropdown{min-width:min(620px,calc(100vw - 32px));max-width:min(720px,calc(100vw - 32px))}
 .lt-startech-menu.nav-overflow-reduce-spacing .lt-category-nav{gap:0}
-.lt-startech-menu.nav-overflow-reduce-font .lt-category-item[data-navbar-item]{font-size:max(11px,calc(var(--navbar-font-size,14px) - 1px))}
+.lt-startech-menu.nav-overflow-reduce-font-within-limit .lt-category-item[data-navbar-item]{font-size:max(11px,calc(var(--navbar-font-size,14px) - 1px))}
 .lt-startech-menu.nav-overflow-compact-items .lt-category-link{padding-left:4px;padding-right:4px}
 .lt-startech-menu.nav-overflow-allow-extra-row.nav-row-single-row .lt-category-nav{flex-wrap:wrap;overflow:visible}
 @media(min-width:721px){.lt-startech-menu.nav-desktop-disabled{display:none}}
@@ -870,15 +871,16 @@ body{max-width:100%;overflow-x:hidden}
 
 @media(min-width:721px) and (max-width:1200px){
   .lt-startech-menu.nav-tablet-custom .lt-category-item[data-navbar-item]{font-size:var(--navbar-font-size-tablet,13px)}
-  .lt-startech-menu.nav-tablet-custom .lt-category-nav{gap:var(--navbar-tablet-gap,0)}
+  .lt-startech-menu.nav-tablet-custom .lt-category-nav{column-gap:var(--navbar-tablet-gap,0);row-gap:var(--navbar-row-gap,0)}
   .lt-startech-menu.nav-tablet-custom.nav-row-single-row .lt-category-nav{justify-content:flex-start}
   .lt-startech-menu.nav-tablet-custom.nav-row-wrap .lt-category-nav{justify-content:flex-start}
   .lt-startech-menu.nav-tablet-overflow-reduce-spacing .lt-category-nav{gap:0}
-  .lt-startech-menu.nav-tablet-overflow-reduce-font .lt-category-item[data-navbar-item]{font-size:11px}
+  .lt-startech-menu.nav-tablet-overflow-reduce-font-within-limit .lt-category-item[data-navbar-item]{font-size:11px}
   .lt-startech-menu.nav-tablet-overflow-compact-items .lt-category-link{padding-left:4px;padding-right:4px}
 }
 @media(max-width:720px){
   .lt-startech-menu .lt-category-nav{font-size:var(--navbar-font-size-mobile,14px);gap:0;padding:var(--navbar-padding-y,8px) var(--navbar-padding-x,8px)}
+  .lt-startech-menu .lt-category-item[data-navbar-item]{font-size:var(--navbar-font-size-mobile,14px)}
   .lt-startech-menu.nav-mobile-align-left .lt-category-link{text-align:left}
   .lt-startech-menu.nav-mobile-align-center .lt-category-link{text-align:center}
   .lt-startech-menu.nav-mobile-align-right .lt-category-link{text-align:right}

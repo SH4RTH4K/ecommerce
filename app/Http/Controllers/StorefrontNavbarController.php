@@ -23,9 +23,10 @@ class StorefrontNavbarController extends Controller
 
     public function save(Request $request, StorefrontNavbarService $service)
     {
-        // Keep older integrations/tests that only submit item settings compatible.
+        // Keep older integrations that only submit item settings compatible without
+        // unexpectedly replacing an administrator's saved design choices.
         if (! $request->has('layout')) {
-            $request->merge(['layout' => $service->defaultLayout()]);
+            $request->merge(['layout' => $service->layout()]);
         }
 
         $this->validate($request, [
@@ -50,8 +51,11 @@ class StorefrontNavbarController extends Controller
             'layout.custom_max_width' => 'required|integer|min:800|max:1800',
             'layout.minimum_height' => 'required|integer|min:32|max:80',
             'layout.item_gap' => 'required|integer|min:0|max:40',
+            'layout.row_gap' => 'nullable|integer|min:0|max:40',
             'layout.padding_x' => 'required|integer|min:0|max:30',
             'layout.padding_y' => 'required|integer|min:0|max:30',
+            'layout.item_padding_x' => 'nullable|integer|min:0|max:40',
+            'layout.item_padding_y' => 'nullable|integer|min:0|max:30',
             'layout.font_size_desktop' => 'required|integer|min:11|max:24',
             'layout.font_size_tablet' => 'required|integer|min:10|max:22',
             'layout.font_size_mobile' => 'required|integer|min:12|max:24',
