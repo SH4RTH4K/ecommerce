@@ -2901,7 +2901,9 @@ class SuperAdminController extends Controller {
         if ($request->filter==='out') $query->where('stock_tracking',1)->where('stock_quantity',0);
         if ($request->filter==='untracked') $query->where('stock_tracking',0);
         if ($request->filled('search')) $query->where(function($q)use($request){$q->where('product_name','like','%'.$request->search.'%')->orWhere('sku','like','%'.$request->search.'%');});
-        $products=$query->paginate(25)->appends($request->query());
+        $requestedPerPage=(int)$request->query('per_page',25);
+        $perPage=in_array($requestedPerPage,[10,25,50,100],true)?$requestedPerPage:25;
+        $products=$query->paginate($perPage)->withQueryString();
         $counts=['tracked'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->count(),'low'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5])->count(),'out'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->where('stock_quantity',0)->count()];
         return view('admin.admin-pages.inventory',compact('products','counts'));
     }
