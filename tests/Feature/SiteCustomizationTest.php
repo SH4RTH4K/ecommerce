@@ -279,6 +279,18 @@ class SiteCustomizationTest extends TestCase
                 'specification_label_color' => '#405060',
                 'specification_group_color' => '#506070',
                 'specification_heading_color' => '#607080',
+                'detail_code_font_family' => 'mono',
+                'detail_code_font_size' => '14',
+                'detail_code_font_weight' => '700',
+                'detail_code_letter_spacing' => '0.04',
+                'detail_code_text_transform' => 'none',
+                'detail_code_text_color' => '#123456',
+                'detail_code_background' => '#e8f0f6',
+                'detail_code_border_color' => '#789abc',
+                'detail_code_border_width' => '2',
+                'detail_code_border_radius' => '12',
+                'detail_code_padding_y' => '7',
+                'detail_code_padding_x' => '12',
                 'footer_font_family' => 'georgia',
                 'footer_font_size' => '16',
             ]);
@@ -315,6 +327,12 @@ class SiteCustomizationTest extends TestCase
             $this->assertSame('#405060', $decodedTheme['specification_label_color']);
             $this->assertSame('#506070', $decodedTheme['specification_group_color']);
             $this->assertSame('#607080', $decodedTheme['specification_heading_color']);
+            $this->assertSame('mono', $decodedTheme['detail_code_font_family']);
+            $this->assertSame('14', $decodedTheme['detail_code_font_size']);
+            $this->assertSame('700', $decodedTheme['detail_code_font_weight']);
+            $this->assertSame('#123456', $decodedTheme['detail_code_text_color']);
+            $this->assertSame('#e8f0f6', $decodedTheme['detail_code_background']);
+            $this->assertSame('12', $decodedTheme['detail_code_border_radius']);
             $this->assertSame('georgia', $decodedTheme['footer_font_family']);
             $this->assertSame('16', $decodedTheme['footer_font_size']);
 
@@ -336,6 +354,18 @@ class SiteCustomizationTest extends TestCase
                 ->assertSee('--theme-specification-label: #405060', false)
                 ->assertSee('--theme-specification-group: #506070', false)
                 ->assertSee('--theme-specification-heading: #607080', false)
+                ->assertSee('--theme-detail-code-font-family: "Courier New"', false)
+                ->assertSee('--theme-detail-code-font-size: 14px', false)
+                ->assertSee('--theme-detail-code-font-weight: 700', false)
+                ->assertSee('--theme-detail-code-letter-spacing: 0.04em', false)
+                ->assertSee('--theme-detail-code-text-transform: none', false)
+                ->assertSee('--theme-detail-code-text: #123456', false)
+                ->assertSee('--theme-detail-code-background: #e8f0f6', false)
+                ->assertSee('--theme-detail-code-border: #789abc', false)
+                ->assertSee('--theme-detail-code-border-width: 2px', false)
+                ->assertSee('--theme-detail-code-radius: 12px', false)
+                ->assertSee('--theme-detail-code-padding-y: 7px', false)
+                ->assertSee('--theme-detail-code-padding-x: 12px', false)
                 ->assertSee('--theme-footer-bg: #0f2233', false)
                 ->assertSee('--theme-footer-font-size: 16px', false)
                 ->assertSee('--theme-button-primary-bg: #123456', false)

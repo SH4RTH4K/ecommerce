@@ -136,6 +136,7 @@
 .ws-theme-preview-cta{font-family:var(--theme-pc-builder-font-family,system-ui,sans-serif);font-size:var(--theme-pc-builder-font-size,13px)}
 .ws-theme-preview-nav{font-family:var(--theme-navigation-font-family,system-ui,sans-serif);font-size:var(--theme-navigation-font-size,14px)}
 .ws-theme-preview-card{font-family:var(--theme-cards-font-family,system-ui,sans-serif);font-size:var(--theme-cards-font-size,14px)}
+.ws-theme-preview-detail-code{grid-column:1/-1;justify-self:start;display:inline-flex;padding:var(--theme-detail-code-padding-y,5px) var(--theme-detail-code-padding-x,9px);border:var(--theme-detail-code-border-width,0) solid var(--theme-detail-code-border,#eef7fb);border-radius:var(--theme-detail-code-radius,999px);background:var(--theme-detail-code-background,#eef7fb);color:var(--theme-detail-code-text,#14708a);font-family:var(--theme-detail-code-font-family,var(--theme-body-font-family,inherit));font-size:var(--theme-detail-code-font-size,11px);font-weight:var(--theme-detail-code-font-weight,800);letter-spacing:var(--theme-detail-code-letter-spacing,.08em);line-height:1.35;text-transform:var(--theme-detail-code-text-transform,uppercase)}
 .ws-theme-preview-features{grid-column:1/-1;padding:12px 14px;border:1px solid var(--theme-card-border,#dfe8ed);border-radius:12px;background:var(--theme-page-bg,#fff);font-family:var(--theme-key-features-font-family,var(--theme-body-font-family,system-ui,sans-serif));font-size:var(--theme-key-features-font-size,13px)}
 .ws-theme-preview-features h4{margin:0 0 7px;color:var(--theme-key-features-heading,var(--theme-heading,#0b3d62));font-family:inherit;font-size:calc(var(--theme-key-features-font-size,13px) + 2px)}
 .ws-theme-preview-features ul{margin:0;padding-left:18px;color:var(--theme-key-features-text,#506474);font:inherit}
@@ -329,6 +330,7 @@
                                 <p>৳ 4,250</p>
                                 <button type="button" class="ws-theme-preview-button ws-theme-preview-button--secondary">View product</button>
                             </article>
+                            <div class="ws-theme-preview-detail-code">Product code: 0009.0055.0035.000004</div>
                             <section class="ws-theme-preview-features">
                                 <h4>Key Features</h4>
                                 <ul><li>Fast performance</li><li>Reliable connectivity</li></ul>
@@ -853,6 +855,18 @@
             '--theme-specification-label': resolved.specification_label_color,
             '--theme-specification-group': resolved.specification_group_color,
             '--theme-specification-heading': resolved.specification_heading_color,
+            '--theme-detail-code-font-family': resolved.detail_code_font_family === 'inherit' ? 'var(--theme-body-font-family)' : fontStack(resolved.detail_code_font_family),
+            '--theme-detail-code-font-size': resolved.detail_code_font_size + 'px',
+            '--theme-detail-code-font-weight': resolved.detail_code_font_weight,
+            '--theme-detail-code-letter-spacing': resolved.detail_code_letter_spacing + 'em',
+            '--theme-detail-code-text-transform': resolved.detail_code_text_transform,
+            '--theme-detail-code-text': resolved.detail_code_text_color,
+            '--theme-detail-code-background': resolved.detail_code_background,
+            '--theme-detail-code-border': resolved.detail_code_border_color,
+            '--theme-detail-code-border-width': resolved.detail_code_border_width + 'px',
+            '--theme-detail-code-radius': resolved.detail_code_border_radius + 'px',
+            '--theme-detail-code-padding-y': resolved.detail_code_padding_y + 'px',
+            '--theme-detail-code-padding-x': resolved.detail_code_padding_x + 'px',
             '--theme-cards-font-family': fontStack(resolved.cards_font_family),
             '--theme-cards-font-size': resolved.cards_font_size + 'px',
             '--theme-buttons-font-family': fontStack(resolved.buttons_font_family),

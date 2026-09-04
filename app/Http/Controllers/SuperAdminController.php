@@ -2897,15 +2897,29 @@ class SuperAdminController extends Controller {
     {
         $this->authCheck();
         $query=DB::table('product')->whereNull('deleted_at')->orderBy('product_name');
-        if ($request->filter==='low') $query->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5]);
-        if ($request->filter==='out') $query->where('stock_tracking',1)->where('stock_quantity',0);
-        if ($request->filter==='untracked') $query->where('stock_tracking',0);
-        if ($request->filled('search')) $query->where(function($q)use($request){$q->where('product_name','like','%'.$request->search.'%')->orWhere('sku','like','%'.$request->search.'%');});
+        $stockFilter=(string)$request->query('filter');
+        if ($stockFilter==='low') $query->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5]);
+        if ($stockFilter==='out') $query->where('stock_tracking',1)->where('stock_quantity',0);
+        if ($stockFilter==='untracked') $query->where('stock_tracking',0);
+        if ($request->filled('category_id')) $query->where('category_id',(int)$request->query('category_id'));
+        if ($request->filled('manufacturer_id')) $query->where('manufacturer_id',(string)$request->query('manufacturer_id'));
+        $search=trim((string)$request->query('search'));
+        if ($search!=='') $query->where(function($q)use($search){
+            $term='%'.$search.'%';
+            $q->where('product_name','like',$term)
+                ->orWhere('product_model','like',$term)
+                ->orWhere('product_code','like',$term)
+                ->orWhere('sku','like',$term)
+                ->orWhere('barcode','like',$term);
+            if(ctype_digit($search)) $q->orWhere('id',(int)$search);
+        });
         $requestedPerPage=(int)$request->query('per_page',25);
         $perPage=in_array($requestedPerPage,[10,25,50,100],true)?$requestedPerPage:25;
         $products=$query->paginate($perPage)->withQueryString();
         $counts=['tracked'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->count(),'low'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->whereBetween('stock_quantity',[1,5])->count(),'out'=>DB::table('product')->whereNull('deleted_at')->where('stock_tracking',1)->where('stock_quantity',0)->count()];
-        return view('admin.admin-pages.inventory',compact('products','counts'));
+        $filterCategories=DB::table('category')->whereNull('deleted_at')->orderBy('category_name')->get(['category_id','category_name']);
+        $filterManufacturers=DB::table('manufacturer')->whereNull('deleted_at')->orderBy('manufacturer_name')->get(['manufacturer_id','manufacturer_name']);
+        return view('admin.admin-pages.inventory',compact('products','counts','filterCategories','filterManufacturers'));
     }
 
     public function updateInventory(Request $request,$id)

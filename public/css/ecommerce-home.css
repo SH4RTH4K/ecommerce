@@ -840,7 +840,7 @@
 .lt-thumbnails button:hover,.lt-thumbnails button:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(245,130,31,.13)}
 .lt-thumbnails img{width:100%;height:100%}
 .lt-detail-info{align-self:start;padding:6px 0}
-.lt-detail-code{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef7fb;color:#14708a;font-size:11px;letter-spacing:.08em}
+.lt-detail-code{display:inline-flex;padding:var(--theme-detail-code-padding-y,5px) var(--theme-detail-code-padding-x,9px);border:var(--theme-detail-code-border-width,0) solid var(--theme-detail-code-border,#eef7fb);border-radius:var(--theme-detail-code-radius,999px);background:var(--theme-detail-code-background,#eef7fb);color:var(--theme-detail-code-text,#14708a);font-family:var(--theme-detail-code-font-family,var(--theme-body-font-family,inherit));font-size:var(--theme-detail-code-font-size,11px);font-weight:var(--theme-detail-code-font-weight,800);letter-spacing:var(--theme-detail-code-letter-spacing,.08em);text-transform:var(--theme-detail-code-text-transform,uppercase)}
 .lt-detail-info h1{margin:13px 0 7px;font-size:clamp(28px,3vw,42px);letter-spacing:-.035em;line-height:1.12}
 .lt-detail-model{margin:0;color:#728394;font-size:13px}
 .lt-product-intro{margin:20px 0 0;padding:13px 15px;border:1px solid #f4d7bb;border-left:4px solid var(--orange);background:#fffaf5;color:#6f4d22;font-size:13px}
