@@ -42,7 +42,7 @@
                 <label>Show<select name="per_page" onchange="this.form.submit()">@foreach([12,24,48] as $size)<option value="{{ $size }}" {{ $products->perPage() === $size ? 'selected' : '' }}>{{ $size }}</option>@endforeach</select></label>
             </form>
             <div class="lt-product-grid">@forelse($products as $product) @include('partials.product-card', ['product' => $product]) @empty <div class="lt-empty">No published products found.</div> @endforelse</div>
-            <div class="lt-pagination">{{ $products->links() }}</div>
+            <div class="lt-pagination">{{ $products->links('vendor.pagination.storefront') }}</div>
         </div>
     </div>
 </section>

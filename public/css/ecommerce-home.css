@@ -1316,3 +1316,105 @@
 .data-table tr:hover .heading-row, .data-table tr:hover th[colspan], .data-table tr:hover td[colspan] {
     background: #f5f6fb;
 }
+
+/* Storefront pagination is intentionally self-contained so it does not depend on Tailwind or Bootstrap. */
+.lt-pagination {
+    margin-top: 26px;
+    text-align: center;
+}
+
+.lt-pagination-nav {
+    display: flex;
+    justify-content: center;
+}
+
+.lt-pagination-list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lt-pagination-list li {
+    display: flex;
+}
+
+.lt-pagination-list a,
+.lt-pagination-list li > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+    padding: 7px 11px;
+    border: 1px solid #dce5ed;
+    border-radius: 7px;
+    background: #fff;
+    color: var(--navy);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+}
+
+.lt-pagination-list a:hover,
+.lt-pagination-list a:focus-visible {
+    border-color: var(--navy);
+    background: var(--navy);
+    color: #fff;
+}
+
+.lt-pagination-list .is-current > span {
+    border-color: var(--orange);
+    background: var(--orange);
+    color: #fff;
+}
+
+.lt-pagination-list .is-disabled > span {
+    background: #f5f7f9;
+    color: #9aa8b3;
+    cursor: not-allowed;
+}
+
+.lt-pagination-list .lt-pagination-ellipsis > span {
+    min-width: 22px;
+    padding-inline: 3px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--muted);
+}
+
+.lt-pagination-list .lt-pagination-prev a,
+.lt-pagination-list .lt-pagination-prev > span,
+.lt-pagination-list .lt-pagination-next a,
+.lt-pagination-list .lt-pagination-next > span {
+    min-width: 92px;
+}
+
+.pcb-pagination {
+    margin-top: 20px;
+}
+
+@media (max-width: 520px) {
+    .lt-pagination-list {
+        gap: 4px;
+    }
+
+    .lt-pagination-list a,
+    .lt-pagination-list li > span {
+        min-width: 34px;
+        min-height: 34px;
+        padding: 6px 8px;
+    }
+
+    .lt-pagination-list .lt-pagination-prev a,
+    .lt-pagination-list .lt-pagination-prev > span,
+    .lt-pagination-list .lt-pagination-next a,
+    .lt-pagination-list .lt-pagination-next > span {
+        min-width: 76px;
+    }
+}

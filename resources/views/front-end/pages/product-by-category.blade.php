@@ -126,7 +126,7 @@
                 @endforelse
             </div>
 
-            <div class="lt-pagination">{{ $products->links() }}</div>
+            <div class="lt-pagination">{{ $products->links('vendor.pagination.storefront') }}</div>
         </div>
     </div>
 </section>
