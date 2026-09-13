@@ -1654,6 +1654,27 @@ class SuperAdminController extends Controller {
     public function updateHomepageFeatureCards(Request $request, HomepageFeatureCardService $featureCards)
     {
         $this->authCheck();
+        $featureCardUploads = [];
+        $cardUploadErrors = $_FILES['card_image']['error'] ?? [];
+        if (is_array($cardUploadErrors)) {
+            foreach ($cardUploadErrors as $id => $error) $featureCardUploads['card_image.'.(int) $id] = (int) $error;
+        }
+        if (isset($_FILES['new_card_image']['error'])) $featureCardUploads['new_card_image'] = (int) $_FILES['new_card_image']['error'];
+        foreach ($featureCardUploads as $field => $uploadError) {
+            if ($uploadError === UPLOAD_ERR_NO_FILE || $uploadError === UPLOAD_ERR_OK) continue;
+            $limit = ini_get('upload_max_filesize') ?: 'unknown';
+            $postLimit = ini_get('post_max_size') ?: 'unknown';
+            $message = match ($uploadError) {
+                UPLOAD_ERR_INI_SIZE => "PHP rejected this image before Laravel received it. The live upload_max_filesize is {$limit}; increase it to at least 10M and post_max_size to at least 20M.",
+                UPLOAD_ERR_FORM_SIZE => "The upload request is larger than the live post_max_size ({$postLimit}). Increase post_max_size to at least 20M.",
+                UPLOAD_ERR_PARTIAL => 'The image upload was interrupted. Please try again or check the live server connection timeout.',
+                UPLOAD_ERR_NO_TMP_DIR => 'The live server has no temporary upload directory. Check upload_tmp_dir and its permissions.',
+                UPLOAD_ERR_CANT_WRITE => 'The live server could not write the temporary upload. Check the temporary directory permissions.',
+                UPLOAD_ERR_EXTENSION => 'A live-server PHP extension stopped the image upload. Check the PHP security configuration.',
+                default => "The live server rejected the image (upload_max_filesize: {$limit}, post_max_size: {$postLimit}).",
+            };
+            return Redirect::back()->withInput()->withErrors([$field => $message]);
+        }
         $this->validate($request, [
             'cards' => 'nullable|array',
             'cards.*.name' => 'required|string|max:150', 'cards.*.card_type' => 'required|in:TEXT_CTA,IMAGE,IMAGE_TEXT,CATEGORY,SUBCATEGORY,PRODUCT,BRAND,SPECIAL_OFFER,CUSTOM',
@@ -1669,8 +1690,13 @@ class SuperAdminController extends Controller {
             'cards.*.detach_image' => 'nullable|boolean',
             'cards.*.delete_image' => 'nullable|boolean',
             'new_card' => 'nullable|array', 'new_card.name' => 'nullable|string|max:150',
-            'card_image' => 'nullable|array', 'card_image.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096', 'new_card_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'card_image' => 'nullable|array', 'card_image.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:8192', 'new_card_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:8192',
             'config.layout' => 'required|in:STACKED,GRID,SLIDER', 'config.max_visible_cards' => 'required|in:1,2,3,4,5,AUTO', 'config.card_gap' => 'required|integer|min:0|max:40', 'config.slider_interval' => 'required|integer|min:3|max:30', 'delete_card' => 'nullable|integer|exists:homepage_feature_cards,id',
+        ], [
+            'card_image.*.max' => 'This card image is larger than 8 MB. Choose a smaller image or ask hosting to increase upload_max_filesize and post_max_size.',
+            'card_image.*.uploaded' => 'The live server rejected this card image before Laravel could save it. Ask hosting to set upload_max_filesize=10M and post_max_size=20M.',
+            'new_card_image.max' => 'This card image is larger than 8 MB. Choose a smaller image or ask hosting to increase upload_max_filesize and post_max_size.',
+            'new_card_image.uploaded' => 'The live server rejected this card image before Laravel could save it. Ask hosting to set upload_max_filesize=10M and post_max_size=20M.',
         ]);
         $sharedImageKept = false;
         DB::transaction(function () use ($request, $featureCards, &$sharedImageKept) {
