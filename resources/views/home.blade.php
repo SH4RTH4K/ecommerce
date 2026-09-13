@@ -94,6 +94,7 @@
                         @endif
                         @if($cardImage && $card->overlay_style !== 'NONE')<span class="hfc-overlay" aria-hidden="true"></span>@endif
                         <div class="hfc-store-content"><span>{{ $card->kicker_text }}</span>@if($card->title)<h2>{{ $card->title }}</h2>@endif @if($card->description)<p>{{ $card->description }}</p>@endif @if($card->button_text && $cardLink)<a href="{{ $cardLink }}" @if($card->open_in_new_tab) target="_blank" rel="noopener" @endif>{{ $card->button_text }}</a>@endif</div>
+                        @if($cardLink)<span class="hfc-click-indicator" aria-hidden="true" title="Click to open"><i class="fa fa-external-link"></i></span>@endif
                         @if($cardLink && $card->clickable_area === 'ENTIRE_CARD')<a class="hfc-card-link" href="{{ $cardLink }}" @if($card->open_in_new_tab) target="_blank" rel="noopener" @endif aria-label="{{ $card->title ?: $card->name }}"></a>@endif
                     </div>
                 @endforeach
